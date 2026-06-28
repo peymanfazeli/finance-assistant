@@ -67,7 +67,8 @@ const defaultSettings: ApplicationSettings = {
     'avgWeeklySpending'
   ],
   lastOpenedDataset: null,
-  recentDatasets: []
+  recentDatasets: [],
+  lastExportTimestamp: null,
 }
 
 let savePromise: Promise<void> = Promise.resolve()

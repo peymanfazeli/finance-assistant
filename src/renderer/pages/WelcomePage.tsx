@@ -1,4 +1,6 @@
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth, sizes } from '../../core/utils/styles'
 
 interface WelcomePageProps {
   onCreateDataset: () => void
@@ -9,20 +11,40 @@ function WelcomePage({ onCreateDataset, onImportData }: WelcomePageProps): JSX.E
   const { t } = useTranslation()
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+    <motion.div
+      style={styles.container}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div
+        style={styles.card}
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <h1 style={styles.title}>{t('welcome.title')}</h1>
         <p style={styles.subtitle}>{t('welcome.subtitle')}</p>
         <div style={styles.buttons}>
-          <button style={styles.primaryButton} onClick={onCreateDataset}>
+          <motion.button
+            style={styles.primaryButton}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onCreateDataset}
+          >
             {t('welcome.createDataset')}
-          </button>
-          <button style={styles.secondaryButton} onClick={onImportData}>
+          </motion.button>
+          <motion.button
+            style={styles.secondaryButton}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onImportData}
+          >
             {t('welcome.importData')}
-          </button>
+          </motion.button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -32,52 +54,52 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100vh',
-    backgroundColor: '#f5f5f5'
+    backgroundColor: colors.bg.page,
   },
   card: {
     textAlign: 'center',
-    padding: '48px',
-    borderRadius: '12px',
-    backgroundColor: '#fff',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-    maxWidth: '480px'
+    padding: padding.dialogLg,
+    borderRadius: borderRadius.xxl,
+    backgroundColor: colors.bg.card,
+    boxShadow: shadow.welcome,
+    maxWidth: sizes.formMaxWidth,
   },
   title: {
-    fontSize: '28px',
-    fontWeight: 700,
-    margin: '0 0 8px',
-    color: '#1a1a1a'
+    fontSize: fontSize.display,
+    fontWeight: fontWeight.bold,
+    margin: `0 0 ${spacing.sm}`,
+    color: colors.text.primary,
   },
   subtitle: {
-    fontSize: '16px',
-    color: '#666',
-    margin: '0 0 32px'
+    fontSize: fontSize.lg,
+    color: colors.text.subtle,
+    margin: `0 0 ${spacing.xxxl}`,
   },
   buttons: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px'
+    gap: spacing.md,
   },
   primaryButton: {
-    padding: '14px 32px',
-    fontSize: '16px',
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#4A90D9',
+    padding: padding.buttonHero,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
     border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer'
+    borderRadius: borderRadius.lg,
+    cursor: 'pointer',
   },
   secondaryButton: {
-    padding: '14px 32px',
-    fontSize: '16px',
-    fontWeight: 600,
-    color: '#4A90D9',
-    backgroundColor: '#fff',
-    border: '2px solid #4A90D9',
-    borderRadius: '8px',
-    cursor: 'pointer'
-  }
+    padding: padding.buttonHero,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
+    backgroundColor: colors.bg.card,
+    border: `${borderWidth.thick} solid ${colors.primary}`,
+    borderRadius: borderRadius.lg,
+    cursor: 'pointer',
+  },
 }
 
 export default WelcomePage

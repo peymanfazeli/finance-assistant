@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { ImportService, ColumnMapping as ColumnMappingType, ImportedRow } from '../../core/services/ImportService'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding } from '../../core/utils/styles'
+import { addToast } from '../components/ToastContainer'
 import FileSelector from '../components/FileSelector'
 import ImportPreview from '../components/ImportPreview'
 import ColumnMapping from '../components/ColumnMapping'
@@ -102,6 +105,7 @@ function ImportPage(): JSX.Element {
 
   const handleConfirmImport = (): void => {
     try {
+      let count = 0
       imported.forEach((row, i) => {
         if (!skipIndices.has(i)) {
           const category = dataset?.categories.find(
@@ -115,6 +119,7 @@ function ImportPage(): JSX.Element {
             amount: row.amount,
             notes: row.notes
           })
+          count++
         }
       })
       setShowConfirm(false)
@@ -122,6 +127,7 @@ function ImportPage(): JSX.Element {
       setImported([])
       setFileName(undefined)
       setError(null)
+      addToast('success', t('import.importSuccess', { count }))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed')
     }
@@ -130,7 +136,7 @@ function ImportPage(): JSX.Element {
   const hasData = rows.length > 0
 
   return (
-    <div style={styles.container}>
+    <motion.div style={styles.container}>
       <h2 style={styles.title}>{t('import.title')}</h2>
 
       <FileSelector onSelect={handleSelectFile} fileName={fileName} />
@@ -150,9 +156,14 @@ function ImportPage(): JSX.Element {
             locale={locale}
           />
           <div style={styles.actions}>
-            <button style={styles.importBtn} onClick={() => setShowConfirm(true)}>
+            <motion.button
+              style={styles.importBtn}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowConfirm(true)}
+            >
               {t('import.confirmImport', { count: imported.length - skipIndices.size })}
-            </button>
+            </motion.button>
           </div>
         </>
       )}
@@ -166,26 +177,26 @@ function ImportPage(): JSX.Element {
           onCancel={() => setShowConfirm(false)}
         />
       )}
-    </div>
+    </motion.div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px' },
-  title: { fontSize: '20px', fontWeight: 600, margin: '0 0 16px', color: '#1a1a1a' },
-  loading: { color: '#888', fontSize: '14px' },
-  error: { color: '#721c24', fontSize: '14px', padding: '8px 12px', backgroundColor: '#f8d7da', borderRadius: '6px' },
-  actions: { marginTop: '16px' },
+  container: { padding: padding.page },
+  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: `0 0 ${spacing.lg}`, color: colors.text.primary },
+  loading: { color: colors.text.disabled, fontSize: fontSize.base },
+  error: { color: colors.text.expense, fontSize: fontSize.base, padding: padding.input, backgroundColor: colors.bg.expense, borderRadius: borderRadius.md },
+  actions: { marginTop: spacing.lg },
   importBtn: {
-    padding: '10px 24px',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#28a745',
+    padding: padding.buttonLg,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.inverse,
+    backgroundColor: colors.success,
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
 }
 
 export default ImportPage

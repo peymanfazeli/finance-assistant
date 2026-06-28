@@ -1,3 +1,7 @@
+import { motion } from 'framer-motion'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
+import useReducedMotion from '../hooks/useReducedMotion'
+
 interface SummaryCardProps {
   title: string
   value: string
@@ -6,14 +10,19 @@ interface SummaryCardProps {
 }
 
 function SummaryCard({ title, value, icon, color }: SummaryCardProps): JSX.Element {
+  const prefersReduced = useReducedMotion()
+
   return (
-    <div style={styles.card}>
+    <motion.div
+      style={styles.card}
+      whileHover={prefersReduced ? {} : { y: -3, boxShadow: shadow.elevated }}
+    >
       {icon && <span style={styles.icon}>{icon}</span>}
       <div style={styles.content}>
         <span style={styles.title}>{title}</span>
-        <span style={{ ...styles.value, color: color ?? '#1a1a1a' }}>{value}</span>
+        <span style={{ ...styles.value, color: color ?? colors.text.primary }}>{value}</span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -21,17 +30,18 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '20px',
-    backgroundColor: '#fff',
-    borderRadius: '10px',
-    boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
-    border: '1px solid #f0f0f0'
+    gap: spacing.lg,
+    padding: padding.card,
+    backgroundColor: colors.bg.card,
+    borderRadius: borderRadius.xl,
+    boxShadow: shadow.elevated,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    transition: 'box-shadow 0.15s',
   },
-  icon: { fontSize: '28px' },
-  content: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  title: { fontSize: '12px', fontWeight: 500, color: '#888', textTransform: 'uppercase' },
-  value: { fontSize: '22px', fontWeight: 700 }
+  icon: { fontSize: fontSize.icon },
+  content: { display: 'flex', flexDirection: 'column', gap: spacing.xs },
+  title: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text.disabled, textTransform: 'uppercase' },
+  value: { fontSize: fontSize.xxxl, fontWeight: fontWeight.bold },
 }
 
 export default SummaryCard

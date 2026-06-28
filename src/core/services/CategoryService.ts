@@ -2,15 +2,17 @@ import { Category } from '../models/types'
 import { generateId } from '../utils/id'
 
 const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'createdAt'>[] = [
-  { name: 'Food & Drinks', color: '#FF6B6B', icon: 'restaurant', isDefault: true },
-  { name: 'Transportation', color: '#4ECDC4', icon: 'directions_car', isDefault: true },
-  { name: 'Internet', color: '#45B7D1', icon: 'wifi', isDefault: true },
-  { name: 'Shopping', color: '#96CEB4', icon: 'shopping_bag', isDefault: true },
-  { name: 'Education', color: '#FFEAA7', icon: 'school', isDefault: true },
-  { name: 'Software & Subscriptions', color: '#DDA0DD', icon: 'computer', isDefault: true },
-  { name: 'Bills', color: '#98D8C8', icon: 'receipt', isDefault: true },
-  { name: 'Investment', color: '#F7DC6F', icon: 'trending_up', isDefault: true },
-  { name: 'Other', color: '#BDC3C7', icon: 'category', isDefault: true }
+  { name: 'Food & Drinks', color: '#FF6B6B', icon: '🍵🥪', isDefault: true },
+  { name: 'Transportation', color: '#DDA0DD', icon: '🚌', isDefault: true },
+  { name: 'Internet', color: '#F5C88B', icon: '🛜', isDefault: true },
+  { name: 'Shopping', color: '#FF0909', icon: '🛍️', isDefault: true },
+  { name: 'Education', color: '#BAE9FC', icon: 'school', isDefault: true },
+  { name: 'Software & Subscriptions', color: '#EEB04C', icon: '💻', isDefault: true },
+  { name: 'Bills', color: '#FFA99B', icon: '🧾', isDefault: true },
+  { name: 'Investment', color: '#A1F9B0', icon: '💰', isDefault: true },
+  { name: 'Project', color: '#1BF13F', icon: '🧑‍💻', isDefault: true },
+  { name: 'MustNot', color: '#C7C7C7', icon: '❌', isDefault: true },
+  { name: 'Bullshit', color: '#BDC3C7', icon: '💩', isDefault: true }
 ]
 
 export class CategoryService {

@@ -5,6 +5,8 @@ import { TransactionType, Transaction, Category } from '../../core/models/types'
 interface TransactionFormProps {
   transaction?: Transaction
   categories: Category[]
+  keepOpen?: boolean
+  onKeepOpenChange?: (value: boolean) => void
   onSave: (data: {
     date: string
     title: string
@@ -16,7 +18,7 @@ interface TransactionFormProps {
   onCancel: () => void
 }
 
-function TransactionForm({ transaction, categories, onSave, onCancel }: TransactionFormProps): JSX.Element {
+function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
   const { t } = useTranslation()
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0])
   const [title, setTitle] = useState(transaction?.title ?? '')
@@ -88,20 +90,32 @@ function TransactionForm({ transaction, categories, onSave, onCancel }: Transact
       </div>
       <div style={styles.buttons}>
         <button style={styles.cancelBtn} onClick={onCancel}>{t('common.cancel')}</button>
-        <button
-          style={styles.saveBtn}
-          onClick={handleSubmit}
-          disabled={!title.trim() || !amount || parseFloat(amount) <= 0}
-        >
-          {t('common.save')}
-        </button>
+        <div style={styles.rightGroup}>
+          {onKeepOpenChange && (
+            <label style={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={!!keepOpen}
+                onChange={(e) => onKeepOpenChange(e.target.checked)}
+              />
+              {t('transaction.batchMode')}
+            </label>
+          )}
+          <button
+            style={styles.saveBtn}
+            onClick={handleSubmit}
+            disabled={!title.trim() || !amount || parseFloat(amount) <= 0}
+          >
+            {t('common.save')}
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  form: { padding: '16px', maxWidth: '480px' },
+  form: { padding: '16px'},
   field: { marginBottom: '12px' },
   label: { display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#555' },
   input: {
@@ -131,7 +145,9 @@ const styles: Record<string, React.CSSProperties> = {
     resize: 'vertical',
     boxSizing: 'border-box'
   },
-  buttons: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' },
+  buttons: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' },
+  rightGroup: { display: 'flex', alignItems: 'center', gap: '12px' },
+  checkboxLabel: { fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#555' },
   cancelBtn: {
     padding: '8px 16px',
     fontSize: '13px',

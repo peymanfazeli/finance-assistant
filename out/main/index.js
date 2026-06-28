@@ -126,15 +126,17 @@ function generateId() {
   return crypto.randomUUID();
 }
 const DEFAULT_CATEGORIES = [
-  { name: "Food & Drinks", color: "#FF6B6B", icon: "restaurant", isDefault: true },
-  { name: "Transportation", color: "#4ECDC4", icon: "directions_car", isDefault: true },
-  { name: "Internet", color: "#45B7D1", icon: "wifi", isDefault: true },
-  { name: "Shopping", color: "#96CEB4", icon: "shopping_bag", isDefault: true },
-  { name: "Education", color: "#FFEAA7", icon: "school", isDefault: true },
-  { name: "Software & Subscriptions", color: "#DDA0DD", icon: "computer", isDefault: true },
-  { name: "Bills", color: "#98D8C8", icon: "receipt", isDefault: true },
-  { name: "Investment", color: "#F7DC6F", icon: "trending_up", isDefault: true },
-  { name: "Other", color: "#BDC3C7", icon: "category", isDefault: true }
+  { name: "Food & Drinks", color: "#FF6B6B", icon: "🍵🥪", isDefault: true },
+  { name: "Transportation", color: "#DDA0DD", icon: "🚌", isDefault: true },
+  { name: "Internet", color: "#F5C88B", icon: "🛜", isDefault: true },
+  { name: "Shopping", color: "#FF0909", icon: "🛍️", isDefault: true },
+  { name: "Education", color: "#BAE9FC", icon: "school", isDefault: true },
+  { name: "Software & Subscriptions", color: "#EEB04C", icon: "💻", isDefault: true },
+  { name: "Bills", color: "#FFA99B", icon: "🧾", isDefault: true },
+  { name: "Investment", color: "#A1F9B0", icon: "💰", isDefault: true },
+  { name: "Project", color: "#1BF13F", icon: "🧑‍💻", isDefault: true },
+  { name: "MustNot", color: "#C7C7C7", icon: "❌", isDefault: true },
+  { name: "Bullshit", color: "#BDC3C7", icon: "💩", isDefault: true }
 ];
 class CategoryService {
   static createDefaultCategories() {
@@ -296,7 +298,7 @@ class SettingsService {
     return Object.values(Language).includes(s.language) && Array.isArray(s.visibleDashboardCards) && (s.lastOpenedDataset === null || typeof s.lastOpenedDataset === "string") && Array.isArray(s.recentDatasets);
   }
 }
-function getSettingsPath() {
+function getSettingsPath$1() {
   return `${electron.app.getPath("userData")}/settings.json`;
 }
 function writeAtomic(filePath, content) {
@@ -311,7 +313,7 @@ function writeAtomic(filePath, content) {
 function registerSettingsHandlers() {
   electron.ipcMain.handle("settings:load", async () => {
     try {
-      const settingsPath = getSettingsPath();
+      const settingsPath = getSettingsPath$1();
       if (!fs.existsSync(settingsPath)) {
         return { success: true, data: null };
       }
@@ -324,7 +326,7 @@ function registerSettingsHandlers() {
   });
   electron.ipcMain.handle("settings:save", async (_event, content) => {
     try {
-      writeAtomic(getSettingsPath(), content);
+      writeAtomic(getSettingsPath$1(), content);
       return { success: true };
     } catch (err) {
       return { success: false, error: String(err) };
@@ -387,6 +389,63 @@ function registerExportHandlers() {
       filters
     });
     return result;
+  });
+}
+let closeRequested = false;
+function getSettingsPath() {
+  return `${electron.app.getPath("userData")}/settings.json`;
+}
+function registerCloseHandlers(mainWindow2) {
+  electron.ipcMain.handle("export:get-last-timestamp", async () => {
+    try {
+      const settingsPath = getSettingsPath();
+      if (!fs.existsSync(settingsPath)) {
+        return { timestamp: null };
+      }
+      const content = fs.readFileSync(settingsPath, "utf-8");
+      const settings = SettingsService.deserialize(content);
+      return { timestamp: settings.lastExportTimestamp ?? null };
+    } catch {
+      return { timestamp: null };
+    }
+  });
+  electron.ipcMain.handle("export:save-last-timestamp", async (_event, timestamp) => {
+    try {
+      const settingsPath = getSettingsPath();
+      const content = fs.readFileSync(settingsPath, "utf-8");
+      const settings = SettingsService.deserialize(content);
+      settings.lastExportTimestamp = timestamp;
+      const { writeFileSync, renameSync, mkdirSync } = require("fs");
+      const { dirname } = require("path");
+      const dir = dirname(settingsPath);
+      if (!fs.existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+      const tmpPath = settingsPath + ".tmp";
+      writeFileSync(tmpPath, JSON.stringify(settings, null, 2), "utf-8");
+      renameSync(tmpPath, settingsPath);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  });
+  electron.ipcMain.handle("app:confirm-close", async () => {
+    closeRequested = true;
+    if (mainWindow2 && !mainWindow2.isDestroyed()) {
+      mainWindow2.close();
+    } else {
+      electron.app.quit();
+    }
+  });
+  electron.ipcMain.handle("app:cancel-close", async () => {
+    closeRequested = false;
+    return { success: true };
+  });
+  mainWindow2.on("close", (e) => {
+    if (!closeRequested) {
+      e.preventDefault();
+      mainWindow2.webContents.send("app:will-close");
+    }
   });
 }
 const LABELS = {
@@ -486,7 +545,7 @@ function registerMenuHandlers() {
   });
 }
 function createWindow() {
-  const mainWindow = new electron.BrowserWindow({
+  mainWindow = new electron.BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -529,6 +588,7 @@ function writeErrorLog(context, message) {
   } catch {
   }
 }
+let mainWindow = null;
 let isQuitting = false;
 let pendingSaves = 0;
 function notifySaveStarted() {
@@ -562,6 +622,7 @@ electron.app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
   createWindow();
+  registerCloseHandlers(mainWindow);
   electron.app.on("activate", () => {
     if (electron.BrowserWindow.getAllWindows().length === 0) {
       createWindow();

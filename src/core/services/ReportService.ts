@@ -22,6 +22,9 @@ export type ReportType =
   | 'topExpenses'
   | 'topIncome'
   | 'spendingTrends'
+  | 'searchReport'
+
+export type SearchGrouping = 'category' | 'month'
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'donut' | 'area'
 
@@ -143,6 +146,42 @@ export class ReportService {
           expense: Math.round(value * 100) / 100
         }
       })
+  }
+
+  static generateSearch(
+    transactions: Transaction[],
+    categories: Category[],
+    keyword: string,
+    grouping: SearchGrouping,
+    dateFrom?: string,
+    dateTo?: string
+  ): ReportDataPoint[] {
+    const lower = keyword.toLowerCase()
+    let filtered = transactions.filter((t) => {
+      const matchesTitle = t.title.toLowerCase().includes(lower)
+      const matchesNotes = t.notes?.toLowerCase().includes(lower)
+      const cat = categories.find((c) => c.id === t.categoryId)
+      const matchesCategory = cat?.name.toLowerCase().includes(lower)
+      return matchesTitle || matchesNotes || matchesCategory
+    })
+    if (dateFrom) filtered = filtered.filter((t) => t.date >= dateFrom)
+    if (dateTo) filtered = filtered.filter((t) => t.date <= dateTo)
+
+    if (grouping === 'category') {
+      return ReportService.groupByCategory(filtered, categories)
+    }
+
+    const groups = new Map<string, number>()
+    filtered.forEach((t) => {
+      const key = ReportService.truncateDate(t.date, 'month')
+      groups.set(key, (groups.get(key) || 0) + t.amount)
+    })
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, value]) => ({
+        name,
+        value: Math.round(value * 100) / 100,
+      }))
   }
 
   private static groupByCategory(

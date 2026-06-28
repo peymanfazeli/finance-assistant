@@ -53,7 +53,15 @@ const api = {
     saveFileBinary: (filePath: string, base64: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('export:saveFileBinary', filePath, base64),
     showSaveDialog: (defaultName: string, filters: Electron.FileFilter[]): Promise<Electron.SaveDialogReturnValue> =>
-      ipcRenderer.invoke('dialog:saveExport', defaultName, filters)
+      ipcRenderer.invoke('dialog:saveExport', defaultName, filters),
+    getLastExportTimestamp: (): Promise<{ timestamp: string | null }> =>
+      ipcRenderer.invoke('export:get-last-timestamp'),
+    saveLastExportTimestamp: (timestamp: string): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('export:save-last-timestamp', timestamp),
+    confirmClose: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('app:confirm-close'),
+    cancelClose: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('app:cancel-close')
   }
 }
 

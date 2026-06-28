@@ -30,7 +30,8 @@
     "loading": "Loading...",
     "actions": "Actions",
     "clear": "Clear",
-    "closeDataset": "Close Dataset"
+    "closeDataset": "Close Dataset",
+    "exportSuccess": "Export successful"
   },
   "welcome": {
     "title": "Welcome to Finance Assistant",
@@ -66,7 +67,11 @@
     "notesPlaceholder": "Optional notes...",
     "confirmDelete": "Are you sure you want to delete this transaction?",
     "noTransactions": "No transactions yet. Add your first transaction or import data.",
-    "batchMode": "Add another"
+    "batchMode": "Add another",
+    "created": "Transaction created",
+    "updated": "Transaction updated",
+    "deleted": "Transaction deleted",
+    "duplicated": "Transaction duplicated"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -92,7 +97,11 @@
     "confirmImport": "Import {{count}} rows",
     "importSuccess": "Successfully imported {{count}} transactions",
     "importError": "Error importing file",
-    "noFileSelected": "No file selected"
+    "noFileSelected": "No file selected",
+    "importFile": "Import File…",
+    "dropHere": "Drop file here",
+    "singleFileOnly": "Please drop only one file",
+    "invalidFileType": "Invalid file type. Supported: {{types}}"
   },
   "reports": {
     "title": "Reports",
@@ -105,13 +114,20 @@
     "topExpenses": "Top Expenses",
     "topIncome": "Top Income",
     "spendingTrends": "Spending Trends",
+    "searchReport": "Search Report",
     "chartType": "Chart Type",
     "line": "Line",
     "bar": "Bar",
     "pie": "Pie",
     "donut": "Donut",
     "area": "Area",
-    "noData": "No data available for this report"
+    "noData": "No data available for this report",
+    "enterKeyword": "Enter a keyword and click Generate to search transactions",
+    "noSearchResults": "No transactions match your search",
+    "searchPlaceholder": "Search keyword...",
+    "groupByCategory": "Group by Category",
+    "groupByMonth": "Group by Month",
+    "generate": "Generate"
   },
   "customReport": {
     "title": "Custom Report",
@@ -137,7 +153,10 @@
     "icon": "Icon",
     "confirmDelete": "Delete this category? Transactions will be reassigned.",
     "reassignTo": "Reassign transactions to",
-    "defaultCategories": "Default categories cannot be deleted"
+    "defaultCategories": "Default categories cannot be deleted",
+    "created": "Category created",
+    "updated": "Category updated",
+    "deleted": "Category deleted"
   },
   "export": {
     "pdf": "Export as PDF",
@@ -145,6 +164,12 @@
     "csv": "Export as CSV",
     "noData": "No data to export",
     "exportSuccess": "Export successful"
+  },
+  "exportOnClose": {
+    "title": "Unsaved Changes",
+    "message": "You have unexported transaction changes. Would you like to export your data before closing?",
+    "exportNow": "Export Now",
+    "closeAnyway": "Close Anyway"
   },
   "settings": {
     "title": "Settings",

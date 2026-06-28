@@ -45,6 +45,7 @@ export interface ApplicationSettings {
   visibleDashboardCards: string[]
   lastOpenedDataset: string | null
   recentDatasets: string[]
+  lastExportTimestamp: string | null
 }
 
 export type TransactionFilter = {

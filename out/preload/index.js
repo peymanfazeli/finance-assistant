@@ -41,7 +41,11 @@ const api = {
   export: {
     saveFile: (filePath, content) => electron.ipcRenderer.invoke("export:saveFile", filePath, content),
     saveFileBinary: (filePath, base64) => electron.ipcRenderer.invoke("export:saveFileBinary", filePath, base64),
-    showSaveDialog: (defaultName, filters) => electron.ipcRenderer.invoke("dialog:saveExport", defaultName, filters)
+    showSaveDialog: (defaultName, filters) => electron.ipcRenderer.invoke("dialog:saveExport", defaultName, filters),
+    getLastExportTimestamp: () => electron.ipcRenderer.invoke("export:get-last-timestamp"),
+    saveLastExportTimestamp: (timestamp) => electron.ipcRenderer.invoke("export:save-last-timestamp", timestamp),
+    confirmClose: () => electron.ipcRenderer.invoke("app:confirm-close"),
+    cancelClose: () => electron.ipcRenderer.invoke("app:cancel-close")
   }
 };
 electron.contextBridge.exposeInMainWorld("api", api);

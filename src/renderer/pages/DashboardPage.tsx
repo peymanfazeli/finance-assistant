@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { DashboardCardId } from '../../core/models/types'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
 import DashboardCustomizationDialog from '../components/DashboardCustomizationDialog'
 
@@ -22,12 +24,17 @@ function DashboardPage(): JSX.Element {
   const hasNoData = stats.transactionCount === 0
 
   return (
-    <div style={styles.container}>
+    <motion.div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('dashboard.title')}</h2>
-        <button style={styles.customizeBtn} onClick={() => setShowCustomize(true)}>
+        <motion.button
+          style={styles.customizeBtn}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowCustomize(true)}
+        >
           {t('dashboard.customize')}
-        </button>
+        </motion.button>
       </div>
 
       {hasNoData ? (
@@ -44,34 +51,34 @@ function DashboardPage(): JSX.Element {
         onToggle={handleToggle}
         onClose={() => setShowCustomize(false)}
       />
-    </div>
+    </motion.div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px' },
+  container: { padding: padding.page },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '8px'
+    marginBottom: spacing.sm,
   },
-  title: { fontSize: '20px', fontWeight: 600, margin: 0, color: '#1a1a1a' },
+  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
   customizeBtn: {
     padding: '8px 14px',
-    fontSize: '13px',
-    color: '#4A90D9',
-    backgroundColor: '#fff',
-    border: '1px solid #4A90D9',
-    borderRadius: '6px',
-    cursor: 'pointer'
+    fontSize: fontSize.md,
+    color: colors.primary,
+    backgroundColor: colors.bg.card,
+    border: `${borderWidth.default} solid ${colors.primary}`,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
   },
   empty: {
-    padding: '64px 24px',
+    padding: `${spacing.massive} ${spacing.xxl}`,
     textAlign: 'center',
-    color: '#888',
-    fontSize: '14px'
-  }
+    color: colors.text.disabled,
+    fontSize: fontSize.base,
+  },
 }
 
 export default DashboardPage

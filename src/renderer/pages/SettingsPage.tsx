@@ -1,6 +1,8 @@
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { Language } from '../../core/models/types'
+import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../core/utils/styles'
 
 function SettingsPage(): JSX.Element {
   const { t, i18n } = useTranslation()
@@ -14,7 +16,7 @@ function SettingsPage(): JSX.Element {
   }
 
   return (
-    <div style={styles.container}>
+    <motion.div style={styles.container}>
       <h2 style={styles.title}>{t('settings.title')}</h2>
 
       <div style={styles.section}>
@@ -45,18 +47,18 @@ function SettingsPage(): JSX.Element {
         <h3 style={styles.sectionTitle}>{t('settings.about')}</h3>
         <p style={styles.about}>Finance Assistant v0.1.0</p>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px', maxWidth: '600px' },
-  title: { fontSize: '20px', fontWeight: 600, margin: '0 0 24px', color: '#1a1a1a' },
-  section: { marginBottom: '24px' },
-  sectionTitle: { fontSize: '16px', fontWeight: 600, margin: '0 0 12px', color: '#333' },
-  radioGroup: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  radio: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' },
-  about: { fontSize: '14px', color: '#666', margin: 0 }
+  container: { padding: spacing.xxl, maxWidth: '600px' },
+  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: `0 0 ${spacing.xxl}`, color: colors.text.primary },
+  section: { marginBottom: spacing.xxl },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, margin: `0 0 ${spacing.md}`, color: colors.text.secondary },
+  radioGroup: { display: 'flex', flexDirection: 'column', gap: spacing.sm },
+  radio: { display: 'flex', alignItems: 'center', gap: spacing.sm, fontSize: fontSize.base, cursor: 'pointer' },
+  about: { fontSize: fontSize.base, color: colors.text.subtle, margin: 0 },
 }
 
 export default SettingsPage

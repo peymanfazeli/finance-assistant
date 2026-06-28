@@ -6,10 +6,11 @@ import { registerDatasetHandlers, cleanupTempFiles } from './datasetHandlers'
 import { registerSettingsHandlers } from './settingsHandlers'
 import { registerFileHandlers } from './fileHandlers'
 import { registerExportHandlers } from './exportHandlers'
+import { registerCloseHandlers } from './closeHandlers'
 import { createAppMenu, registerMenuHandlers } from './menu'
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -57,6 +58,7 @@ function writeErrorLog(context: string, message: string): void {
   } catch { /* silent */ }
 }
 
+let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 let pendingSaves = 0
 
@@ -99,6 +101,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  registerCloseHandlers(mainWindow!)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -1,18 +1,37 @@
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Transaction, TransactionType, SortConfig } from '../../core/models/types'
+import { Transaction, TransactionType, SortConfig, Category } from '../../core/models/types'
 import { useAppStore } from '../../core/store/useAppStore'
 import { formatCurrency } from '../../core/utils/format'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
+import { addToast } from './ToastContainer'
+import useReducedMotion from '../hooks/useReducedMotion'
 
 interface TransactionListProps {
   transactions: Transaction[]
+  categories: Category[]
   onEdit: (id: string) => void
 }
 
-function TransactionList({ transactions, onEdit }: TransactionListProps): JSX.Element {
+const rowVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.03, duration: 0.2, ease: 'easeOut' },
+  }),
+}
+
+const listVariants = {
+  visible: { transition: { staggerChildren: 0.03 } },
+}
+
+function TransactionList({ transactions, categories, onEdit }: TransactionListProps): JSX.Element {
   const { t, i18n } = useTranslation()
   const { sortConfig, setSortConfig, deleteTransaction, duplicateTransaction, dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'USD'
+  const prefersReduced = useReducedMotion()
 
   const handleSort = (field: SortConfig['field']): void => {
     setSortConfig({
@@ -32,7 +51,12 @@ function TransactionList({ transactions, onEdit }: TransactionListProps): JSX.El
   }
 
   return (
-    <div style={styles.container}>
+    <motion.div
+      style={styles.container}
+      variants={prefersReduced ? undefined : listVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <table style={styles.table}>
         <thead>
           <tr>
@@ -55,21 +79,33 @@ function TransactionList({ transactions, onEdit }: TransactionListProps): JSX.El
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx) => (
-            <tr key={tx.id} style={styles.row}>
+          {transactions.map((tx, i) => (
+            <motion.tr
+              key={tx.id}
+              style={styles.row}
+              variants={prefersReduced ? undefined : rowVariants}
+              custom={i}
+              initial="hidden"
+              animate="visible"
+            >
               <td style={styles.td}>{tx.date}</td>
               <td style={styles.td}>{tx.title}</td>
-              <td style={styles.td}>{tx.categoryId}</td>
+              <td style={styles.td}>
+                {(() => {
+                  const cat = categories.find((c) => c.id === tx.categoryId)
+                  return cat ? `${cat.icon} ${cat.name}` : tx.categoryId
+                })()}
+              </td>
               <td style={styles.td}>
                 <span
                   style={{
                     ...styles.typeBadge,
                     backgroundColor:
                       tx.type === TransactionType.Income
-                        ? '#d4edda'
+                        ? colors.bg.income
                         : tx.type === TransactionType.Expense
-                          ? '#f8d7da'
-                          : '#fff3cd'
+                          ? colors.bg.expense
+                          : colors.bg.refund,
                   }}
                 >
                   {t(`transaction.${tx.type}`)}
@@ -80,10 +116,10 @@ function TransactionList({ transactions, onEdit }: TransactionListProps): JSX.El
                   style={{
                     color:
                       tx.type === TransactionType.Income
-                        ? '#155724'
+                        ? colors.text.income
                         : tx.type === TransactionType.Expense
-                          ? '#721c24'
-                          : '#856404'
+                          ? colors.text.expense
+                          : colors.text.refund,
                   }}
                 >
                   {formatCurrency(
@@ -94,28 +130,41 @@ function TransactionList({ transactions, onEdit }: TransactionListProps): JSX.El
                 </span>
               </td>
               <td style={styles.td}>
-                <button style={styles.actionBtn} onClick={() => onEdit(tx.id)}>
+                <motion.button
+                  style={styles.actionBtn}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => onEdit(tx.id)}
+                >
                   {t('common.edit')}
-                </button>
-                <button style={styles.actionBtn} onClick={() => duplicateTransaction(tx.id)}>
+                </motion.button>
+                <motion.button
+                  style={styles.actionBtn}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { duplicateTransaction(tx.id); addToast('success', t('transaction.duplicated')) }}
+                >
                   {t('transaction.duplicate')}
-                </button>
-                <button
-                  style={{ ...styles.actionBtn, color: '#dc3545' }}
+                </motion.button>
+                <motion.button
+                  style={{ ...styles.actionBtn, color: colors.danger }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     if (confirm(t('transaction.confirmDelete'))) {
                       deleteTransaction(tx.id)
+                      addToast('success', t('transaction.deleted'))
                     }
                   }}
                 >
                   {t('common.delete')}
-                </button>
+                </motion.button>
               </td>
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </motion.div>
   )
 }
 
@@ -123,45 +172,45 @@ const styles: Record<string, React.CSSProperties> = {
   container: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse' },
   th: {
-    padding: '10px 12px',
+    padding: padding.tableCell,
     textAlign: 'left',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: '#555',
-    borderBottom: '2px solid #eee',
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+    color: colors.text.muted,
+    borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
     cursor: 'pointer',
-    userSelect: 'none'
+    userSelect: 'none',
   },
   thRight: {
-    padding: '10px 12px',
+    padding: padding.tableCell,
     textAlign: 'right',
-    fontWeight: 600,
-    fontSize: '13px',
-    color: '#555',
-    borderBottom: '2px solid #eee',
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+    color: colors.text.muted,
+    borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
     cursor: 'pointer',
-    userSelect: 'none'
+    userSelect: 'none',
   },
-  td: { padding: '10px 12px', fontSize: '14px', borderBottom: '1px solid #f0f0f0' },
-  tdRight: { padding: '10px 12px', fontSize: '14px', borderBottom: '1px solid #f0f0f0', textAlign: 'right' },
+  td: { padding: padding.tableCell, fontSize: fontSize.base, borderBottom: `${borderWidth.default} solid ${colors.border.light}` },
+  tdRight: { padding: padding.tableCell, fontSize: fontSize.base, borderBottom: `${borderWidth.default} solid ${colors.border.light}`, textAlign: 'right' },
   row: { transition: 'background 0.15s' },
   typeBadge: {
     display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: 500
+    padding: padding.badge,
+    borderRadius: borderRadius.sm,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
   actionBtn: {
     padding: '4px 8px',
-    marginRight: '4px',
-    fontSize: '12px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
-    cursor: 'pointer'
+    marginRight: spacing.xs,
+    fontSize: fontSize.sm,
+    border: `${borderWidth.default} solid ${colors.border.strong}`,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.bg.card,
+    cursor: 'pointer',
   },
-  empty: { padding: '48px', textAlign: 'center', color: '#888', fontSize: '14px' }
+  empty: { padding: spacing.huge, textAlign: 'center', color: colors.text.disabled, fontSize: fontSize.base },
 }
 
 export default TransactionList

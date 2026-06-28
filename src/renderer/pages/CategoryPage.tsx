@@ -1,7 +1,10 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { Category } from '../../core/models/types'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding } from '../../core/utils/styles'
+import { addToast } from '../components/ToastContainer'
 import CategoryList from '../components/CategoryList'
 import CategoryFormDialog from '../components/CategoryFormDialog'
 import CategoryDeleteDialog from '../components/CategoryDeleteDialog'
@@ -18,8 +21,10 @@ function CategoryPage(): JSX.Element {
   const handleSave = (name: string, color: string, icon: string): void => {
     if (editCategory) {
       updateCategory(editCategory.id, { name, color, icon })
+      addToast('success', t('category.updated'))
     } else {
       addCategory(name, color, icon)
+      addToast('success', t('category.created'))
     }
     setShowForm(false)
     setEditCategory(undefined)
@@ -28,20 +33,23 @@ function CategoryPage(): JSX.Element {
   const handleDelete = (reassignToId: string): void => {
     if (deleteCategoryState) {
       deleteCategory(deleteCategoryState.id, reassignToId)
+      addToast('success', t('category.deleted'))
       setDeleteCategoryState(null)
     }
   }
 
   return (
-    <div style={styles.container}>
+    <motion.div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('categories.title')}</h2>
-        <button
+        <motion.button
           style={styles.addBtn}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => { setEditCategory(undefined); setShowForm(true) }}
         >
           {t('categories.add')}
-        </button>
+        </motion.button>
       </div>
 
       <CategoryList
@@ -66,15 +74,15 @@ function CategoryPage(): JSX.Element {
           onClose={() => setDeleteCategoryState(null)}
         />
       )}
-    </div>
+    </motion.div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  title: { fontSize: '20px', fontWeight: 600, margin: 0, color: '#1a1a1a' },
-  addBtn: { padding: '8px 16px', fontSize: '14px', fontWeight: 600, color: '#fff', backgroundColor: '#4A90D9', border: 'none', borderRadius: '6px', cursor: 'pointer' }
+  container: { padding: padding.page },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
+  addBtn: { padding: padding.button, fontSize: fontSize.base, fontWeight: fontWeight.semibold, color: colors.text.inverse, backgroundColor: colors.primary, border: 'none', borderRadius: borderRadius.md, cursor: 'pointer' },
 }
 
 export default CategoryPage

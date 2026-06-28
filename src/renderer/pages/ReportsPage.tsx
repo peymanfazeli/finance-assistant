@@ -1,9 +1,11 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
-import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint } from '../../core/services/ReportService'
+import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint, SearchGrouping } from '../../core/services/ReportService'
 import ExportButton from '../components/ExportButton'
 import { formatCurrency } from '../../core/utils/format'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -18,11 +20,12 @@ const REPORTS: { id: ReportType; label: string }[] = [
   { id: 'incomeVsExpense', label: 'Income vs Expense' },
   { id: 'topExpenses', label: 'Top Expenses' },
   { id: 'topIncome', label: 'Top Income' },
-  { id: 'spendingTrends', label: 'Spending Trends' }
+  { id: 'spendingTrends', label: 'Spending Trends' },
+  { id: 'searchReport', label: 'Search Report' },
 ]
 
 const CHART_TYPES: ChartType[] = ['line', 'bar', 'pie', 'donut', 'area']
-const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#E67E22', '#2ECC71']
+const SEARCH_CHART_TYPES: ChartType[] = ['bar', 'line', 'area']
 
 function ReportsPage(): JSX.Element {
   const { t, i18n } = useTranslation()
@@ -33,13 +36,24 @@ function ReportsPage(): JSX.Element {
   const [chartType, setChartType] = useState<ChartType>('bar')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [searchGrouping, setSearchGrouping] = useState<SearchGrouping>('category')
+  const [searchGenerated, setSearchGenerated] = useState(false)
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
 
+  const isSearch = selectedReport === 'searchReport'
+
   const data = useMemo(
-    () => ReportService.generate(transactions, categories, selectedReport, dateFrom || undefined, dateTo || undefined),
-    [transactions, categories, selectedReport, dateFrom, dateTo]
+    () => {
+      if (isSearch) {
+        if (!searchGenerated || !searchKeyword.trim()) return []
+        return ReportService.generateSearch(transactions, categories, searchKeyword.trim(), searchGrouping, dateFrom || undefined, dateTo || undefined)
+      }
+      return ReportService.generate(transactions, categories, selectedReport, dateFrom || undefined, dateTo || undefined)
+    },
+    [transactions, categories, selectedReport, dateFrom, dateTo, isSearch, searchKeyword, searchGrouping, searchGenerated]
   )
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -51,7 +65,7 @@ function ReportsPage(): JSX.Element {
   const hasDate = hasData && 'date' in data[0]
 
   const pieData: ReportDataPoint[] | null = useMemo(() => {
-    if (!isPie || !hasDate) return null
+    if (!isPie || !hasDate || isSearch) return null
     if (selectedReport === 'incomeVsExpense') {
       const s = data as TimeSeriesPoint[]
       const totalIncome = s.reduce((sum, point) => sum + (point.income ?? 0), 0)
@@ -65,10 +79,20 @@ function ReportsPage(): JSX.Element {
       transactions, categories, 'expenseByCategory',
       dateFrom || undefined, dateTo || undefined
     ) as ReportDataPoint[]
-  }, [isPie, hasDate, selectedReport, data, transactions, categories, dateFrom, dateTo])
+  }, [isPie, hasDate, selectedReport, data, transactions, categories, dateFrom, dateTo, isSearch])
+
+  const handleSearch = useCallback(() => {
+    setSearchGenerated(true)
+  }, [])
 
   const renderChart = (): JSX.Element | null => {
-    if (!hasData) return <div style={styles.noData}>{t('reports.noData')}</div>
+    if (isSearch && !searchGenerated) {
+      return <div style={styles.noData}>{t('reports.enterKeyword')}</div>
+    }
+    if (!hasData) {
+      if (isSearch) return <div style={styles.noData}>{t('reports.noSearchResults')}</div>
+      return <div style={styles.noData}>{t('reports.noData')}</div>
+    }
 
     if (isPie) {
       const pd = pieData ?? points
@@ -86,7 +110,7 @@ function ReportsPage(): JSX.Element {
               label
             >
               {pd.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                <Cell key={i} fill={colors.chart[i % colors.chart.length]} />
               ))}
             </Pie>
             <Tooltip />
@@ -110,11 +134,11 @@ function ReportsPage(): JSX.Element {
                 <Legend />
                 {'income' in series[0] ? (
                   <>
-                    <Line type="monotone" dataKey="income" stroke="#28a745" name="Income" />
-                    <Line type="monotone" dataKey="expense" stroke="#dc3545" name="Expense" />
+                    <Line type="monotone" dataKey="income" stroke={colors.success} name="Income" />
+                    <Line type="monotone" dataKey="expense" stroke={colors.danger} name="Expense" />
                   </>
                 ) : (
-                  <Line type="monotone" dataKey="expense" stroke="#dc3545" name="Expense" />
+                  <Line type="monotone" dataKey="expense" stroke={colors.danger} name="Expense" />
                 )}
               </LineChart>
             </ResponsiveContainer>
@@ -130,11 +154,11 @@ function ReportsPage(): JSX.Element {
                 <Legend />
                 {'income' in series[0] ? (
                   <>
-                    <Area type="monotone" dataKey="income" stroke="#28a745" fill="#c3e6cb" name="Income" />
-                    <Area type="monotone" dataKey="expense" stroke="#dc3545" fill="#f8d7da" name="Expense" />
+                    <Area type="monotone" dataKey="income" stroke={colors.success} fill={colors.bg.income} name="Income" />
+                    <Area type="monotone" dataKey="expense" stroke={colors.danger} fill={colors.bg.expense} name="Expense" />
                   </>
                 ) : (
-                  <Area type="monotone" dataKey="expense" stroke="#dc3545" fill="#f8d7da" name="Expense" />
+                  <Area type="monotone" dataKey="expense" stroke={colors.danger} fill={colors.bg.expense} name="Expense" />
                 )}
               </AreaChart>
             </ResponsiveContainer>
@@ -150,11 +174,11 @@ function ReportsPage(): JSX.Element {
                 <Legend />
                 {'income' in series[0] ? (
                   <>
-                    <Bar dataKey="income" fill="#28a745" name="Income" />
-                    <Bar dataKey="expense" fill="#dc3545" name="Expense" />
+                    <Bar dataKey="income" fill={colors.success} name="Income" />
+                    <Bar dataKey="expense" fill={colors.danger} name="Expense" />
                   </>
                 ) : (
-                  <Bar dataKey="expense" fill="#dc3545" name="Expense" />
+                  <Bar dataKey="expense" fill={colors.danger} name="Expense" />
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -172,7 +196,7 @@ function ReportsPage(): JSX.Element {
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" stroke="#4A90D9" />
+              <Line type="monotone" dataKey="value" stroke={colors.primary} />
             </LineChart>
           </ResponsiveContainer>
         )
@@ -185,7 +209,7 @@ function ReportsPage(): JSX.Element {
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
-              <Area type="monotone" dataKey="value" stroke="#4A90D9" fill="#d0e6f5" />
+              <Area type="monotone" dataKey="value" stroke={colors.primary} fill={colors.bg.active} />
             </AreaChart>
           </ResponsiveContainer>
         )
@@ -200,7 +224,7 @@ function ReportsPage(): JSX.Element {
               <Legend />
               <Bar dataKey="value">
                 {points.map((_, i) => (
-                  <Cell key={i} fill={points[i]?.color ?? COLORS[i % COLORS.length]} />
+                  <Cell key={i} fill={points[i]?.color ?? colors.chart[i % colors.chart.length]} />
                 ))}
               </Bar>
             </BarChart>
@@ -209,8 +233,10 @@ function ReportsPage(): JSX.Element {
     }
   }
 
+  const displayChartTypes = isSearch ? SEARCH_CHART_TYPES : CHART_TYPES
+
   return (
-    <div style={styles.container}>
+    <motion.div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('reports.title')}</h2>
         <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} />
@@ -220,36 +246,92 @@ function ReportsPage(): JSX.Element {
         <select
           style={styles.select}
           value={selectedReport}
-          onChange={(e) => setSelectedReport(e.target.value as ReportType)}
+          onChange={(e) => {
+            setSelectedReport(e.target.value as ReportType)
+            if (e.target.value !== 'searchReport') setSearchGenerated(false)
+          }}
         >
           {REPORTS.map((r) => (
             <option key={r.id} value={r.id}>{t(`reports.${r.id}`)}</option>
           ))}
         </select>
-        <div style={styles.chartTypes}>
-          {CHART_TYPES.map((ct) => (
-            <button
-              key={ct}
-              style={{
-                ...styles.chartTypeBtn,
-                backgroundColor: chartType === ct ? '#4A90D9' : '#f0f0f0',
-                color: chartType === ct ? '#fff' : '#333'
-              }}
-              onClick={() => setChartType(ct)}
+
+        {isSearch ? (
+          <div style={styles.searchSection}>
+            <input
+              style={styles.searchInput}
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder={t('reports.searchPlaceholder')}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
+            />
+            <select
+              style={styles.select}
+              value={searchGrouping}
+              onChange={(e) => setSearchGrouping(e.target.value as SearchGrouping)}
             >
-              {t(`reports.${ct}`)}
-            </button>
-          ))}
-        </div>
+              <option value="category">{t('reports.groupByCategory')}</option>
+              <option value="month">{t('reports.groupByMonth')}</option>
+            </select>
+            <motion.button
+              style={styles.generateBtn}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSearch}
+            >
+              {t('reports.generate')}
+            </motion.button>
+          </div>
+        ) : (
+          <div style={styles.chartTypes}>
+            {displayChartTypes.map((ct) => (
+              <motion.button
+                key={ct}
+                style={{
+                  ...styles.chartTypeBtn,
+                  backgroundColor: chartType === ct ? colors.primary : colors.bg.muted,
+                  color: chartType === ct ? colors.text.inverse : colors.text.secondary,
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setChartType(ct)}
+              >
+                {t(`reports.${ct}`)}
+              </motion.button>
+            ))}
+          </div>
+        )}
+
         <input style={styles.dateInput} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
         <input style={styles.dateInput} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
       </div>
+
+      {isSearch && searchGenerated && (
+        <div style={{ ...styles.chartTypes, marginBottom: spacing.md }}>
+          {displayChartTypes.map((ct) => (
+            <motion.button
+              key={ct}
+              style={{
+                ...styles.chartTypeBtn,
+                backgroundColor: chartType === ct ? colors.primary : colors.bg.muted,
+                color: chartType === ct ? colors.text.inverse : colors.text.secondary,
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setChartType(ct)}
+            >
+              {t(`reports.${ct}`)}
+            </motion.button>
+          ))}
+        </div>
+      )}
 
       <div ref={chartRef}>{renderChart()}</div>
 
       {hasData && (
         <div style={styles.table}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fontSize.sm }}>
             <thead>
               <tr>
                 <th style={styles.th}>Name</th>
@@ -269,25 +351,37 @@ function ReportsPage(): JSX.Element {
           </table>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '24px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  title: { fontSize: '20px', fontWeight: 600, margin: 0, color: '#1a1a1a' },
-  toolbar: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' },
-  select: { padding: '8px 12px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '6px', backgroundColor: '#fff' },
-  chartTypes: { display: 'flex', gap: '4px' },
-  chartTypeBtn: { padding: '6px 12px', fontSize: '12px', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' },
-  dateInput: { padding: '6px 10px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '4px' },
-  noData: { padding: '48px', textAlign: 'center', color: '#888', fontSize: '14px' },
-  table: { marginTop: '16px', overflowX: 'auto' },
-  th: { padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#555', borderBottom: '2px solid #eee', fontSize: '12px' },
-  thRight: { padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#555', borderBottom: '2px solid #eee', fontSize: '12px' },
-  td: { padding: '6px 10px', borderBottom: '1px solid #f0f0f0', fontSize: '13px' },
-  tdRight: { padding: '6px 10px', borderBottom: '1px solid #f0f0f0', textAlign: 'right', fontSize: '13px' }
+  container: { padding: padding.page },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
+  toolbar: { display: 'flex', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.lg, alignItems: 'center' },
+  select: { padding: padding.input, fontSize: fontSize.md, border: `${borderWidth.default} solid ${colors.border.input}`, borderRadius: borderRadius.md, backgroundColor: colors.bg.input },
+  searchSection: { display: 'flex', gap: spacing.sm, flex: 1, flexWrap: 'wrap' },
+  searchInput: { padding: padding.input, fontSize: fontSize.md, border: `${borderWidth.default} solid ${colors.border.input}`, borderRadius: borderRadius.md, flex: 1, minWidth: '160px' },
+  chartTypes: { display: 'flex', gap: spacing.xs },
+  chartTypeBtn: { padding: '6px 12px', fontSize: fontSize.sm, border: `${borderWidth.default} solid ${colors.border.strong}`, borderRadius: borderRadius.sm, cursor: 'pointer' },
+  dateInput: { padding: '6px 10px', fontSize: fontSize.md, border: `${borderWidth.default} solid ${colors.border.input}`, borderRadius: borderRadius.sm },
+  generateBtn: {
+    padding: padding.button,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
+    border: 'none',
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
+  noData: { padding: spacing.huge, textAlign: 'center', color: colors.text.disabled, fontSize: fontSize.base },
+  table: { marginTop: spacing.lg, overflowX: 'auto' },
+  th: { padding: padding.tableCell, textAlign: 'left', fontWeight: fontWeight.semibold, color: colors.text.muted, borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`, fontSize: fontSize.sm },
+  thRight: { padding: padding.tableCell, textAlign: 'right', fontWeight: fontWeight.semibold, color: colors.text.muted, borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`, fontSize: fontSize.sm },
+  td: { padding: padding.tableCellSm, borderBottom: `${borderWidth.default} solid ${colors.border.light}`, fontSize: fontSize.md },
+  tdRight: { padding: padding.tableCellSm, borderBottom: `${borderWidth.default} solid ${colors.border.light}`, textAlign: 'right', fontSize: fontSize.md },
 }
 
 export default ReportsPage
