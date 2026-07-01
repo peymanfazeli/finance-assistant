@@ -1,5 +1,6 @@
 import { Transaction, TransactionType, Category } from '../models/types'
 import { ReportDataPoint, TimeSeriesPoint } from './ReportService'
+import { formatCurrency } from '../utils/format'
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 
@@ -69,12 +70,21 @@ export class ExportService {
   static toPDFBase64(
     data: (ReportDataPoint | TimeSeriesPoint)[],
     title = 'Report',
-    chartImage?: string
+    chartImage?: string,
+    currency = 'USD',
+    locale = 'en-US'
   ): string {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' })
 
     const hasDate = data.length > 0 && 'date' in data[0]
     const hasIncome = hasDate && 'income' in data[0]
+
+    const totalValue = data.reduce((sum, row) => {
+      return sum + ('value' in row ? (row as ReportDataPoint).value : (row as TimeSeriesPoint).expense)
+    }, 0)
+    const totalIncome = hasIncome
+      ? data.reduce((sum, row) => sum + (row as TimeSeriesPoint).income, 0)
+      : 0
 
     let yOffset = 0
     if (chartImage) {
@@ -95,11 +105,17 @@ export class ExportService {
 
     const rows = data.map((row) => {
       if ('date' in row) {
-        if (hasIncome) return [row.date, String(row.income), String(row.expense)]
-        return [row.date, String(row.expense)]
+        if (hasIncome) return [row.date, formatCurrency(row.income, currency, locale), formatCurrency(row.expense, currency, locale)]
+        return [row.date, formatCurrency(row.expense, currency, locale)]
       }
-      return [(row as ReportDataPoint).name, String((row as ReportDataPoint).value)]
+      return [(row as ReportDataPoint).name, formatCurrency((row as ReportDataPoint).value, currency, locale)]
     })
+
+    if (hasIncome) {
+      rows.push(['Total', formatCurrency(totalIncome, currency, locale), formatCurrency(totalValue, currency, locale)])
+    } else {
+      rows.push(['Total', formatCurrency(totalValue, currency, locale)])
+    }
 
     const colWidths = headers.map(() => 60)
     const startY = 36 + yOffset
@@ -116,7 +132,7 @@ export class ExportService {
     rows.forEach((row, ri) => {
       const y = startY + (ri + 1) * rowHeight
       if (y > 280) return
-      doc.setFont(undefined, 'normal')
+      doc.setFont(undefined, ri === rows.length - 1 ? 'bold' : 'normal')
       row.forEach((cell, ci) => {
         const x = 14 + colWidths.slice(0, ci).reduce((a, b) => a + b, 0) + 2
         doc.text(String(cell), x, y)

@@ -10,7 +10,7 @@ interface CreateDatasetDialogProps {
   onCreate: (name: string, currency: string) => void
 }
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'IRR', 'CAD', 'AUD', 'JPY']
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'toman', 'CAD', 'AUD', 'JPY']
 
 function CreateDatasetDialog({ open, onClose, onCreate }: CreateDatasetDialogProps): JSX.Element | null {
   const { t } = useTranslation()

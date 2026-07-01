@@ -8,9 +8,11 @@ interface ExportButtonProps {
   filename?: string
   reportTitle?: string
   chartRef?: React.RefObject<HTMLDivElement | null>
+  currency?: string
+  locale?: string
 }
 
-function ExportButton({ data, filename = 'report', reportTitle, chartRef }: ExportButtonProps): JSX.Element {
+function ExportButton({ data, filename = 'report', reportTitle, chartRef, currency, locale }: ExportButtonProps): JSX.Element {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -61,7 +63,7 @@ function ExportButton({ data, filename = 'report', reportTitle, chartRef }: Expo
               })
               chartImage = canvas.toDataURL('image/png')
             }
-            const pdfBase64 = ExportService.toPDFBase64(data as any, reportTitle || filename, chartImage)
+            const pdfBase64 = ExportService.toPDFBase64(data as any, reportTitle || filename, chartImage, currency, locale)
             await window.api.export.saveFileBinary(result.filePath, pdfBase64)
             break
           }
@@ -74,7 +76,7 @@ function ExportButton({ data, filename = 'report', reportTitle, chartRef }: Expo
         setOpen(false)
       }
     },
-    [data, filename, reportTitle, chartRef, t]
+    [data, filename, reportTitle, chartRef, t, currency, locale]
   )
 
   return (

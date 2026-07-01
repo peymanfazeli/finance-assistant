@@ -239,7 +239,7 @@ function ReportsPage(): JSX.Element {
     <motion.div style={styles.container}>
       <div style={styles.header}>
         <h2 style={styles.title}>{t('reports.title')}</h2>
-        <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} />
+        <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} currency={currency} locale={locale} />
       </div>
 
       <div style={styles.toolbar}>
@@ -331,24 +331,47 @@ function ReportsPage(): JSX.Element {
 
       {hasData && (
         <div style={styles.table}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fontSize.sm }}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Name</th>
-                {'date' in ((pieData ?? data)[0] ?? {}) ? <th style={styles.th}>Date</th> : null}
-                <th style={styles.thRight}>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(pieData ?? data).map((row, i) => (
-                <tr key={i}>
-                  <td style={styles.td}>{'name' in row ? row.name : row.date}</td>
-                  {'date' in row && <td style={styles.td}>{row.date}</td>}
-                  <td style={styles.tdRight}>{formatCurrency('value' in row ? row.value : row.expense, currency, locale)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {(() => {
+            const tableData = pieData ?? data
+            const firstRow = tableData[0]
+            const hasDate = !!firstRow && 'date' in firstRow
+            const hasIncome = hasDate && tableData.some(row => (row as TimeSeriesPoint).income > 0)
+            const totalValue = tableData.reduce((sum, row) =>
+              sum + ('value' in row ? (row as ReportDataPoint).value : (row as TimeSeriesPoint).expense), 0)
+            const totalIncomeVal = hasIncome ? tableData.reduce((sum, row) =>
+              sum + (row as TimeSeriesPoint).income, 0) : 0
+
+            return (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fontSize.sm }}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Name</th>
+                    {hasDate ? <th style={styles.th}>Date</th> : null}
+                    {hasIncome ? <th style={styles.thRight}>Income</th> : null}
+                    <th style={styles.thRight}>{hasIncome ? 'Expense' : 'Value'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableData.map((row, i) => (
+                    <tr key={i}>
+                      <td style={styles.td}>{'name' in row ? row.name : row.date}</td>
+                      {hasDate && <td style={styles.td}>{'date' in row ? row.date : ''}</td>}
+                      {hasIncome && <td style={styles.tdRight}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>}
+                      <td style={styles.tdRight}>{formatCurrency('value' in row ? (row as ReportDataPoint).value : (row as TimeSeriesPoint).expense, currency, locale)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style={{ ...styles.td, fontWeight: fontWeight.semibold }}>Total</td>
+                    {hasDate && <td style={styles.td}></td>}
+                    {hasIncome && <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>{formatCurrency(totalIncomeVal, currency, locale)}</td>}
+                    <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>{formatCurrency(totalValue, currency, locale)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            )
+          })()}
         </div>
       )}
     </motion.div>

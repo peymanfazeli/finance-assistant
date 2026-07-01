@@ -161,7 +161,7 @@ function CustomReportBuilderPage(): JSX.Element {
               </motion.button>
             ))}
           </div>
-          {generated && hasData && <ExportButton data={data} filename="custom-report" reportTitle="Custom Report" />}
+          {generated && hasData && <ExportButton data={data} filename="custom-report" reportTitle="Custom Report" currency={currency} locale={locale} />}
         </div>
         {renderChart()}
         {hasData && (

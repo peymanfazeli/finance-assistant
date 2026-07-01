@@ -23,6 +23,7 @@ export class DatasetService {
 
   static deserialize(content: string): Dataset {
     const data = JSON.parse(content) as Dataset
+    if (data.currency === 'IRR') data.currency = 'toman'
     if (!data.version) {
       throw new Error('Invalid dataset file: missing version field')
     }

@@ -2,14 +2,20 @@ const CURRENCY_CONFIG: Record<string, { decimals: number }> = {
   USD: { decimals: 2 },
   EUR: { decimals: 2 },
   GBP: { decimals: 2 },
-  IRR: { decimals: 0 },
+  toman: { decimals: 0 },
   CAD: { decimals: 2 },
   AUD: { decimals: 2 },
   JPY: { decimals: 0 }
 }
 
 export function formatCurrency(amount: number, currency: string, locale = 'en-US'): string {
-  const config = CURRENCY_CONFIG[currency] || { decimals: 2 }
+  const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG['USD']
+  const formatted = new Intl.NumberFormat(locale, {
+    style: 'decimal',
+    minimumFractionDigits: config.decimals,
+    maximumFractionDigits: config.decimals
+  }).format(amount)
+  if (currency === 'toman') return `${formatted} ${currency}`
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,

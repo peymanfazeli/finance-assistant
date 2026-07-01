@@ -16,10 +16,10 @@ describe('formatCurrency', () => {
     expect(formatCurrency(99.99, 'EUR')).toMatch(/99/)
   })
 
-  it('formats IRR', () => {
-    const result = formatCurrency(100000, 'IRR')
+  it('formats Toman', () => {
+    const result = formatCurrency(100000, 'toman')
     expect(result).toMatch(/100/)
-    expect(result).toMatch(/IRR/)
+    expect(result).toMatch(/toman/)
   })
 })
 
