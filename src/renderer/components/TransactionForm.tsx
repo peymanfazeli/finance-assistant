@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TransactionType, Transaction, Category } from '../../core/models/types'
+import Modal from './Modal'
 
 interface TransactionFormProps {
   transaction?: Transaction
@@ -26,12 +27,32 @@ function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, 
   const [type, setType] = useState<TransactionType>(transaction?.type ?? TransactionType.Expense)
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '')
   const [notes, setNotes] = useState(transaction?.notes ?? '')
+  const [showValidationModal, setShowValidationModal] = useState(false)
+  const [missingFields, setMissingFields] = useState<string[]>([])
+
+  const resetFields = (): void => {
+    setDate(new Date().toISOString().split('T')[0])
+    setTitle('')
+    setCategoryId(categories[0]?.id ?? '')
+    setType(TransactionType.Expense)
+    setAmount('')
+    setNotes('')
+  }
 
   const handleSubmit = (): void => {
     const parsedAmount = parseFloat(amount)
-    if (!title.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return
+    const fields: string[] = []
+    if (!title.trim()) fields.push(t('transaction.titleLabel'))
+    if (!categoryId) fields.push(t('transaction.category'))
+    if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) fields.push(t('transaction.amount'))
+    if (fields.length > 0) {
+      setMissingFields(fields)
+      setShowValidationModal(true)
+      return
+    }
     try {
       onSave({ date, title: title.trim(), categoryId, type, amount: parsedAmount, notes })
+      resetFields()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
     }
@@ -104,18 +125,45 @@ function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, 
           <button
             style={styles.saveBtn}
             onClick={handleSubmit}
-            disabled={!title.trim() || !amount || parseFloat(amount) <= 0}
           >
             {t('common.save')}
           </button>
         </div>
       </div>
+      <Modal
+        open={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        title={t('transaction.validationTitle')}
+      >
+        <p>{t('transaction.validationMessage')}</p>
+        <ul>
+          {missingFields.map((field) => (
+            <li key={field}>{field}</li>
+          ))}
+        </ul>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+          <button
+            onClick={() => setShowValidationModal(false)}
+            style={{
+              padding: '8px 16px',
+              fontSize: '13px',
+              color: '#fff',
+              backgroundColor: '#4A90D9',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {t('common.ok')}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  form: { padding: '16px'},
+  form: { padding: 0},
   field: { marginBottom: '12px' },
   label: { display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#555' },
   input: {

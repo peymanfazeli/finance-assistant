@@ -11,6 +11,7 @@ import DropZone from '../components/DropZone'
 import { ImportService, ImportedRow, ColumnMapping as ColumnMappingType } from '../../core/services/ImportService'
 import TransactionList from '../components/TransactionList'
 import TransactionForm from '../components/TransactionForm'
+import Modal from '../components/Modal'
 import ImportModal from '../components/ImportModal'
 import SearchBar from '../components/SearchBar'
 import FilterPanel from '../components/FilterPanel'
@@ -297,28 +298,24 @@ function TransactionPage(): JSX.Element {
         <SearchBar onSearch={setSearchKeyword} />
         <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} />
       </div>
-<div style={{overflowY: 'scroll', maxHeight: '350px'}}>
-      {showForm && (
-        <motion.div
-          style={styles.formSection}
-          initial={{ opacity: 0, maxHeight: 0 }}
-          animate={{ opacity: 1, maxHeight: 500 }}
-          exit={{ opacity: 0, maxHeight: 0 }}
-        >
-          <TransactionForm
-            transaction={editingTransaction}
-            categories={categories}
-            keepOpen={keepFormOpen}
-            onKeepOpenChange={setKeepFormOpen}
-            onSave={handleSave}
-            onCancel={() => { setShowForm(false); setEditId(null) }}
-          />
-        </motion.div>
-      )}
+      <div style={{overflowY: 'scroll', maxHeight: '350px'}}>
+        <TransactionList transactions={filteredTransactions} categories={categories} onEdit={handleEdit} />
+      </div>
 
-      <TransactionList transactions={filteredTransactions} categories={categories} onEdit={handleEdit} />
-
-</div>
+      <Modal
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditId(null) }}
+        title={editId ? t('transaction.edit') : t('transaction.add')}
+      >
+        <TransactionForm
+          transaction={editingTransaction}
+          categories={categories}
+          keepOpen={keepFormOpen}
+          onKeepOpenChange={setKeepFormOpen}
+          onSave={handleSave}
+          onCancel={() => { setShowForm(false); setEditId(null) }}
+        />
+      </Modal>
       {dropError && <p style={styles.dropError}>{dropError}</p>}
 
       {dropShowImportModal && (
@@ -415,13 +412,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dropError: { color: colors.text.expense, fontSize: fontSize.base, padding: padding.input, backgroundColor: colors.bg.expense, borderRadius: borderRadius.md, marginTop: spacing.md },
   toolbar: { marginBottom: spacing.lg },
-  formSection: {
-    border: `${borderWidth.default} solid ${colors.border.default}`,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.lg,
-    backgroundColor: '#fafafa',
-    overflowY: 'auto',
-  },
 }
 
 export default TransactionPage

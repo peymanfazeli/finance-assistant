@@ -116,6 +116,7 @@ class DatasetService {
   }
   static deserialize(content) {
     const data = JSON.parse(content);
+    if (data.currency === "IRR") data.currency = "toman";
     if (!data.version) {
       throw new Error("Invalid dataset file: missing version field");
     }
