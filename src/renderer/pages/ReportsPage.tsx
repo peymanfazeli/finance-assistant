@@ -236,55 +236,80 @@ function ReportsPage(): JSX.Element {
   const displayChartTypes = isSearch ? SEARCH_CHART_TYPES : CHART_TYPES
 
   return (
-    <motion.div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>{t('reports.title')}</h2>
-        <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} currency={currency} locale={locale} />
-      </div>
+    <>
+      <motion.div style={styles.container}>
+        <div style={styles.header}>
+          <h2 style={styles.title}>{t('reports.title')}</h2>
+          <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} currency={currency} locale={locale} />
+        </div>
 
-      <div style={styles.toolbar}>
-        <select
-          style={styles.select}
-          value={selectedReport}
-          onChange={(e) => {
-            setSelectedReport(e.target.value as ReportType)
-            if (e.target.value !== 'searchReport') setSearchGenerated(false)
-          }}
-        >
-          {REPORTS.map((r) => (
-            <option key={r.id} value={r.id}>{t(`reports.${r.id}`)}</option>
-          ))}
-        </select>
+        <div style={styles.toolbar}>
+          <select
+            style={styles.select}
+            value={selectedReport}
+            onChange={(e) => {
+              setSelectedReport(e.target.value as ReportType)
+              if (e.target.value !== 'searchReport') setSearchGenerated(false)
+            }}
+          >
+            {REPORTS.map((r) => (
+              <option key={r.id} value={r.id}>{t(`reports.${r.id}`)}</option>
+            ))}
+          </select>
 
-        {isSearch ? (
-          <div style={styles.searchSection}>
-            <input
-              style={styles.searchInput}
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder={t('reports.searchPlaceholder')}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
-            />
-            <select
-              style={styles.select}
-              value={searchGrouping}
-              onChange={(e) => setSearchGrouping(e.target.value as SearchGrouping)}
-            >
-              <option value="category">{t('reports.groupByCategory')}</option>
-              <option value="month">{t('reports.groupByMonth')}</option>
-            </select>
-            <motion.button
-              style={styles.generateBtn}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleSearch}
-            >
-              {t('reports.generate')}
-            </motion.button>
-          </div>
-        ) : (
-          <div style={styles.chartTypes}>
+          {isSearch ? (
+            <div style={styles.searchSection}>
+              <input
+                style={styles.searchInput}
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder={t('reports.searchPlaceholder')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
+              />
+              <select
+                style={styles.select}
+                value={searchGrouping}
+                onChange={(e) => setSearchGrouping(e.target.value as SearchGrouping)}
+              >
+                <option value="category">{t('reports.groupByCategory')}</option>
+                <option value="month">{t('reports.groupByMonth')}</option>
+              </select>
+              <motion.button
+                style={styles.generateBtn}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleSearch}
+              >
+                {t('reports.generate')}
+              </motion.button>
+            </div>
+          ) : (
+            <div style={styles.chartTypes}>
+              {displayChartTypes.map((ct) => (
+                <motion.button
+                  key={ct}
+                  style={{
+                    ...styles.chartTypeBtn,
+                    backgroundColor: chartType === ct ? colors.primary : colors.bg.muted,
+                    color: chartType === ct ? colors.text.inverse : colors.text.secondary,
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setChartType(ct)}
+                >
+                  {t(`reports.${ct}`)}
+                </motion.button>
+              ))}
+            </div>
+          )}
+
+          <input style={styles.dateInput} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
+          <input style={styles.dateInput} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+        </div>
+
+        {isSearch && searchGenerated && (
+          <div style={{ ...styles.chartTypes, marginBottom: spacing.md }}>
             {displayChartTypes.map((ct) => (
               <motion.button
                 key={ct}
@@ -303,33 +328,16 @@ function ReportsPage(): JSX.Element {
           </div>
         )}
 
-        <input style={styles.dateInput} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-        <input style={styles.dateInput} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
-      </div>
-
-      {isSearch && searchGenerated && (
-        <div style={{ ...styles.chartTypes, marginBottom: spacing.md }}>
-          {displayChartTypes.map((ct) => (
-            <motion.button
-              key={ct}
-              style={{
-                ...styles.chartTypeBtn,
-                backgroundColor: chartType === ct ? colors.primary : colors.bg.muted,
-                color: chartType === ct ? colors.text.inverse : colors.text.secondary,
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setChartType(ct)}
-            >
-              {t(`reports.${ct}`)}
-            </motion.button>
-          ))}
-        </div>
-      )}
-
-      <div ref={chartRef}>{renderChart()}</div>
-
-      {hasData && (
+        <div ref={chartRef}>{renderChart()}</div>
+      </motion.div>
+      <div
+        style={{
+          minHeight: '50px',
+          maxHeight: '200px',
+          overflow: 'scroll',
+        }}
+      >
+        {hasData && (
         <div style={styles.table}>
           {(() => {
             const tableData = pieData ?? data
@@ -373,13 +381,15 @@ function ReportsPage(): JSX.Element {
             )
           })()}
         </div>
+
       )}
-    </motion.div>
+      </div>
+    </>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: padding.page },
+  container: { padding: padding.page},
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
   toolbar: { display: 'flex', gap: spacing.sm, flexWrap: 'wrap', marginBottom: spacing.lg, alignItems: 'center' },
