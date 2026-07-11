@@ -26,6 +26,8 @@ const api = {
       ipcRenderer.invoke('dataset:load', filePath),
     createDefault: (): Promise<{ success: boolean; path?: string; error?: string }> =>
       ipcRenderer.invoke('dataset:createDefault'),
+    createNamed: (name: string, currency: string, categories?: { id: string; name: string; color: string; icon: string; isDefault: boolean; createdAt: string }[], receivables?: { id: string; title: string; categoryId: string; totalAmount: number; from: string; notes: string; createdAt: string; updatedAt: string }[], transactions?: { id: string; date: string; title: string; categoryId: string; type: string; amount: number; notes: string; createdAt: string; updatedAt: string }[]): Promise<{ success: boolean; path?: string; error?: string }> =>
+      ipcRenderer.invoke('dataset:createNamed', name, currency, categories, receivables, transactions),
     showSaveDialog: (): Promise<Electron.OpenDialogReturnValue> =>
       ipcRenderer.invoke('dialog:save'),
     showOpenDialog: (): Promise<Electron.OpenDialogReturnValue> =>
@@ -62,6 +64,16 @@ const api = {
       ipcRenderer.invoke('app:confirm-close'),
     cancelClose: (): Promise<{ success: boolean }> =>
       ipcRenderer.invoke('app:cancel-close')
+  },
+  config: {
+    createDatasetConfigs: (datasetName: string): Promise<{ success: boolean; catPath?: string; recievPath?: string; error?: string }> =>
+      ipcRenderer.invoke('config:createDatasetConfigs', datasetName),
+    syncReceivables: (datasetName: string, receivables: { title: string; category: string; totalAmount: number; from: string; notes: string }[]): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('config:syncReceivables', datasetName, receivables),
+    syncCategories: (datasetName: string, categories: { name: string; color: string; icon: string; isDefault: boolean }[]): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('config:syncCategories', datasetName, categories),
+    readConfigForImport: (csvBaseName: string): Promise<{ success: boolean; categories?: { name: string; color: string; icon: string; isDefault: boolean }[]; receivables?: { title: string; category: string; totalAmount: number; from: string; notes: string }[]; source?: string; error?: string }> =>
+      ipcRenderer.invoke('config:readConfigForImport', csvBaseName)
   }
 }
 

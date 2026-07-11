@@ -96,9 +96,9 @@ const optimizer = {
     });
   }
 };
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 class DatasetService {
-  static create(name, currency, categories) {
+  static create(name, currency, categories, receivables = [], transactions = []) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
     return {
       version: SCHEMA_VERSION,
@@ -106,8 +106,9 @@ class DatasetService {
       currency,
       createdAt: now,
       updatedAt: now,
-      transactions: [],
-      categories
+      transactions,
+      categories,
+      receivables
     };
   }
   static serialize(dataset) {
@@ -120,22 +121,35 @@ class DatasetService {
     if (!data.version) {
       throw new Error("Invalid dataset file: missing version field");
     }
+    if (!data.receivables) {
+      data.receivables = [];
+    }
     return data;
   }
 }
 function generateId() {
-  return crypto.randomUUID();
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : r & 3 | 8;
+    return v.toString(16);
+  });
 }
 const DEFAULT_CATEGORIES = [
   { name: "Food & Drinks", color: "#FF6B6B", icon: "🍵🥪", isDefault: true },
   { name: "Transportation", color: "#DDA0DD", icon: "🚌", isDefault: true },
+  { name: "Car purchases", color: "#DDA0DD", icon: "🚗", isDefault: true },
   { name: "Internet", color: "#F5C88B", icon: "🛜", isDefault: true },
   { name: "Shopping", color: "#FF0909", icon: "🛍️", isDefault: true },
+  { name: "House purchases", color: "#FF0909", icon: "🏠", isDefault: true },
   { name: "Education", color: "#BAE9FC", icon: "school", isDefault: true },
   { name: "Software & Subscriptions", color: "#EEB04C", icon: "💻", isDefault: true },
   { name: "Bills", color: "#FFA99B", icon: "🧾", isDefault: true },
   { name: "Investment", color: "#A1F9B0", icon: "💰", isDefault: true },
   { name: "Project", color: "#1BF13F", icon: "🧑‍💻", isDefault: true },
+  { name: "Salary", color: "#1BF13F", icon: "💵", isDefault: true },
   { name: "MustNot", color: "#C7C7C7", icon: "❌", isDefault: true },
   { name: "Bullshit", color: "#BDC3C7", icon: "💩", isDefault: true }
 ];
@@ -242,6 +256,25 @@ function registerDatasetHandlers() {
       fs.writeFileSync(tmpPath, content, "utf-8");
       fs.renameSync(tmpPath, defaultPath);
       return { success: true, path: defaultPath };
+    } catch (err) {
+      return { success: false, error: String(err) };
+    }
+  });
+  electron.ipcMain.handle("dataset:createNamed", async (_event, name, currency, categories, receivables, transactions) => {
+    try {
+      const datasetsDir = path.join(electron.app.getPath("userData"), "datasets");
+      if (!fs.existsSync(datasetsDir)) {
+        fs.mkdirSync(datasetsDir, { recursive: true });
+      }
+      const sanitized = name.replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "_") || "dataset";
+      const filePath = path.join(datasetsDir, `${sanitized}.fina`);
+      const cats = categories ?? CategoryService.createDefaultCategories();
+      const dataset = DatasetService.create(name, currency, cats, receivables, transactions);
+      const content = DatasetService.serialize(dataset);
+      const tmpPath = filePath + ".tmp";
+      fs.writeFileSync(tmpPath, content, "utf-8");
+      fs.renameSync(tmpPath, filePath);
+      return { success: true, path: filePath };
     } catch (err) {
       return { success: false, error: String(err) };
     }
@@ -449,6 +482,196 @@ function registerCloseHandlers(mainWindow2) {
     }
   });
 }
+function getConfigsDir() {
+  if (is.dev) {
+    return path.join(process.cwd(), "src", "Configs");
+  }
+  return path.join(electron.app.getAppPath(), "src", "Configs");
+}
+function sanitizeFileName(name) {
+  return name.replace(/[^a-zA-Z0-9_\- ]/g, "").trim().replace(/\s+/g, "_") || "dataset";
+}
+function getDefaultCatPath() {
+  return path.join(getConfigsDir(), "def_cat.ts");
+}
+function getDefaultRecievPath() {
+  return path.join(getConfigsDir(), "def_reciev.ts");
+}
+function getDatasetCatPath(datasetName) {
+  return path.join(getConfigsDir(), `${sanitizeFileName(datasetName)}_cat.ts`);
+}
+function getDatasetRecievPath(datasetName) {
+  return path.join(getConfigsDir(), `${sanitizeFileName(datasetName)}_reciev.ts`);
+}
+function buildReceivablesFileContent(receivables) {
+  const entries = receivables.map(
+    (r) => `  { title: ${JSON.stringify(r.title)}, category: ${JSON.stringify(r.category)}, totalAmount: ${r.totalAmount}, from: ${JSON.stringify(r.from)}, notes: ${JSON.stringify(r.notes)} }`
+  ).join(",\n");
+  return `export interface ReceivableConfig {
+  title: string
+  category: string
+  totalAmount: number
+  from: string
+  notes: string
+}
+
+export const DEFAULT_RECEIVABLES: ReceivableConfig[] = [
+${entries}
+]
+`;
+}
+function buildCategoriesFileContent(categories) {
+  const entries = categories.map(
+    (c) => `    { name: ${JSON.stringify(c.name)}, color: ${JSON.stringify(c.color)}, icon: ${JSON.stringify(c.icon)}, isDefault: ${c.isDefault} }`
+  ).join(",\n");
+  return `import { Category } from '../core/models/types'
+export const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'createdAt'>[] = [
+${entries}
+  ]
+`;
+}
+function writeAtomically(filePath, content) {
+  const tmpPath = filePath + ".tmp";
+  fs.writeFileSync(tmpPath, content, "utf-8");
+  const { renameSync } = require("fs");
+  renameSync(tmpPath, filePath);
+}
+function parseConfigArray(content) {
+  const bracketStart = content.indexOf("[");
+  const bracketEnd = content.lastIndexOf("]");
+  if (bracketStart === -1 || bracketEnd === -1) return [];
+  const body = content.slice(bracketStart + 1, bracketEnd);
+  const entries = [];
+  let depth = 0;
+  let current = "";
+  for (const ch of body) {
+    if (ch === "{") {
+      depth++;
+      current += ch;
+    } else if (ch === "}") {
+      depth--;
+      current += ch;
+      if (depth === 0) {
+        entries.push(current);
+        current = "";
+      }
+    } else if (depth > 0) {
+      current += ch;
+    }
+  }
+  return entries;
+}
+function extractField(entry, field) {
+  const m = entry.match(new RegExp(`${field}:\\s*["']([^"']*)["']`));
+  return m ? m[1] : "";
+}
+function extractNumber(entry, field) {
+  const m = entry.match(new RegExp(`${field}:\\s*(\\d+)`));
+  return m ? parseInt(m[1], 10) : 0;
+}
+function extractBool(entry, field) {
+  const m = entry.match(new RegExp(`${field}:\\s*(true|false)`));
+  return m ? m[1] === "true" : false;
+}
+function registerConfigHandlers() {
+  electron.ipcMain.handle(
+    "config:createDatasetConfigs",
+    async (_event, datasetName) => {
+      try {
+        const configsDir = getConfigsDir();
+        if (!fs.existsSync(configsDir)) {
+          fs.mkdirSync(configsDir, { recursive: true });
+        }
+        const catPath = getDatasetCatPath(datasetName);
+        const recievPath = getDatasetRecievPath(datasetName);
+        const defaultCat = getDefaultCatPath();
+        const defaultReciev = getDefaultRecievPath();
+        if (!fs.existsSync(catPath) && fs.existsSync(defaultCat)) {
+          fs.writeFileSync(catPath, fs.readFileSync(defaultCat, "utf-8"), "utf-8");
+        }
+        if (!fs.existsSync(recievPath) && fs.existsSync(defaultReciev)) {
+          fs.writeFileSync(recievPath, fs.readFileSync(defaultReciev, "utf-8"), "utf-8");
+        }
+        return { success: true, catPath, recievPath };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "config:syncReceivables",
+    async (_event, datasetName, receivables) => {
+      try {
+        const filePath = getDatasetRecievPath(datasetName);
+        const content = buildReceivablesFileContent(receivables);
+        writeAtomically(filePath, content);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "config:syncCategories",
+    async (_event, datasetName, categories) => {
+      try {
+        const filePath = getDatasetCatPath(datasetName);
+        const content = buildCategoriesFileContent(categories);
+        writeAtomically(filePath, content);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    }
+  );
+  electron.ipcMain.handle(
+    "config:readConfigForImport",
+    async (_event, csvBaseName) => {
+      try {
+        const configsDir = getConfigsDir();
+        let catPath = path.join(configsDir, `${csvBaseName}_cat.ts`);
+        let recievPath = path.join(configsDir, `${csvBaseName}_reciev.ts`);
+        let source = csvBaseName;
+        if (!fs.existsSync(catPath)) {
+          catPath = getDefaultCatPath();
+          source = "def";
+        }
+        if (!fs.existsSync(recievPath)) {
+          recievPath = getDefaultRecievPath();
+          source = fs.existsSync(path.join(configsDir, `${csvBaseName}_cat.ts`)) ? csvBaseName : "def";
+        }
+        const categories = [];
+        if (fs.existsSync(catPath)) {
+          const catContent = fs.readFileSync(catPath, "utf-8");
+          for (const entry of parseConfigArray(catContent)) {
+            categories.push({
+              name: extractField(entry, "name"),
+              color: extractField(entry, "color"),
+              icon: extractField(entry, "icon"),
+              isDefault: extractBool(entry, "isDefault")
+            });
+          }
+        }
+        const receivables = [];
+        if (fs.existsSync(recievPath)) {
+          const recContent = fs.readFileSync(recievPath, "utf-8");
+          for (const entry of parseConfigArray(recContent)) {
+            receivables.push({
+              title: extractField(entry, "title"),
+              category: extractField(entry, "category"),
+              totalAmount: extractNumber(entry, "totalAmount"),
+              from: extractField(entry, "from"),
+              notes: extractField(entry, "notes")
+            });
+          }
+        }
+        return { success: true, categories, receivables, source };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    }
+  );
+}
 const LABELS = {
   en: {
     file: "File",
@@ -605,6 +828,7 @@ electron.app.whenReady().then(() => {
   registerSettingsHandlers();
   registerFileHandlers();
   registerExportHandlers();
+  registerConfigHandlers();
   createAppMenu();
   registerMenuHandlers();
   electron.ipcMain.handle("log:error", async (_event, context, message) => {

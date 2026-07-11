@@ -3,6 +3,7 @@ import { writeFileSync, renameSync, readFileSync, existsSync, mkdirSync, readdir
 import { dirname, resolve, join } from 'path'
 import { DatasetService } from '../core/services/DatasetService'
 import { CategoryService } from '../core/services/CategoryService'
+import { Category, Receivable, Transaction } from '../core/models/types'
 
 export function cleanupTempFiles(): void {
   try {
@@ -69,6 +70,26 @@ export function registerDatasetHandlers(): void {
       writeFileSync(tmpPath, content, 'utf-8')
       renameSync(tmpPath, defaultPath)
       return { success: true, path: defaultPath }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  ipcMain.handle('dataset:createNamed', async (_event, name: string, currency: string, categories?: Category[], receivables?: Receivable[], transactions?: Transaction[]) => {
+    try {
+      const datasetsDir = join(app.getPath('userData'), 'datasets')
+      if (!existsSync(datasetsDir)) {
+        mkdirSync(datasetsDir, { recursive: true })
+      }
+      const sanitized = name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_') || 'dataset'
+      const filePath = join(datasetsDir, `${sanitized}.fina`)
+      const cats = categories ?? CategoryService.createDefaultCategories()
+      const dataset = DatasetService.create(name, currency, cats, receivables, transactions)
+      const content = DatasetService.serialize(dataset)
+      const tmpPath = filePath + '.tmp'
+      writeFileSync(tmpPath, content, 'utf-8')
+      renameSync(tmpPath, filePath)
+      return { success: true, path: filePath }
     } catch (err) {
       return { success: false, error: String(err) }
     }

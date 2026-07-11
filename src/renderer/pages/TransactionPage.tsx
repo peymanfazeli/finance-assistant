@@ -22,6 +22,9 @@ function TransactionPage(): JSX.Element {
   const {
     dataset,
     addTransaction,
+    addCategory,
+    addReceivable,
+    setConfigBaseName,
     updateTransaction,
     filters,
     sortConfig,
@@ -168,13 +171,45 @@ function TransactionPage(): JSX.Element {
         dupFlags.forEach((isDup, i) => { if (isDup) skipped.add(i) })
         setDropSkipIndices(skipped)
 
+        const baseName = (filePath.split('\\').pop() || filePath.split('/').pop() || '').replace(/\.csv$/i, '')
+        setConfigBaseName(baseName)
+        const configResult = await window.api.config.readConfigForImport(baseName)
+        if (configResult.success && configResult.categories) {
+          const existingCatNames = new Set(dataset?.categories.map((c) => c.name.toLowerCase()) ?? [])
+          for (const cat of configResult.categories) {
+            if (!existingCatNames.has(cat.name.toLowerCase())) {
+              addCategory(cat.name, cat.color, cat.icon)
+            }
+          }
+        }
+        if (configResult.success && configResult.receivables) {
+          const currentCats = useAppStore.getState().dataset?.categories ?? []
+          const existingRecTitles = new Set(
+            (dataset?.receivables ?? []).map((r) => r.title.toLowerCase())
+          )
+          for (const rec of configResult.receivables) {
+            if (!existingRecTitles.has(rec.title.toLowerCase())) {
+              const matchedCat = currentCats.find(
+                (c) => c.name.toLowerCase() === rec.category.toLowerCase()
+              )
+              addReceivable({
+                title: rec.title,
+                categoryId: matchedCat?.id ?? currentCats[0]?.id ?? '',
+                totalAmount: rec.totalAmount,
+                from: rec.from,
+                notes: rec.notes
+              })
+            }
+          }
+        }
+
         setDropShowImportModal(true)
       } catch (err) {
         setDropError(t('import.importError') + ': ' + String(err))
       }
       setDropImporting(false)
     },
-    [dataset, t]
+    [dataset, t, addCategory, addReceivable, setConfigBaseName]
   )
 
   const handleFileDrop = useCallback(
@@ -191,16 +226,23 @@ function TransactionPage(): JSX.Element {
   const handleDropConfirmImport = useCallback((): void => {
     try {
       const remapped = ImportService.applyMapping(previewRows, currentMapping)
+
+      const existingNames = new Set(categories.map((c) => c.name.toLowerCase()))
+      const importedNames = new Set(remapped.map((r) => r.category.toLowerCase()).filter(Boolean))
+      const missingNames = [...importedNames].filter((name) => !existingNames.has(name))
+      missingNames.forEach((name) => addCategory(name, '#808080', '📁'))
+
+      const currentCategories = useAppStore.getState().dataset?.categories ?? []
       let count = 0
       remapped.forEach((row, i) => {
         if (!dropSkipIndices.has(i)) {
-          const category = categories.find(
+          const category = currentCategories.find(
             (c) => c.name.toLowerCase() === row.category.toLowerCase()
           )
           addTransaction({
             date: row.date,
             title: row.title,
-            categoryId: category?.id ?? categories[categories.length - 1]?.id ?? '',
+            categoryId: category?.id ?? currentCategories[currentCategories.length - 1]?.id ?? '',
             type: row.type,
             amount: row.amount,
             notes: row.notes,
@@ -215,7 +257,7 @@ function TransactionPage(): JSX.Element {
     } catch (err) {
       setDropError(err instanceof Error ? err.message : 'Import failed')
     }
-  }, [previewRows, currentMapping, dropSkipIndices, categories, addTransaction, t])
+  }, [previewRows, currentMapping, dropSkipIndices, categories, addTransaction, addCategory, t])
 
   const handleDropCancelImport = useCallback((): void => {
     setDropShowImportModal(false)

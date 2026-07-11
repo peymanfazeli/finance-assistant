@@ -5,11 +5,13 @@
   "nav": {
     "dashboard": "Dashboard",
     "transactions": "Transactions",
+    "receivables": "Receivables",
     "import": "Import",
     "categories": "Categories",
     "reports": "Reports",
     "customReports": "Custom",
-    "settings": "Settings"
+    "settings": "Settings",
+    "close": "Close"
   },
   "common": {
     "save": "Save",
@@ -160,6 +162,32 @@
     "created": "Category created",
     "updated": "Category updated",
     "deleted": "Category deleted"
+  },
+  "receivable": {
+    "title": "Receivables",
+    "add": "Add Receivable",
+    "edit": "Edit Receivable",
+    "delete": "Delete Receivable",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. Monthly salary",
+    "category": "Category",
+    "from": "From",
+    "fromPlaceholder": "e.g. Employer name",
+    "totalAmount": "Total Amount",
+    "received": "Received",
+    "remaining": "Remaining",
+    "notes": "Notes",
+    "notesPlaceholder": "Optional notes...",
+    "confirmDelete": "Are you sure you want to delete this receivable?",
+    "noReceivables": "No receivables yet. Add your first receivable to track expected income.",
+    "created": "Receivable created",
+    "updated": "Receivable updated",
+    "deleted": "Receivable deleted",
+    "validationTitle": "Missing Required Fields",
+    "validationMessage": "Please fill in the following fields:",
+    "receivedTransactions": "Received Transactions",
+    "transactionDetails": "Transaction Details",
+    "noLinkedTransactions": "No matching transactions found for this receivable."
   },
   "export": {
     "pdf": "Export as PDF",

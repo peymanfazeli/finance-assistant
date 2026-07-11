@@ -12,6 +12,7 @@ declare global {
         save: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
         load: (filePath: string) => Promise<{ success: boolean; data?: Dataset; error?: string }>
         createDefault: () => Promise<{ success: boolean; path?: string; error?: string }>
+        createNamed: (name: string, currency: string, categories?: { id: string; name: string; color: string; icon: string; isDefault: boolean; createdAt: string }[], receivables?: { id: string; title: string; categoryId: string; totalAmount: number; from: string; notes: string; createdAt: string; updatedAt: string }[], transactions?: { id: string; date: string; title: string; categoryId: string; type: string; amount: number; notes: string; createdAt: string; updatedAt: string }[]) => Promise<{ success: boolean; path?: string; error?: string }>
         showSaveDialog: () => Promise<Electron.OpenDialogReturnValue>
         showOpenDialog: () => Promise<Electron.OpenDialogReturnValue>
       }
@@ -30,6 +31,12 @@ declare global {
         saveFile: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
         saveFileBinary: (filePath: string, base64: string) => Promise<{ success: boolean; error?: string }>
         showSaveDialog: (defaultName: string, filters: Electron.FileFilter[]) => Promise<Electron.SaveDialogReturnValue>
+      }
+      config: {
+        createDatasetConfigs: (datasetName: string) => Promise<{ success: boolean; catPath?: string; recievPath?: string; error?: string }>
+        syncReceivables: (datasetName: string, receivables: { title: string; category: string; totalAmount: number; from: string; notes: string }[]) => Promise<{ success: boolean; error?: string }>
+        syncCategories: (datasetName: string, categories: { name: string; color: string; icon: string; isDefault: boolean }[]) => Promise<{ success: boolean; error?: string }>
+        readConfigForImport: (csvBaseName: string) => Promise<{ success: boolean; categories?: { name: string; color: string; icon: string; isDefault: boolean }[]; receivables?: { title: string; category: string; totalAmount: number; from: string; notes: string }[]; source?: string; error?: string }>
       }
     }
   }

@@ -5,11 +5,13 @@
   "nav": {
     "dashboard": "داشبورد",
     "transactions": "تراکنش‌ها",
+    "receivables": "دریافتی‌ها",
     "import": "ورود داده",
     "categories": "دسته‌بندی‌ها",
     "reports": "گزارش‌ها",
     "customReports": "سفارشی",
-    "settings": "تنظیمات"
+    "settings": "تنظیمات",
+    "close": "بستن"
   },
   "common": {
     "save": "ذخیره",
@@ -160,6 +162,32 @@
     "created": "دسته‌بندی ایجاد شد",
     "updated": "دسته‌بندی به‌روزرسانی شد",
     "deleted": "دسته‌بندی حذف شد"
+  },
+  "receivable": {
+    "title": "دریافتی‌ها",
+    "add": "افزودن دریافتی",
+    "edit": "ویرایش دریافتی",
+    "delete": "حذف دریافتی",
+    "titleLabel": "عنوان",
+    "titlePlaceholder": "مثال: حقوق ماهانه",
+    "category": "دسته‌بندی",
+    "from": "از طرف",
+    "fromPlaceholder": "مثال: نام کارفرما",
+    "totalAmount": "مبلغ کل",
+    "received": "دریافت شده",
+    "remaining": "باقی‌مانده",
+    "notes": "یادداشت",
+    "notesPlaceholder": "یادداشت‌های اختیاری...",
+    "confirmDelete": "آیا از حذف این دریافتی اطمینان دارید؟",
+    "noReceivables": "هنوز دریافتی وجود ندارد. اولین دریافتی خود را اضافه کنید تا درآمد مورد انتظار را پیگیری کنید.",
+    "created": "دریافتی ایجاد شد",
+    "updated": "دریافتی به‌روزرسانی شد",
+    "deleted": "دریافتی حذف شد",
+    "validationTitle": "فیلدهای اجباری خالی هستند",
+    "validationMessage": "لطفاً فیلدهای زیر را پر کنید:",
+    "receivedTransactions": "تراکنش‌های دریافت شده",
+    "transactionDetails": "جزئیات تراکنش",
+    "noLinkedTransactions": "هیچ تراکنش مطابقی برای این دریافتی یافت نشد."
   },
   "export": {
     "pdf": "خروجی PDF",

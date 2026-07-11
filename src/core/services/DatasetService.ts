@@ -1,9 +1,15 @@
-import { Dataset, Category } from '../models/types'
+import { Dataset, Category, Receivable, Transaction } from '../models/types'
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 export class DatasetService {
-  static create(name: string, currency: string, categories: Category[]): Dataset {
+  static create(
+    name: string,
+    currency: string,
+    categories: Category[],
+    receivables: Receivable[] = [],
+    transactions: Transaction[] = []
+  ): Dataset {
     const now = new Date().toISOString()
     return {
       version: SCHEMA_VERSION,
@@ -11,8 +17,9 @@ export class DatasetService {
       currency,
       createdAt: now,
       updatedAt: now,
-      transactions: [],
-      categories
+      transactions,
+      categories,
+      receivables
     }
   }
 
@@ -26,6 +33,9 @@ export class DatasetService {
     if (data.currency === 'IRR') data.currency = 'toman'
     if (!data.version) {
       throw new Error('Invalid dataset file: missing version field')
+    }
+    if (!data.receivables) {
+      data.receivables = []
     }
     return data
   }

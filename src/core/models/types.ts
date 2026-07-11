@@ -30,6 +30,17 @@ export interface Transaction {
   updatedAt: string
 }
 
+export interface Receivable {
+  id: string
+  title: string
+  categoryId: string
+  totalAmount: number
+  from: string
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Dataset {
   version: number
   name: string
@@ -38,6 +49,7 @@ export interface Dataset {
   updatedAt: string
   transactions: Transaction[]
   categories: Category[]
+  receivables: Receivable[]
 }
 
 export interface ApplicationSettings {

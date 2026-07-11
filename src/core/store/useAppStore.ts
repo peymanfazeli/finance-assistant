@@ -3,6 +3,7 @@ import {
   Dataset,
   Transaction,
   Category,
+  Receivable,
   ApplicationSettings,
   TransactionFilter,
   SortConfig,
@@ -14,11 +15,13 @@ import { DatasetService } from '../services/DatasetService'
 import { SettingsService } from '../services/SettingsService'
 import { CategoryService } from '../services/CategoryService'
 import { TransactionService } from '../services/TransactionService'
+import { ReceivableService } from '../services/ReceivableService'
 import { StatsService, DashboardStats } from '../services/StatsService'
 
 interface AppState {
   dataset: Dataset | null
   datasetPath: string | null
+  configBaseName: string | null
   settings: ApplicationSettings
   stats: DashboardStats
   filters: TransactionFilter
@@ -26,6 +29,7 @@ interface AppState {
   visibleCards: DashboardCardId[]
 
   setDataset: (dataset: Dataset, path: string) => void
+  setConfigBaseName: (name: string) => void
   setSettings: (settings: ApplicationSettings) => void
   clearDataset: () => void
   saveDataset: () => Promise<void>
@@ -47,6 +51,18 @@ interface AppState {
   addCategory: (name: string, color: string, icon: string) => void
   updateCategory: (id: string, updates: Partial<Pick<Category, 'name' | 'color' | 'icon'>>) => void
   deleteCategory: (id: string, reassignToId: string) => void
+  syncCategoriesConfig: () => void
+
+  addReceivable: (data: {
+    title: string
+    categoryId: string
+    totalAmount: number
+    from: string
+    notes?: string
+  }) => void
+  updateReceivable: (id: string, updates: Partial<Pick<Receivable, 'title' | 'categoryId' | 'totalAmount' | 'from' | 'notes'>>) => void
+  deleteReceivable: (id: string) => void
+  syncReceivablesConfig: () => void
 
   setFilters: (filters: TransactionFilter) => void
   setSortConfig: (config: SortConfig) => void
@@ -81,6 +97,7 @@ function queuedSave(saveFn: () => Promise<void>): Promise<void> {
 export const useAppStore = create<AppState>((set, get) => ({
   dataset: null,
   datasetPath: null,
+  configBaseName: null,
   settings: defaultSettings,
   stats: {
     totalIncome: 0,
@@ -105,6 +122,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  setConfigBaseName: (name) => set({ configBaseName: name }),
+
   setSettings: (settings) => {
     set({ settings })
   },
@@ -113,6 +132,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       dataset: null,
       datasetPath: null,
+      configBaseName: null,
       stats: {
         totalIncome: 0,
         totalExpenses: 0,
@@ -122,6 +142,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         avgWeeklySpending: 0
       }
     })
+    get().updateSettings({ lastOpenedDataset: null })
   },
 
   saveDataset: async () => {
@@ -199,11 +220,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveDatasetQueued()
   },
 
+  syncCategoriesConfig: () => {
+    const { dataset, configBaseName } = get()
+    if (!dataset) return
+    const configData = dataset.categories.map((c) => ({
+      name: c.name,
+      color: c.color,
+      icon: c.icon,
+      isDefault: c.isDefault
+    }))
+    window.api.config.syncCategories(configBaseName ?? dataset.name, configData)
+  },
+
   addCategory: (name, color, icon) => {
     const { dataset } = get()
     if (!dataset) return
     const updated = CategoryService.create(dataset.categories, name, color, icon)
     set({ dataset: { ...dataset, categories: updated } })
+    get().saveDatasetQueued()
+    get().syncCategoriesConfig()
   },
 
   updateCategory: (id, updates) => {
@@ -211,6 +246,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!dataset) return
     const updated = CategoryService.update(dataset.categories, id, updates)
     set({ dataset: { ...dataset, categories: updated } })
+    get().saveDatasetQueued()
+    get().syncCategoriesConfig()
   },
 
   deleteCategory: (id, reassignToId) => {
@@ -227,6 +264,51 @@ export const useAppStore = create<AppState>((set, get) => ({
         transactions
       }
     })
+    get().saveDatasetQueued()
+    get().syncCategoriesConfig()
+  },
+
+  syncReceivablesConfig: () => {
+    const { dataset, configBaseName } = get()
+    if (!dataset) return
+    const configData = dataset.receivables.map((r) => {
+      const cat = dataset.categories.find((c) => c.id === r.categoryId)
+      return {
+        title: r.title,
+        category: cat?.name ?? '',
+        totalAmount: r.totalAmount,
+        from: r.from,
+        notes: r.notes
+      }
+    })
+    window.api.config.syncReceivables(configBaseName ?? dataset.name, configData)
+  },
+
+  addReceivable: (data) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const updated = ReceivableService.create(dataset.receivables, data)
+    set({ dataset: { ...dataset, receivables: updated } })
+    get().saveDatasetQueued()
+    get().syncReceivablesConfig()
+  },
+
+  updateReceivable: (id, updates) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const updated = ReceivableService.update(dataset.receivables, id, updates)
+    set({ dataset: { ...dataset, receivables: updated } })
+    get().saveDatasetQueued()
+    get().syncReceivablesConfig()
+  },
+
+  deleteReceivable: (id) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const updated = ReceivableService.delete(dataset.receivables, id)
+    set({ dataset: { ...dataset, receivables: updated } })
+    get().saveDatasetQueued()
+    get().syncReceivablesConfig()
   },
 
   setFilters: (filters) => set({ filters }),

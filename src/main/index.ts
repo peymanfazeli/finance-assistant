@@ -7,6 +7,7 @@ import { registerSettingsHandlers } from './settingsHandlers'
 import { registerFileHandlers } from './fileHandlers'
 import { registerExportHandlers } from './exportHandlers'
 import { registerCloseHandlers } from './closeHandlers'
+import { registerConfigHandlers } from './configHandlers'
 import { createAppMenu, registerMenuHandlers } from './menu'
 
 function createWindow(): void {
@@ -78,6 +79,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerFileHandlers()
   registerExportHandlers()
+  registerConfigHandlers()
   createAppMenu()
   registerMenuHandlers()
 

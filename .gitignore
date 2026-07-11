@@ -2,3 +2,4 @@
 /dist
 *.fina
 .env
+src/Configs

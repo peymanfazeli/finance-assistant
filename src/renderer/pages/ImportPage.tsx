@@ -13,7 +13,7 @@ import ImportConfirmDialog from '../components/ImportConfirmDialog'
 
 function ImportPage(): JSX.Element {
   const { t, i18n } = useTranslation()
-  const { dataset, addTransaction } = useAppStore()
+  const { dataset, addTransaction, addCategory, addReceivable, setConfigBaseName } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'USD'
   const [loading, setLoading] = useState(false)
@@ -74,6 +74,38 @@ function ImportPage(): JSX.Element {
       const skipped = new Set<number>()
       dupFlags.forEach((isDup, i) => { if (isDup) skipped.add(i) })
       setSkipIndices(skipped)
+
+      const baseName = (filePath.split('\\').pop() || filePath.split('/').pop() || '').replace(/\.csv$/i, '')
+      setConfigBaseName(baseName)
+      const configResult = await window.api.config.readConfigForImport(baseName)
+      if (configResult.success && configResult.categories) {
+        const existingCatNames = new Set(dataset?.categories.map((c) => c.name.toLowerCase()) ?? [])
+        for (const cat of configResult.categories) {
+          if (!existingCatNames.has(cat.name.toLowerCase())) {
+            addCategory(cat.name, cat.color, cat.icon)
+          }
+        }
+      }
+      if (configResult.success && configResult.receivables) {
+        const currentCats = useAppStore.getState().dataset?.categories ?? []
+        const existingRecTitles = new Set(
+          (dataset?.receivables ?? []).map((r) => r.title.toLowerCase())
+        )
+        for (const rec of configResult.receivables) {
+          if (!existingRecTitles.has(rec.title.toLowerCase())) {
+            const matchedCat = currentCats.find(
+              (c) => c.name.toLowerCase() === rec.category.toLowerCase()
+            )
+            addReceivable({
+              title: rec.title,
+              categoryId: matchedCat?.id ?? currentCats[0]?.id ?? '',
+              totalAmount: rec.totalAmount,
+              from: rec.from,
+              notes: rec.notes
+            })
+          }
+        }
+      }
     } catch (err) {
       setError(t('import.importError') + ': ' + String(err))
     }
@@ -105,16 +137,22 @@ function ImportPage(): JSX.Element {
 
   const handleConfirmImport = (): void => {
     try {
+      const existingNames = new Set(dataset?.categories.map((c) => c.name.toLowerCase()) ?? [])
+      const importedNames = new Set(imported.map((r) => r.category.toLowerCase()).filter(Boolean))
+      const missingNames = [...importedNames].filter((name) => !existingNames.has(name))
+      missingNames.forEach((name) => addCategory(name, '#808080', '📁'))
+
+      const currentCategories = useAppStore.getState().dataset?.categories ?? []
       let count = 0
       imported.forEach((row, i) => {
         if (!skipIndices.has(i)) {
-          const category = dataset?.categories.find(
+          const category = currentCategories.find(
             (c) => c.name.toLowerCase() === row.category.toLowerCase()
           )
           addTransaction({
             date: row.date,
             title: row.title,
-            categoryId: category?.id ?? dataset?.categories[dataset.categories.length - 1]?.id ?? '',
+            categoryId: category?.id ?? currentCategories[currentCategories.length - 1]?.id ?? '',
             type: row.type,
             amount: row.amount,
             notes: row.notes

@@ -24,6 +24,7 @@ const api = {
     save: (filePath, content) => electron.ipcRenderer.invoke("dataset:save", filePath, content),
     load: (filePath) => electron.ipcRenderer.invoke("dataset:load", filePath),
     createDefault: () => electron.ipcRenderer.invoke("dataset:createDefault"),
+    createNamed: (name, currency, categories, receivables, transactions) => electron.ipcRenderer.invoke("dataset:createNamed", name, currency, categories, receivables, transactions),
     showSaveDialog: () => electron.ipcRenderer.invoke("dialog:save"),
     showOpenDialog: () => electron.ipcRenderer.invoke("dialog:open")
   },
@@ -46,6 +47,12 @@ const api = {
     saveLastExportTimestamp: (timestamp) => electron.ipcRenderer.invoke("export:save-last-timestamp", timestamp),
     confirmClose: () => electron.ipcRenderer.invoke("app:confirm-close"),
     cancelClose: () => electron.ipcRenderer.invoke("app:cancel-close")
+  },
+  config: {
+    createDatasetConfigs: (datasetName) => electron.ipcRenderer.invoke("config:createDatasetConfigs", datasetName),
+    syncReceivables: (datasetName, receivables) => electron.ipcRenderer.invoke("config:syncReceivables", datasetName, receivables),
+    syncCategories: (datasetName, categories) => electron.ipcRenderer.invoke("config:syncCategories", datasetName, categories),
+    readConfigForImport: (csvBaseName) => electron.ipcRenderer.invoke("config:readConfigForImport", csvBaseName)
   }
 };
 electron.contextBridge.exposeInMainWorld("api", api);

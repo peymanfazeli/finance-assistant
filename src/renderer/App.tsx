@@ -3,9 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import './i18n'
 import { useAppStore } from '../core/store/useAppStore'
-import { DatasetService } from '../core/services/DatasetService'
 import { SettingsService } from '../core/services/SettingsService'
-import { CategoryService } from '../core/services/CategoryService'
+import { ConfigService } from '../core/services/ConfigService'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, zIndex, borderWidth, sizes, transitions } from '../core/utils/styles'
 import { ExportService } from '../core/services/ExportService'
 import WelcomePage from './pages/WelcomePage'
@@ -19,10 +18,11 @@ import CategoryPage from './pages/CategoryPage'
 import ReportsPage from './pages/ReportsPage'
 import CustomReportBuilderPage from './pages/CustomReportBuilderPage'
 import SettingsPage from './pages/SettingsPage'
+import ReceivablePage from './pages/ReceivablePage'
 import { ApplicationSettings } from '../core/models/types'
 import useReducedMotion from './hooks/useReducedMotion'
 
-type Page = 'dashboard' | 'transactions' | 'categories' | 'reports' | 'customReports' | 'settings'
+type Page = 'dashboard' | 'transactions' | 'receivables' | 'categories' | 'reports' | 'customReports' | 'settings'
 
 const pageVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -40,7 +40,7 @@ const pageVariants = {
 
 function App(): JSX.Element {
   const { t } = useTranslation()
-  const { dataset, setDataset, setSettings, settings } = useAppStore()
+  const { dataset, setDataset, setConfigBaseName, setSettings, settings, clearDataset } = useAppStore()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showLoadError, setShowLoadError] = useState(false)
   const [showCloseWarning, setShowCloseWarning] = useState(false)
@@ -172,10 +172,22 @@ function App(): JSX.Element {
     return () => { remove() }
   }, [shouldWarn])
 
-  const handleCreateDataset = (name: string, currency: string): void => {
-    const categories = CategoryService.createDefaultCategories()
-    const newDataset = DatasetService.create(name, currency, categories)
-    setDataset(newDataset, '')
+  const handleCreateDataset = async (name: string, currency: string): Promise<void> => {
+    const categories = ConfigService.getCategories()
+    const receivables = ConfigService.getReceivables(categories)
+    const result = await window.api.dataset.createNamed(name, currency, categories, receivables)
+    if (!result.success || !result.path) {
+      alert(t('errors.generic') + ': ' + (result.error || t('import.importError')))
+      return
+    }
+    const datasetResult = await window.api.dataset.load(result.path)
+    if (!datasetResult.success || !datasetResult.data) {
+      alert(t('errors.generic') + ': ' + (datasetResult.error || t('import.importError')))
+      return
+    }
+    setDataset(datasetResult.data, result.path)
+    setConfigBaseName(name)
+    await window.api.config.createDatasetConfigs(name)
     setShowCreateDialog(false)
   }
 
@@ -258,6 +270,7 @@ function App(): JSX.Element {
   const navItems: { page: Page; label: string }[] = [
     { page: 'dashboard', label: t('nav.dashboard') },
     { page: 'transactions', label: t('nav.transactions') },
+    { page: 'receivables', label: t('nav.receivables') },
     { page: 'categories', label: t('nav.categories') },
     { page: 'reports', label: t('nav.reports') },
     { page: 'customReports', label: t('nav.customReports') },
@@ -292,6 +305,20 @@ function App(): JSX.Element {
               {item.label}
             </motion.button>
           ))}
+          <motion.button
+            style={{
+              ...styles.navButton,
+              color: colors.text.muted,
+              marginLeft: spacing.sm,
+              borderLeft: `1px solid ${colors.border}`,
+              paddingLeft: spacing.sm
+            }}
+            whileHover={prefersReduced ? {} : { scale: 1.03, backgroundColor: colors.bg.hover }}
+            whileTap={prefersReduced ? {} : { scale: 0.97 }}
+            onClick={() => clearDataset()}
+          >
+            {t('nav.close')}
+          </motion.button>
         </div>
       </nav>
       <main style={styles.main}>
@@ -307,6 +334,7 @@ function App(): JSX.Element {
             >
               {currentPage === 'dashboard' && <DashboardPage />}
               {currentPage === 'transactions' && <TransactionPage />}
+              {currentPage === 'receivables' && <ReceivablePage />}
               {currentPage === 'categories' && <CategoryPage />}
               {currentPage === 'reports' && <ReportsPage />}
               {currentPage === 'customReports' && <CustomReportBuilderPage />}

@@ -4,13 +4,16 @@ import { generateId } from '../utils/id'
 const DEFAULT_CATEGORIES: Omit<Category, 'id' | 'createdAt'>[] = [
   { name: 'Food & Drinks', color: '#FF6B6B', icon: '🍵🥪', isDefault: true },
   { name: 'Transportation', color: '#DDA0DD', icon: '🚌', isDefault: true },
+  { name: 'Car purchases', color: '#DDA0DD', icon: '🚗', isDefault: true },
   { name: 'Internet', color: '#F5C88B', icon: '🛜', isDefault: true },
   { name: 'Shopping', color: '#FF0909', icon: '🛍️', isDefault: true },
+  { name: 'House purchases', color: '#FF0909', icon: '🏠', isDefault: true },
   { name: 'Education', color: '#BAE9FC', icon: 'school', isDefault: true },
   { name: 'Software & Subscriptions', color: '#EEB04C', icon: '💻', isDefault: true },
   { name: 'Bills', color: '#FFA99B', icon: '🧾', isDefault: true },
   { name: 'Investment', color: '#A1F9B0', icon: '💰', isDefault: true },
   { name: 'Project', color: '#1BF13F', icon: '🧑‍💻', isDefault: true },
+  { name: 'Salary', color: '#1BF13F', icon: '💵', isDefault: true },
   { name: 'MustNot', color: '#C7C7C7', icon: '❌', isDefault: true },
   { name: 'Bullshit', color: '#BDC3C7', icon: '💩', isDefault: true }
 ]
