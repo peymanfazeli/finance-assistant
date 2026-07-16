@@ -19,6 +19,7 @@ const REPORTS: { id: ReportType; label: string }[] = [
   { id: 'weeklySpending', label: 'Weekly Spending' },
   { id: 'monthlySpending', label: 'Monthly Spending' },
   { id: 'incomeVsExpense', label: 'Income vs Expense' },
+  { id: 'allByCategory', label: 'All by Category' },
   { id: 'topExpenses', label: 'Top Expenses' },
   { id: 'topIncome', label: 'Top Income' },
   { id: 'spendingTrends', label: 'Spending Trends' },
@@ -112,7 +113,7 @@ function ReportsPage(): JSX.Element {
               label
             >
               {pd.map((_, i) => (
-                <Cell key={i} fill={colors.chart[i % colors.chart.length]} />
+                <Cell key={i} fill={pd[i]?.color ?? colors.chart[i % colors.chart.length]} />
               ))}
             </Pie>
             <Tooltip />

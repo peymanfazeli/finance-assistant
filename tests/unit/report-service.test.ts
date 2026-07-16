@@ -37,6 +37,17 @@ describe('ReportService', () => {
     const result = ReportService.generate(transactions, categories, 'expenseByCategory', '2026-02-01')
     expect(result[0].value).toBe(50)
   })
+
+  it('generates all by category report with both income and expense', () => {
+    const result = ReportService.generate(transactions, categories, 'allByCategory')
+    expect(result).toHaveLength(2)
+    const food = result.find(r => r.name === 'Food')
+    const income = result.find(r => r.name === 'Income')
+    expect(food?.value).toBe(150)
+    expect(income?.value).toBe(5000)
+    expect(food?.color).toBe('#e17055')
+    expect(income?.color).toBe('#00b894')
+  })
 })
 
 describe('ReportService.generateCustom', () => {

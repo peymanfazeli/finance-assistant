@@ -19,6 +19,7 @@ export type ReportType =
   | 'weeklySpending'
   | 'monthlySpending'
   | 'incomeVsExpense'
+  | 'allByCategory'
   | 'topExpenses'
   | 'topIncome'
   | 'spendingTrends'
@@ -80,6 +81,8 @@ export class ReportService {
         )
       case 'incomeVsExpense':
         return ReportService.incomeVsExpenseTimeSeries(filtered)
+      case 'allByCategory':
+        return ReportService.allByCategory(filtered, categories)
       case 'topExpenses':
         return ReportService.topN(
           filtered.filter((t) => t.type === TransactionType.Expense),
@@ -197,6 +200,27 @@ export class ReportService {
       name: catMap.get(catId)?.name ?? catId,
       value: Math.round(value * 100) / 100,
       color: catMap.get(catId)?.color
+    }))
+  }
+
+  private static allByCategory(
+    transactions: Transaction[],
+    categories: Category[]
+  ): ReportDataPoint[] {
+    const catMap = new Map(categories.map((c) => [c.id, c]))
+    const groups = new Map<string, { value: number; type: TransactionType }>()
+    transactions.forEach((t) => {
+      const entry = groups.get(t.categoryId)
+      if (entry) {
+        entry.value += t.amount
+      } else {
+        groups.set(t.categoryId, { value: t.amount, type: t.type })
+      }
+    })
+    return Array.from(groups.entries()).map(([catId, { value, type }]) => ({
+      name: catMap.get(catId)?.name ?? catId,
+      value: Math.round(value * 100) / 100,
+      color: type === TransactionType.Income ? '#00b894' : '#e17055'
     }))
   }
 
