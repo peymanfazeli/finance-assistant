@@ -38,6 +38,9 @@ declare global {
         syncCategories: (datasetName: string, categories: { name: string; color: string; icon: string; isDefault: boolean }[]) => Promise<{ success: boolean; error?: string }>
         readConfigForImport: (csvBaseName: string) => Promise<{ success: boolean; categories?: { name: string; color: string; icon: string; isDefault: boolean }[]; receivables?: { title: string; category: string; totalAmount: number; from: string; notes: string }[]; source?: string; error?: string }>
       }
+      print: {
+        toPdf: (html: string) => Promise<{ success: boolean; data?: string; error?: string }>
+      }
     }
   }
 }

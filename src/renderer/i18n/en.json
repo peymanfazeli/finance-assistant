@@ -132,7 +132,17 @@
     "searchPlaceholder": "Search keyword...",
     "groupByCategory": "Group by Category",
     "groupByMonth": "Group by Month",
-    "generate": "Generate"
+    "generate": "Generate",
+    "aiAnalysis": "AI Analysis",
+    "aiAnalysisPrompt": "Get AI-powered insights and recommendations for your financial data",
+    "analyze": "Analyze Report",
+    "analyzing": "Analyzing your data...",
+    "noInternet": "No internet connection. Please check your connection and try again.",
+    "analysisComplete": "Analysis Complete",
+    "printAnalysis": "Print Analysis",
+    "newAnalysis": "New Analysis",
+    "analysisError": "Failed to get analysis. Please try again.",
+    "retry": "Retry"
   },
   "customReport": {
     "title": "Custom Report",

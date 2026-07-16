@@ -843,6 +843,35 @@ electron.app.whenReady().then(() => {
     notifySaveCompleted();
     return { success: true };
   });
+  electron.ipcMain.handle("print:pdf", async (_event, html) => {
+    const printWindow = new electron.BrowserWindow({
+      show: false,
+      width: 800,
+      height: 600,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false
+      }
+    });
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    try {
+      const pdfData = await printWindow.webContents.printToPDF({
+        printBackground: true,
+        pageSize: "A4",
+        marginTop: 0.4,
+        marginBottom: 0.4,
+        marginLeft: 0.4,
+        marginRight: 0.4
+      });
+      const base64 = pdfData.toString("base64");
+      return { success: true, data: base64 };
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      return { success: false, error: String(err) };
+    } finally {
+      printWindow.close();
+    }
+  });
   electron.app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });

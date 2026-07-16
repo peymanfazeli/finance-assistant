@@ -74,6 +74,10 @@ const api = {
       ipcRenderer.invoke('config:syncCategories', datasetName, categories),
     readConfigForImport: (csvBaseName: string): Promise<{ success: boolean; categories?: { name: string; color: string; icon: string; isDefault: boolean }[]; receivables?: { title: string; category: string; totalAmount: number; from: string; notes: string }[]; source?: string; error?: string }> =>
       ipcRenderer.invoke('config:readConfigForImport', csvBaseName)
+  },
+  print: {
+    toPdf: (html: string): Promise<{ success: boolean; data?: string; error?: string }> =>
+      ipcRenderer.invoke('print:pdf', html)
   }
 }
 

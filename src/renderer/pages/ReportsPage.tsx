@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint, SearchGrouping } from '../../core/services/ReportService'
 import ExportButton from '../components/ExportButton'
+import AIAnalysisModal from '../components/AIAnalysisModal'
 import { formatCurrency } from '../../core/utils/format'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import {
@@ -39,6 +40,7 @@ function ReportsPage(): JSX.Element {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchGrouping, setSearchGrouping] = useState<SearchGrouping>('category')
   const [searchGenerated, setSearchGenerated] = useState(false)
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false)
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
@@ -240,7 +242,17 @@ function ReportsPage(): JSX.Element {
       <motion.div style={styles.container}>
         <div style={styles.header}>
           <h2 style={styles.title}>{t('reports.title')}</h2>
-          <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} currency={currency} locale={locale} />
+          <div style={{ display: 'flex', gap: spacing.sm }}>
+            <motion.button
+              style={styles.aiAnalysisBtn}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowAIAnalysis(true)}
+            >
+              {t('reports.aiAnalysis')}
+            </motion.button>
+            <ExportButton data={data} filename={selectedReport} reportTitle={t(`reports.${selectedReport}`)} chartRef={chartRef} currency={currency} locale={locale} />
+          </div>
         </div>
 
         <div style={styles.toolbar}>
@@ -384,6 +396,12 @@ function ReportsPage(): JSX.Element {
 
       )}
       </div>
+      <AIAnalysisModal
+        open={showAIAnalysis}
+        onClose={() => setShowAIAnalysis(false)}
+        reportData={data}
+        reportType={t(`reports.${selectedReport}`)}
+      />
     </>
   )
 }
@@ -405,6 +423,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: fontWeight.semibold,
     color: colors.text.inverse,
     backgroundColor: colors.primary,
+    border: 'none',
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
+  aiAnalysisBtn: {
+    padding: padding.button,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.inverse,
+    backgroundColor: '#6C5CE7',
     border: 'none',
     borderRadius: borderRadius.md,
     cursor: 'pointer',

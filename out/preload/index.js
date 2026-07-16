@@ -53,6 +53,9 @@ const api = {
     syncReceivables: (datasetName, receivables) => electron.ipcRenderer.invoke("config:syncReceivables", datasetName, receivables),
     syncCategories: (datasetName, categories) => electron.ipcRenderer.invoke("config:syncCategories", datasetName, categories),
     readConfigForImport: (csvBaseName) => electron.ipcRenderer.invoke("config:readConfigForImport", csvBaseName)
+  },
+  print: {
+    toPdf: (html) => electron.ipcRenderer.invoke("print:pdf", html)
   }
 };
 electron.contextBridge.exposeInMainWorld("api", api);
