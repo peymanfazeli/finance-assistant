@@ -187,6 +187,8 @@
     "totalAmount": "Total Amount",
     "received": "Received",
     "remaining": "Remaining",
+    "askDate": "Ask Date",
+    "payDate": "Pay Date",
     "notes": "Notes",
     "notesPlaceholder": "Optional notes...",
     "confirmDelete": "Are you sure you want to delete this receivable?",

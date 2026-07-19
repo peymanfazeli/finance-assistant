@@ -18,7 +18,7 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
   const { t, i18n } = useTranslation()
   const { dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
 
@@ -36,6 +36,11 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
   const remainingAmount = useMemo(() => {
     if (!receivable) return 0
     return ReceivableService.getRemainingAmount(receivable, transactions)
+  }, [receivable, transactions])
+
+  const payDate = useMemo(() => {
+    if (!receivable) return null
+    return ReceivableService.getPayDate(receivable, transactions)
   }, [receivable, transactions])
 
   const chartData = useMemo(() => {
@@ -59,6 +64,10 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
               <span style={styles.summaryValue}>{receivable.from}</span>
             </div>
             <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>{t('receivable.askDate')}</span>
+              <span style={styles.summaryValue}>{receivable.askDate || t('common.noData')}</span>
+            </div>
+            <div style={styles.summaryItem}>
               <span style={styles.summaryLabel}>{t('receivable.category')}</span>
               <span style={styles.summaryValue}>{category ? `${category.icon} ${category.name}` : '-'}</span>
             </div>
@@ -75,6 +84,10 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
               <span style={{ ...styles.summaryValue, color: remainingAmount > 0 ? colors.text.income : colors.text.expense, fontWeight: fontWeight.semibold }}>
                 {formatCurrency(remainingAmount, currency, locale)}
               </span>
+            </div>
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>{t('receivable.payDate')}</span>
+              <span style={styles.summaryValue}>{payDate || t('common.noData')}</span>
             </div>
           </div>
 

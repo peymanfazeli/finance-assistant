@@ -187,6 +187,8 @@
     "totalAmount": "مبلغ کل",
     "received": "دریافت شده",
     "remaining": "باقی‌مانده",
+    "askDate": "تاریخ درخواست",
+    "payDate": "تاریخ پرداخت",
     "notes": "یادداشت",
     "notesPlaceholder": "یادداشت‌های اختیاری...",
     "confirmDelete": "آیا از حذف این دریافتی اطمینان دارید؟",

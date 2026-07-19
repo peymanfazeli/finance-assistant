@@ -37,6 +37,7 @@ export interface Receivable {
   totalAmount: number
   from: string
   notes: string
+  askDate?: string
   createdAt: string
   updatedAt: string
 }

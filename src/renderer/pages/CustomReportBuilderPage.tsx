@@ -26,7 +26,7 @@ function CustomReportBuilderPage(): JSX.Element {
   const { t, i18n } = useTranslation()
   const { dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []

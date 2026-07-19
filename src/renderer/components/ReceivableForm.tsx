@@ -12,6 +12,7 @@ interface ReceivableFormProps {
     totalAmount: number
     from: string
     notes: string
+    askDate?: string
   }) => void
   onCancel: () => void
 }
@@ -23,6 +24,7 @@ function ReceivableForm({ receivable, categories, onSave, onCancel }: Receivable
   const [totalAmount, setTotalAmount] = useState(receivable?.totalAmount?.toString() ?? '')
   const [from, setFrom] = useState(receivable?.from ?? '')
   const [notes, setNotes] = useState(receivable?.notes ?? '')
+  const [askDate, setAskDate] = useState(receivable?.askDate ?? '')
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
 
@@ -39,7 +41,7 @@ function ReceivableForm({ receivable, categories, onSave, onCancel }: Receivable
       return
     }
     try {
-      onSave({ title: title.trim(), categoryId, totalAmount: parsedAmount, from: from.trim(), notes })
+      onSave({ title: title.trim(), categoryId, totalAmount: parsedAmount, from: from.trim(), notes, askDate: askDate || undefined })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
     }
@@ -82,6 +84,15 @@ function ReceivableForm({ receivable, categories, onSave, onCancel }: Receivable
           min="0"
           value={totalAmount}
           onChange={(e) => setTotalAmount(e.target.value)}
+        />
+      </div>
+      <div style={styles.field}>
+        <label style={styles.label}>{t('receivable.askDate')}</label>
+        <input
+          style={styles.input}
+          type="date"
+          value={askDate}
+          onChange={(e) => setAskDate(e.target.value)}
         />
       </div>
       <div style={styles.field}>

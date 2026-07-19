@@ -39,7 +39,7 @@ describe('CreateDatasetDialog', () => {
     const input = screen.getByPlaceholderText('e.g. My Finances 2026')
     fireEvent.change(input, { target: { value: 'Test Dataset' } })
     screen.getByText('Create').click()
-    expect(onCreate).toHaveBeenCalledWith('Test Dataset', 'USD')
+    expect(onCreate).toHaveBeenCalledWith('Test Dataset', 'toman')
   })
 
   it('calls onClose when cancel clicked', () => {

@@ -33,7 +33,7 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
   const { t, i18n } = useTranslation()
   const { deleteReceivable, dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
   const prefersReduced = useReducedMotion()
 
   if (receivables.length === 0) {
@@ -51,11 +51,13 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
         <thead>
           <tr>
             <th style={styles.th}>{t('receivable.titleLabel')}</th>
+            <th style={styles.th}>{t('receivable.askDate')}</th>
             <th style={styles.th}>{t('receivable.category')}</th>
             <th style={styles.th}>{t('receivable.from')}</th>
             <th style={styles.thRight}>{t('receivable.totalAmount')}</th>
             <th style={styles.thRight}>{t('receivable.received')}</th>
             <th style={styles.thRight}>{t('receivable.remaining')}</th>
+            <th style={styles.th}>{t('receivable.payDate')}</th>
             <th style={styles.th}>{t('common.actions')}</th>
           </tr>
         </thead>
@@ -63,6 +65,8 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
           {receivables.map((rec, i) => {
             const received = ReceivableService.getReceivedAmount(rec, transactions)
             const remaining = ReceivableService.getRemainingAmount(rec, transactions)
+            const payDate = ReceivableService.getPayDate(rec, transactions)
+            const isFullyReceived = remaining <= 0
             const cat = categories.find((c) => c.id === rec.categoryId)
             const remainingPercent = rec.totalAmount > 0 ? (remaining / rec.totalAmount) * 100 : 0
             let rowBg: string | undefined
@@ -81,12 +85,13 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
                 animate="visible"
                 onClick={() => onClick(rec.id)}
               >
-                <td style={styles.td}>{rec.title}</td>
+                <td style={{ ...styles.td, textDecoration: isFullyReceived ? 'line-through' : undefined }}>{rec.title}</td>
+                <td style={styles.td}>{rec.askDate || t('common.noData')}</td>
                 <td style={styles.td}>
                   {cat ? `${cat.icon} ${cat.name}` : rec.categoryId}
                 </td>
                 <td style={styles.td}>{rec.from}</td>
-                <td style={styles.tdRight}>
+                <td style={{ ...styles.tdRight, textDecoration: isFullyReceived ? 'line-through' : undefined }}>
                   {formatCurrency(rec.totalAmount, currency, locale)}
                 </td>
                 <td style={styles.tdRight}>
@@ -99,6 +104,7 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
                     {formatCurrency(remaining, currency, locale)}
                   </span>
                 </td>
+                <td style={styles.td}>{payDate || t('common.noData')}</td>
                 <td style={styles.td}>
                   <motion.button
                     style={styles.actionBtn}

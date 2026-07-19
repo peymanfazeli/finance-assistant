@@ -10,18 +10,18 @@ interface CreateDatasetDialogProps {
   onCreate: (name: string, currency: string) => void
 }
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'toman', 'CAD', 'AUD', 'JPY']
+const CURRENCIES = ['toman', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY']
 
 function CreateDatasetDialog({ open, onClose, onCreate }: CreateDatasetDialogProps): JSX.Element | null {
   const { t } = useTranslation()
   const [name, setName] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState('toman')
 
   const handleCreate = (): void => {
     if (!name.trim()) return
     onCreate(name.trim(), currency)
     setName('')
-    setCurrency('USD')
+    setCurrency('toman')
   }
 
   return (

@@ -11,7 +11,7 @@ function DashboardPage(): JSX.Element {
   const { t, i18n } = useTranslation()
   const { stats, visibleCards, setVisibleCards, dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
   const [showCustomize, setShowCustomize] = useState(false)
 
   const handleToggle = (cardId: DashboardCardId): void => {

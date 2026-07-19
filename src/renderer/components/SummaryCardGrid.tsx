@@ -65,7 +65,7 @@ interface SummaryCardGridProps {
   locale?: string
 }
 
-function SummaryCardGrid({ stats, visibleCards, currency = 'USD', locale = 'en-US' }: SummaryCardGridProps): JSX.Element {
+function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en-US' }: SummaryCardGridProps): JSX.Element {
   const CARD_CONFIGS = createCardConfigs(currency, locale)
   const visible = CARD_CONFIGS.filter((c) => visibleCards.includes(c.id))
 

@@ -31,6 +31,7 @@ function ReceivablePage(): JSX.Element {
       totalAmount: number
       from: string
       notes: string
+      askDate?: string
     }) => {
       if (editId) {
         updateReceivable(editId, data)

@@ -10,7 +10,7 @@ interface DuplicateReviewProps {
   locale?: string
 }
 
-function DuplicateReview({ imported, duplicates, onToggle, currency = 'USD', locale = 'en-US' }: DuplicateReviewProps): JSX.Element {
+function DuplicateReview({ imported, duplicates, onToggle, currency = 'toman', locale = 'en-US' }: DuplicateReviewProps): JSX.Element {
   const { t } = useTranslation()
   const duplicateCount = duplicates.filter(Boolean).length
 

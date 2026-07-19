@@ -30,7 +30,7 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
   const { t, i18n } = useTranslation()
   const { sortConfig, setSortConfig, deleteTransaction, duplicateTransaction, dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
   const prefersReduced = useReducedMotion()
 
   const handleSort = (field: SortConfig['field']): void => {

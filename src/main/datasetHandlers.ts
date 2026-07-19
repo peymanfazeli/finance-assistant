@@ -64,7 +64,7 @@ export function registerDatasetHandlers(): void {
       }
       const defaultPath = join(datasetsDir, 'default.fina')
       const categories = CategoryService.createDefaultCategories()
-      const dataset = DatasetService.create('My Finances', 'USD', categories)
+      const dataset = DatasetService.create('My Finances', 'toman', categories)
       const content = DatasetService.serialize(dataset)
       const tmpPath = defaultPath + '.tmp'
       writeFileSync(tmpPath, content, 'utf-8')

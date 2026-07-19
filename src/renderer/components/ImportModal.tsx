@@ -29,7 +29,7 @@ function ImportModal({
   imported,
   duplicates,
   skipIndices,
-  currency = 'USD',
+  currency = 'toman',
   locale = 'en-US',
   onMappingChange,
   onDuplicateToggle,

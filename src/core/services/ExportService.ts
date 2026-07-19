@@ -71,7 +71,7 @@ export class ExportService {
     data: (ReportDataPoint | TimeSeriesPoint)[],
     title = 'Report',
     chartImage?: string,
-    currency = 'USD',
+    currency = 'toman',
     locale = 'en-US'
   ): string {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' })

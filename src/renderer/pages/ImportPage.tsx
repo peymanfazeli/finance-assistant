@@ -15,7 +15,7 @@ function ImportPage(): JSX.Element {
   const { t, i18n } = useTranslation()
   const { dataset, addTransaction, addCategory, addReceivable, setConfigBaseName } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
-  const currency = dataset?.currency || 'USD'
+  const currency = dataset?.currency || 'toman'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string>()
