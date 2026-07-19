@@ -15,10 +15,13 @@ import {
 const REPORTS: { id: ReportType; label: string }[] = [
   { id: 'expenseByCategory', label: 'Expense by Category' },
   { id: 'incomeByCategory', label: 'Income by Category' },
+  { id: 'investByCategory', label: 'Invest by Category' },
   { id: 'dailySpending', label: 'Daily Spending' },
   { id: 'weeklySpending', label: 'Weekly Spending' },
   { id: 'monthlySpending', label: 'Monthly Spending' },
   { id: 'incomeVsExpense', label: 'Income vs Expense' },
+  { id: 'investVsIncome', label: 'Invest vs Income' },
+  { id: 'investVsExpense', label: 'Invest vs Expense' },
   { id: 'allByCategory', label: 'All by Category' },
   { id: 'topExpenses', label: 'Top Expenses' },
   { id: 'topIncome', label: 'Top Income' },
@@ -125,6 +128,9 @@ function ReportsPage(): JSX.Element {
 
     if ('date' in (data[0] ?? {})) {
       const commonProps = { data: series, margin: { top: 10, right: 30, left: 0, bottom: 0 } }
+      const hasIncome = series.some((s) => s.income > 0)
+      const hasExpense = series.some((s) => s.expense > 0)
+      const hasInvestment = series.some((s) => s.investment > 0)
       switch (chartType) {
         case 'line':
           return (
@@ -135,14 +141,9 @@ function ReportsPage(): JSX.Element {
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
-                {'income' in series[0] ? (
-                  <>
-                    <Line type="monotone" dataKey="income" stroke={colors.success} name="Income" />
-                    <Line type="monotone" dataKey="expense" stroke={colors.danger} name="Expense" />
-                  </>
-                ) : (
-                  <Line type="monotone" dataKey="expense" stroke={colors.danger} name="Expense" />
-                )}
+                {hasIncome && <Line type="monotone" dataKey="income" stroke={colors.success} name="Income" />}
+                {hasExpense && <Line type="monotone" dataKey="expense" stroke={colors.danger} name="Expense" />}
+                {hasInvestment && <Line type="monotone" dataKey="investment" stroke="#6c5ce7" name="Investment" />}
               </LineChart>
             </ResponsiveContainer>
           )
@@ -155,14 +156,9 @@ function ReportsPage(): JSX.Element {
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
-                {'income' in series[0] ? (
-                  <>
-                    <Area type="monotone" dataKey="income" stroke={colors.success} fill={colors.bg.income} name="Income" />
-                    <Area type="monotone" dataKey="expense" stroke={colors.danger} fill={colors.bg.expense} name="Expense" />
-                  </>
-                ) : (
-                  <Area type="monotone" dataKey="expense" stroke={colors.danger} fill={colors.bg.expense} name="Expense" />
-                )}
+                {hasIncome && <Area type="monotone" dataKey="income" stroke={colors.success} fill={colors.bg.income} name="Income" />}
+                {hasExpense && <Area type="monotone" dataKey="expense" stroke={colors.danger} fill={colors.bg.expense} name="Expense" />}
+                {hasInvestment && <Area type="monotone" dataKey="investment" stroke="#6c5ce7" fill={colors.bg.investment} name="Investment" />}
               </AreaChart>
             </ResponsiveContainer>
           )
@@ -175,14 +171,9 @@ function ReportsPage(): JSX.Element {
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
-                {'income' in series[0] ? (
-                  <>
-                    <Bar dataKey="income" fill={colors.success} name="Income" />
-                    <Bar dataKey="expense" fill={colors.danger} name="Expense" />
-                  </>
-                ) : (
-                  <Bar dataKey="expense" fill={colors.danger} name="Expense" />
-                )}
+                {hasIncome && <Bar dataKey="income" fill={colors.success} name="Income" />}
+                {hasExpense && <Bar dataKey="expense" fill={colors.danger} name="Expense" />}
+                {hasInvestment && <Bar dataKey="investment" fill="#6c5ce7" name="Investment" />}
               </BarChart>
             </ResponsiveContainer>
           )

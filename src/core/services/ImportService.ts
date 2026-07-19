@@ -100,10 +100,12 @@ export class ImportService {
       const typeStr = get('type').toLowerCase()
 
       let type = TransactionType.Expense
-      if (typeStr === 'income' || typeStr === 'درآمد' || typeStr === 'income') {
+      if (typeStr === 'income' || typeStr === 'درآمد') {
         type = TransactionType.Income
       } else if (typeStr === 'refund' || typeStr === 'بازگشت') {
         type = TransactionType.Refund
+      } else if (typeStr === 'investment' || typeStr === 'سرمایه‌گذاری') {
+        type = TransactionType.Investment
       }
 
       return {

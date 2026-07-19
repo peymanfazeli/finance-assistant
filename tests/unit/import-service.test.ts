@@ -37,6 +37,13 @@ describe('ImportService', () => {
     expect(imported[0].type).toBe(TransactionType.Income)
   })
 
+  it('interprets investment type correctly', () => {
+    const csv = 'Date,Title,Category,Type,Amount\n2026-01-15,Stocks,Investment,investment,2000'
+    const preview = ImportService.parseCSV(csv)
+    const imported = ImportService.applyMapping(preview.rows, preview.suggestedMapping)
+    expect(imported[0].type).toBe(TransactionType.Investment)
+  })
+
   it('detects duplicates', () => {
     const existing = [
       { date: '2026-01-15', title: 'Test', type: TransactionType.Expense, amount: 50 }

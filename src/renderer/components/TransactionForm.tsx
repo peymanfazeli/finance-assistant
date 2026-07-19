@@ -87,6 +87,7 @@ function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, 
           <option value={TransactionType.Income}>{t('transaction.income')}</option>
           <option value={TransactionType.Expense}>{t('transaction.expense')}</option>
           <option value={TransactionType.Refund}>{t('transaction.refund')}</option>
+          <option value={TransactionType.Investment}>{t('transaction.investment')}</option>
         </select>
       </div>
       <div style={styles.field}>

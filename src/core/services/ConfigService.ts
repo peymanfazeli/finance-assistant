@@ -52,6 +52,7 @@ export class ConfigService {
       let type: TransactionType = TransactionType.Expense
       if (typeStr === 'income') type = TransactionType.Income
       else if (typeStr === 'refund') type = TransactionType.Refund
+      else if (typeStr === 'investment') type = TransactionType.Investment
 
       return {
         id: generateId(),

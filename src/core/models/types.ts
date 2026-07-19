@@ -1,7 +1,8 @@
 export enum TransactionType {
   Income = 'income',
   Expense = 'expense',
-  Refund = 'refund'
+  Refund = 'refund',
+  Investment = 'investment'
 }
 
 export enum Language {

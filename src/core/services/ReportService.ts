@@ -10,15 +10,19 @@ export interface TimeSeriesPoint {
   date: string
   income: number
   expense: number
+  investment: number
 }
 
 export type ReportType =
   | 'expenseByCategory'
   | 'incomeByCategory'
+  | 'investByCategory'
   | 'dailySpending'
   | 'weeklySpending'
   | 'monthlySpending'
   | 'incomeVsExpense'
+  | 'investVsIncome'
+  | 'investVsExpense'
   | 'allByCategory'
   | 'topExpenses'
   | 'topIncome'
@@ -64,6 +68,11 @@ export class ReportService {
           filtered.filter((t) => t.type === TransactionType.Income),
           categories
         )
+      case 'investByCategory':
+        return ReportService.groupByCategory(
+          filtered.filter((t) => t.type === TransactionType.Investment),
+          categories
+        )
       case 'dailySpending':
         return ReportService.timeSeries(
           filtered.filter((t) => t.type === TransactionType.Expense),
@@ -81,6 +90,10 @@ export class ReportService {
         )
       case 'incomeVsExpense':
         return ReportService.incomeVsExpenseTimeSeries(filtered)
+      case 'investVsIncome':
+        return ReportService.investVsIncomeTimeSeries(filtered)
+      case 'investVsExpense':
+        return ReportService.investVsExpenseTimeSeries(filtered)
       case 'allByCategory':
         return ReportService.allByCategory(filtered, categories)
       case 'topExpenses':
@@ -146,7 +159,8 @@ export class ReportService {
         return {
           date,
           income: 0,
-          expense: Math.round(value * 100) / 100
+          expense: Math.round(value * 100) / 100,
+          investment: 0
         }
       })
   }
@@ -220,7 +234,7 @@ export class ReportService {
     return Array.from(groups.entries()).map(([catId, { value, type }]) => ({
       name: catMap.get(catId)?.name ?? catId,
       value: Math.round(value * 100) / 100,
-      color: type === TransactionType.Income ? '#00b894' : '#e17055'
+      color: type === TransactionType.Income ? '#00b894' : type === TransactionType.Investment ? '#6c5ce7' : '#e17055'
     }))
   }
 
@@ -238,19 +252,21 @@ export class ReportService {
       .map(([date, value]) => ({
         date,
         income: 0,
-        expense: Math.round(value * 100) / 100
+        expense: Math.round(value * 100) / 100,
+        investment: 0
       }))
   }
 
   private static incomeVsExpenseTimeSeries(
     transactions: Transaction[]
   ): TimeSeriesPoint[] {
-    const groups = new Map<string, { income: number; expense: number }>()
+    const groups = new Map<string, { income: number; expense: number; investment: number }>()
     transactions.forEach((t) => {
       const key = ReportService.truncateDate(t.date, 'month')
-      const entry = groups.get(key) || { income: 0, expense: 0 }
+      const entry = groups.get(key) || { income: 0, expense: 0, investment: 0 }
       if (t.type === TransactionType.Income) entry.income += t.amount
       else if (t.type === TransactionType.Expense) entry.expense += t.amount
+      else if (t.type === TransactionType.Investment) entry.investment += t.amount
       groups.set(key, entry)
     })
     return Array.from(groups.entries())
@@ -258,7 +274,50 @@ export class ReportService {
       .map(([date, vals]) => ({
         date,
         income: Math.round(vals.income * 100) / 100,
-        expense: Math.round(vals.expense * 100) / 100
+        expense: Math.round(vals.expense * 100) / 100,
+        investment: Math.round(vals.investment * 100) / 100
+      }))
+  }
+
+  private static investVsIncomeTimeSeries(
+    transactions: Transaction[]
+  ): TimeSeriesPoint[] {
+    const groups = new Map<string, { income: number; investment: number }>()
+    transactions.forEach((t) => {
+      const key = ReportService.truncateDate(t.date, 'month')
+      const entry = groups.get(key) || { income: 0, investment: 0 }
+      if (t.type === TransactionType.Income) entry.income += t.amount
+      else if (t.type === TransactionType.Investment) entry.investment += t.amount
+      groups.set(key, entry)
+    })
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, vals]) => ({
+        date,
+        income: Math.round(vals.income * 100) / 100,
+        expense: 0,
+        investment: Math.round(vals.investment * 100) / 100
+      }))
+  }
+
+  private static investVsExpenseTimeSeries(
+    transactions: Transaction[]
+  ): TimeSeriesPoint[] {
+    const groups = new Map<string, { expense: number; investment: number }>()
+    transactions.forEach((t) => {
+      const key = ReportService.truncateDate(t.date, 'month')
+      const entry = groups.get(key) || { expense: 0, investment: 0 }
+      if (t.type === TransactionType.Expense) entry.expense += t.amount
+      else if (t.type === TransactionType.Investment) entry.investment += t.amount
+      groups.set(key, entry)
+    })
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, vals]) => ({
+        date,
+        income: 0,
+        expense: Math.round(vals.expense * 100) / 100,
+        investment: Math.round(vals.investment * 100) / 100
       }))
   }
 

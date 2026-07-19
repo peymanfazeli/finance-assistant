@@ -45,7 +45,7 @@ export class ReceivableService {
 
   static getLinkedTransactions(receivable: Receivable, transactions: Transaction[]): Transaction[] {
     return transactions.filter(
-      (t) => t.categoryId === receivable.categoryId && t.type !== TransactionType.Expense
+      (t) => t.categoryId === receivable.categoryId && (t.type === TransactionType.Income || t.type === TransactionType.Refund)
     )
   }
 

@@ -14,6 +14,7 @@ export const colors = {
     income: '#d4edda',
     expense: '#f8d7da',
     refund: '#fff3cd',
+    investment: '#e8e0f4',
     warning: '#fff3cd',
   },
 
@@ -29,6 +30,7 @@ export const colors = {
     income: '#155724',
     expense: '#721c24',
     refund: '#856404',
+    investment: '#6c5ce7',
     warning: '#856404',
   },
 

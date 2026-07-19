@@ -105,7 +105,9 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                         ? colors.bg.income
                         : tx.type === TransactionType.Expense
                           ? colors.bg.expense
-                          : colors.bg.refund,
+                          : tx.type === TransactionType.Investment
+                            ? colors.bg.investment
+                            : colors.bg.refund,
                   }}
                 >
                   {t(`transaction.${tx.type}`)}
@@ -119,11 +121,13 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                         ? colors.text.income
                         : tx.type === TransactionType.Expense
                           ? colors.text.expense
-                          : colors.text.refund,
+                          : tx.type === TransactionType.Investment
+                            ? colors.text.investment
+                            : colors.text.refund,
                   }}
                 >
                   {formatCurrency(
-                    tx.type === TransactionType.Expense ? -tx.amount : tx.amount,
+                    tx.type === TransactionType.Expense || tx.type === TransactionType.Investment ? -tx.amount : tx.amount,
                     currency,
                     locale
                   )}

@@ -6,6 +6,7 @@ describe('TransactionType enum', () => {
     expect(TransactionType.Income).toBe('income')
     expect(TransactionType.Expense).toBe('expense')
     expect(TransactionType.Refund).toBe('refund')
+    expect(TransactionType.Investment).toBe('investment')
   })
 })
 

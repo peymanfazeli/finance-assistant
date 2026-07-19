@@ -95,7 +95,7 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
         ))}
       </div>
       <div style={styles.chips}>
-        {[TransactionType.Income, TransactionType.Expense, TransactionType.Refund].map((type) => (
+        {[TransactionType.Income, TransactionType.Expense, TransactionType.Refund, TransactionType.Investment].map((type) => (
           <button
             key={type}
             style={{

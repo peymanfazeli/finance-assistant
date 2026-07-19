@@ -16,7 +16,8 @@ interface Props {
 const TYPE_OPTIONS = [
   { value: 'income', labelKey: 'transaction.income' },
   { value: 'expense', labelKey: 'transaction.expense' },
-  { value: 'refund', labelKey: 'transaction.refund' }
+  { value: 'refund', labelKey: 'transaction.refund' },
+  { value: 'investment', labelKey: 'transaction.investment' }
 ]
 
 function ReportFilterPanel({
