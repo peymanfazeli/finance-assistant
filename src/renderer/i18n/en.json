@@ -225,7 +225,11 @@
     "english": "English",
     "persian": "Persian",
     "recentDatasets": "Recent Datasets",
-    "about": "About"
+    "about": "About",
+    "categoryTypeMapping": "Category Type Mapping",
+    "categoryTypeDescription": "Set the default transaction type for each category. When you select a category, the type will auto-fill.",
+    "noDataset": "Open a dataset to configure category types",
+    "none": "None"
   },
   "errors": {
     "generic": "Something went wrong",

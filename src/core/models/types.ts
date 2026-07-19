@@ -52,6 +52,7 @@ export interface Dataset {
   transactions: Transaction[]
   categories: Category[]
   receivables: Receivable[]
+  categoryTypeMap?: Record<string, TransactionType>
 }
 
 export interface ApplicationSettings {

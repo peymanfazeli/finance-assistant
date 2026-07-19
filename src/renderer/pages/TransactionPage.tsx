@@ -352,6 +352,7 @@ function TransactionPage(): JSX.Element {
         <TransactionForm
           transaction={editingTransaction}
           categories={categories}
+          categoryTypeMap={dataset?.categoryTypeMap}
           keepOpen={keepFormOpen}
           onKeepOpenChange={setKeepFormOpen}
           onSave={handleSave}

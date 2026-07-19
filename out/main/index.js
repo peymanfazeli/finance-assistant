@@ -96,7 +96,7 @@ const optimizer = {
     });
   }
 };
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 class DatasetService {
   static create(name, currency, categories, receivables = [], transactions = []) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -123,6 +123,9 @@ class DatasetService {
     }
     if (!data.receivables) {
       data.receivables = [];
+    }
+    if (!data.categoryTypeMap) {
+      data.categoryTypeMap = {};
     }
     return data;
   }

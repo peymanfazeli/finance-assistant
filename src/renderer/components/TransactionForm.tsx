@@ -6,6 +6,7 @@ import Modal from './Modal'
 interface TransactionFormProps {
   transaction?: Transaction
   categories: Category[]
+  categoryTypeMap?: Record<string, TransactionType>
   keepOpen?: boolean
   onKeepOpenChange?: (value: boolean) => void
   onSave: (data: {
@@ -19,7 +20,7 @@ interface TransactionFormProps {
   onCancel: () => void
 }
 
-function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
+function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
   const { t } = useTranslation()
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0])
   const [title, setTitle] = useState(transaction?.title ?? '')
@@ -34,9 +35,16 @@ function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, 
     setDate(new Date().toISOString().split('T')[0])
     setTitle('')
     setCategoryId(categories[0]?.id ?? '')
-    setType(TransactionType.Expense)
+    setType(categoryTypeMap?.[categories[0]?.id] ?? TransactionType.Expense)
     setAmount('')
     setNotes('')
+  }
+
+  const handleCategoryChange = (newCategoryId: string): void => {
+    setCategoryId(newCategoryId)
+    if (categoryTypeMap?.[newCategoryId]) {
+      setType(categoryTypeMap[newCategoryId])
+    }
   }
 
   const handleSubmit = (): void => {
@@ -75,7 +83,7 @@ function TransactionForm({ transaction, categories, keepOpen, onKeepOpenChange, 
       </div>
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.category')}</label>
-        <select style={styles.select} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+        <select style={styles.select} value={categoryId} onChange={(e) => handleCategoryChange(e.target.value)}>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}

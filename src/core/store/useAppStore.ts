@@ -52,6 +52,7 @@ interface AppState {
   updateCategory: (id: string, updates: Partial<Pick<Category, 'name' | 'color' | 'icon'>>) => void
   deleteCategory: (id: string, reassignToId: string) => void
   syncCategoriesConfig: () => void
+  updateCategoryTypeMap: (categoryId: string, type: TransactionType | null) => void
 
   addReceivable: (data: {
     title: string
@@ -257,15 +258,31 @@ export const useAppStore = create<AppState>((set, get) => ({
     const transactions = dataset.transactions.map((t) =>
       t.categoryId === id ? { ...t, categoryId: reassignToId } : t
     )
+    const categoryTypeMap = { ...dataset.categoryTypeMap }
+    delete categoryTypeMap[id]
     set({
       dataset: {
         ...dataset,
         categories: updatedCategories,
-        transactions
+        transactions,
+        categoryTypeMap
       }
     })
     get().saveDatasetQueued()
     get().syncCategoriesConfig()
+  },
+
+  updateCategoryTypeMap: (categoryId, type) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const categoryTypeMap = { ...dataset.categoryTypeMap }
+    if (type === null) {
+      delete categoryTypeMap[categoryId]
+    } else {
+      categoryTypeMap[categoryId] = type
+    }
+    set({ dataset: { ...dataset, categoryTypeMap } })
+    get().saveDatasetQueued()
   },
 
   syncReceivablesConfig: () => {

@@ -1,6 +1,6 @@
 import { Dataset, Category, Receivable, Transaction } from '../models/types'
 
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 export class DatasetService {
   static create(
@@ -36,6 +36,9 @@ export class DatasetService {
     }
     if (!data.receivables) {
       data.receivables = []
+    }
+    if (!data.categoryTypeMap) {
+      data.categoryTypeMap = {}
     }
     return data
   }
