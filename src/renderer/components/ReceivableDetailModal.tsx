@@ -4,6 +4,7 @@ import { Receivable, Transaction, Category, TransactionType } from '../../core/m
 import { ReceivableService } from '../../core/services/ReceivableService'
 import { useAppStore } from '../../core/store/useAppStore'
 import { formatCurrency } from '../../core/utils/format'
+import { formatJalaliDate, formatJalaliDateEn } from '../../core/utils/jalali'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth, shadow } from '../../core/utils/styles'
 import Modal from './Modal'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
@@ -18,6 +19,7 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
   const { t, i18n } = useTranslation()
   const { dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
+  const usePersianDigits = i18n.language === 'fa'
   const currency = dataset?.currency || 'toman'
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
@@ -65,7 +67,7 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
             </div>
             <div style={styles.summaryItem}>
               <span style={styles.summaryLabel}>{t('receivable.askDate')}</span>
-              <span style={styles.summaryValue}>{receivable.askDate || t('common.noData')}</span>
+              <span style={styles.summaryValue}>{receivable.askDate ? formatJalaliDate(receivable.askDate, usePersianDigits) : t('common.noData')}</span>
             </div>
             <div style={styles.summaryItem}>
               <span style={styles.summaryLabel}>{t('receivable.category')}</span>
@@ -110,10 +112,11 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
-                  <XAxis dataKey="date" tick={{ fontSize: fontSize.xs, fill: colors.text.muted }} />
+                  <XAxis dataKey="date" tick={{ fontSize: fontSize.xs, fill: colors.text.muted }} tickFormatter={(d) => formatJalaliDateEn(d)} />
                   <YAxis tick={{ fontSize: fontSize.xs, fill: colors.text.muted }} />
                   <Tooltip
                     formatter={(value) => formatCurrency(Number(value), currency, locale)}
+                    labelFormatter={(label) => formatJalaliDateEn(label)}
                     contentStyle={{ fontSize: fontSize.sm, borderRadius: borderRadius.md }}
                   />
                   <Bar dataKey="amount" name={t('receivable.received')} radius={[4, 4, 0, 0]}>
@@ -144,7 +147,7 @@ function ReceivableDetailModal({ receivable, open, onClose }: ReceivableDetailMo
                   <tbody>
                     {linkedTransactions.map((tx) => (
                       <tr key={tx.id}>
-                        <td style={styles.td}>{tx.date}</td>
+                        <td style={styles.td}>{formatJalaliDate(tx.date, usePersianDigits)}</td>
                         <td style={styles.td}>{tx.title}</td>
                         <td style={styles.td}>
                           <span style={{

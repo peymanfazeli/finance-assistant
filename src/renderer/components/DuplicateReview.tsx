@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ImportedRow } from '../../core/services/ImportService'
 import { formatCurrency } from '../../core/utils/format'
+import { formatJalaliDate } from '../../core/utils/jalali'
 
 interface DuplicateReviewProps {
   imported: ImportedRow[]
@@ -11,7 +12,8 @@ interface DuplicateReviewProps {
 }
 
 function DuplicateReview({ imported, duplicates, onToggle, currency = 'toman', locale = 'en-US' }: DuplicateReviewProps): JSX.Element {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const usePersianDigits = i18n.language === 'fa'
   const duplicateCount = duplicates.filter(Boolean).length
 
   if (duplicateCount === 0) return <></>
@@ -26,7 +28,7 @@ function DuplicateReview({ imported, duplicates, onToggle, currency = 'toman', l
           duplicates[i] ? (
             <div key={i} style={styles.row}>
               <span style={styles.info}>
-                {row.date} - {row.title} - {formatCurrency(row.amount, currency, locale)}
+                {formatJalaliDate(row.date, usePersianDigits)} - {row.title} - {formatCurrency(row.amount, currency, locale)}
               </span>
               <button style={styles.toggleBtn} onClick={() => onToggle(i)}>
                 {t('import.skip')}

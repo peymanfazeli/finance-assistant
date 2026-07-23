@@ -6,6 +6,8 @@ import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint,
 import ExportButton from '../components/ExportButton'
 import AIAnalysisModal from '../components/AIAnalysisModal'
 import { formatCurrency } from '../../core/utils/format'
+import { formatJalaliDateEn } from '../../core/utils/jalali'
+import PersianCalendar from '../components/PersianCalendar'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
@@ -137,7 +139,7 @@ function ReportsPage(): JSX.Element {
             <ResponsiveContainer width="100%" height={350}>
               <LineChart {...commonProps}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
+                <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
@@ -152,7 +154,7 @@ function ReportsPage(): JSX.Element {
             <ResponsiveContainer width="100%" height={350}>
               <AreaChart {...commonProps}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
+                <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
@@ -167,7 +169,7 @@ function ReportsPage(): JSX.Element {
             <ResponsiveContainer width="100%" height={350}>
               <BarChart {...commonProps}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
+                <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
                 <YAxis fontSize={12} />
                 <Tooltip />
                 <Legend />
@@ -308,8 +310,8 @@ function ReportsPage(): JSX.Element {
             </div>
           )}
 
-          <input style={styles.dateInput} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} placeholder="From" />
-          <input style={styles.dateInput} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} placeholder="To" />
+          <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder="From" compact />
+          <PersianCalendar value={dateTo} onChange={setDateTo} placeholder="To" compact />
         </div>
 
         {isSearch && searchGenerated && (
@@ -358,7 +360,7 @@ function ReportsPage(): JSX.Element {
                 <thead>
                   <tr>
                     <th style={styles.th}>Name</th>
-                    {hasDate ? <th style={styles.th}>Date</th> : null}
+                    {hasDate ? <th style={styles.th}>{t('transaction.date')}</th> : null}
                     {hasIncome ? <th style={styles.thRight}>Income</th> : null}
                     <th style={styles.thRight}>{hasIncome ? 'Expense' : 'Value'}</th>
                   </tr>
@@ -366,8 +368,8 @@ function ReportsPage(): JSX.Element {
                 <tbody>
                   {tableData.map((row, i) => (
                     <tr key={i}>
-                      <td style={styles.td}>{'name' in row ? row.name : row.date}</td>
-                      {hasDate && <td style={styles.td}>{'date' in row ? row.date : ''}</td>}
+                      <td style={styles.td}>{'name' in row ? row.name : formatJalaliDateEn(row.date)}</td>
+                      {hasDate && <td style={styles.td}>{'date' in row ? formatJalaliDateEn(row.date) : ''}</td>}
                       {hasIncome && <td style={styles.tdRight}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>}
                       <td style={styles.tdRight}>{formatCurrency('value' in row ? (row as ReportDataPoint).value : (row as TimeSeriesPoint).expense, currency, locale)}</td>
                     </tr>
@@ -408,7 +410,6 @@ const styles: Record<string, React.CSSProperties> = {
   searchInput: { padding: padding.input, fontSize: fontSize.md, border: `${borderWidth.default} solid ${colors.border.input}`, borderRadius: borderRadius.md, flex: 1, minWidth: '160px' },
   chartTypes: { display: 'flex', gap: spacing.xs },
   chartTypeBtn: { padding: '6px 12px', fontSize: fontSize.sm, border: `${borderWidth.default} solid ${colors.border.strong}`, borderRadius: borderRadius.sm, cursor: 'pointer' },
-  dateInput: { padding: '6px 10px', fontSize: fontSize.md, border: `${borderWidth.default} solid ${colors.border.input}`, borderRadius: borderRadius.sm },
   generateBtn: {
     padding: padding.button,
     fontSize: fontSize.base,

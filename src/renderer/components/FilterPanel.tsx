@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TransactionType, Category, TransactionFilter } from '../../core/models/types'
+import PersianCalendar from './PersianCalendar'
 
 interface FilterPanelProps {
   categories: Category[]
@@ -56,9 +57,9 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
       <div style={styles.row}>
         <div style={styles.field}>
           <label style={styles.label}>{t('common.filter')} Date</label>
-          <input style={styles.input} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder="From" compact />
           <span style={styles.separator}>-</span>
-          <input style={styles.input} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <PersianCalendar value={dateTo} onChange={setDateTo} placeholder="To" compact />
         </div>
         <div style={styles.field}>
           <label style={styles.label}>{t('transaction.amount')}</label>

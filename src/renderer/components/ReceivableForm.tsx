@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Receivable, Category } from '../../core/models/types'
 import Modal from './Modal'
+import PersianCalendar from './PersianCalendar'
 
 interface ReceivableFormProps {
   receivable?: Receivable
@@ -88,12 +89,7 @@ function ReceivableForm({ receivable, categories, onSave, onCancel }: Receivable
       </div>
       <div style={styles.field}>
         <label style={styles.label}>{t('receivable.askDate')}</label>
-        <input
-          style={styles.input}
-          type="date"
-          value={askDate}
-          onChange={(e) => setAskDate(e.target.value)}
-        />
+        <PersianCalendar value={askDate} onChange={setAskDate} compact />
       </div>
       <div style={styles.field}>
         <label style={styles.label}>{t('receivable.notes')}</label>

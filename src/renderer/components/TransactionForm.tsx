@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TransactionType, Transaction, Category } from '../../core/models/types'
 import Modal from './Modal'
+import PersianCalendar from './PersianCalendar'
 
 interface TransactionFormProps {
   transaction?: Transaction
@@ -70,7 +71,7 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
     <div style={styles.form}>
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.date')}</label>
-        <input style={styles.input} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <PersianCalendar value={date} onChange={setDate} compact />
       </div>
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.titleLabel')}</label>

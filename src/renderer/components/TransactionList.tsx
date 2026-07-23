@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Transaction, TransactionType, SortConfig, Category } from '../../core/models/types'
 import { useAppStore } from '../../core/store/useAppStore'
 import { formatCurrency } from '../../core/utils/format'
+import { formatJalaliDate } from '../../core/utils/jalali'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import { addToast } from './ToastContainer'
 import useReducedMotion from '../hooks/useReducedMotion'
@@ -32,6 +33,7 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'toman'
   const prefersReduced = useReducedMotion()
+  const usePersianDigits = i18n.language === 'fa'
 
   const handleSort = (field: SortConfig['field']): void => {
     setSortConfig({
@@ -88,7 +90,7 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
               initial="hidden"
               animate="visible"
             >
-              <td style={styles.td}>{tx.date}</td>
+              <td style={styles.td}>{formatJalaliDate(tx.date, usePersianDigits)}</td>
               <td style={styles.td}>{tx.title}</td>
               <td style={styles.td}>
                 {(() => {

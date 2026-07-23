@@ -5,6 +5,7 @@ import { marked } from 'marked'
 import Modal from './Modal'
 import { GAPGPT_API_URL, GAPGPT_API_KEY, GAPGPT_MODEL, ANALYSIS_PROMPT_TEMPLATE } from '../../Configs/Prompts/promptConf'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
+import { formatJalaliDateEn } from '../../core/utils/jalali'
 
 interface AIAnalysisModalProps {
   open: boolean
@@ -285,7 +286,7 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
 </head>
 <body>
   <div class="header">
-    <strong>${reportType}</strong> &mdash; ${new Date().toLocaleDateString('fa-IR')}
+    <strong>${reportType}</strong> &mdash; ${formatJalaliDateEn(new Date().toISOString().split('T')[0])}
   </div>
   ${analysisHtml}
 </body>

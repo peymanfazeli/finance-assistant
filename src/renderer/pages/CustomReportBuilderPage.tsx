@@ -19,6 +19,7 @@ import ReportFilterPanel from '../components/ReportFilterPanel'
 import GroupingSelector from '../components/GroupingSelector'
 import ExportButton from '../components/ExportButton'
 import { formatCurrency } from '../../core/utils/format'
+import { formatJalaliDateEn } from '../../core/utils/jalali'
 
 const CHART_TYPES: ChartType[] = ['line', 'bar', 'area']
 
@@ -73,7 +74,7 @@ function CustomReportBuilderPage(): JSX.Element {
           <ResponsiveContainer width="100%" height={350}>
             <LineChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" fontSize={12} />
+              <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
@@ -86,7 +87,7 @@ function CustomReportBuilderPage(): JSX.Element {
           <ResponsiveContainer width="100%" height={350}>
             <AreaChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" fontSize={12} />
+              <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
@@ -99,7 +100,7 @@ function CustomReportBuilderPage(): JSX.Element {
           <ResponsiveContainer width="100%" height={350}>
             <BarChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" fontSize={12} />
+              <XAxis dataKey="date" fontSize={12} tickFormatter={(d) => formatJalaliDateEn(d)} />
               <YAxis fontSize={12} />
               <Tooltip />
               <Legend />
@@ -169,14 +170,14 @@ function CustomReportBuilderPage(): JSX.Element {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fontSize.sm }}>
               <thead>
                 <tr>
-                  <th style={styles.th}>Date</th>
+                  <th style={styles.th}>{t('transaction.date')}</th>
                   <th style={styles.thRight}>Value</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map((row, i) => (
                   <tr key={i}>
-                    <td style={styles.td}>{row.date}</td>
+                    <td style={styles.td}>{formatJalaliDateEn(row.date)}</td>
                     <td style={styles.tdRight}>{formatCurrency(row.expense, currency, locale)}</td>
                   </tr>
                 ))}

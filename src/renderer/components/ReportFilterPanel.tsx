@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Category } from '../../core/models/types'
+import PersianCalendar from './PersianCalendar'
 
 interface Props {
   dateFrom: string
@@ -45,9 +46,9 @@ function ReportFilterPanel({
       <div style={styles.field}>
         <label style={styles.label}>{t('customReport.dateRange')}</label>
         <div style={styles.dateRow}>
-          <input style={styles.dateInput} type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} />
+          <PersianCalendar value={dateFrom} onChange={onDateFromChange} placeholder="From" compact />
           <span style={styles.sep}>-</span>
-          <input style={styles.dateInput} type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
+          <PersianCalendar value={dateTo} onChange={onDateToChange} placeholder="To" compact />
         </div>
       </div>
 
