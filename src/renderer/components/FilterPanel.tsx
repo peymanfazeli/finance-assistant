@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TransactionType, Category, TransactionFilter } from '../../core/models/types'
 import PersianCalendar from './PersianCalendar'
+import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
 
 interface FilterPanelProps {
   categories: Category[]
   onApply: (filter: TransactionFilter) => void
   onClearSearch?: () => void
+  vertical?: boolean
 }
 
-function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): JSX.Element {
+function FilterPanel({ categories, onApply, onClearSearch, vertical }: FilterPanelProps): JSX.Element {
   const { t } = useTranslation()
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -54,7 +56,7 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
 
   return (
     <div style={styles.container}>
-      <div style={styles.row}>
+      <div style={{ ...styles.row, ...(vertical ? { flexDirection: 'column' as const } : {}) }}>
         <div style={styles.field}>
           <label style={styles.label}>{t('common.filter')} Date</label>
           <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder="From" compact />
@@ -86,8 +88,9 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
             key={c.id}
             style={{
               ...styles.chip,
-              backgroundColor: selectedCategories.includes(c.id) ? c.color : '#f0f0f0',
-              color: selectedCategories.includes(c.id) ? '#fff' : '#333'
+              backgroundColor: selectedCategories.includes(c.id) ? c.color : colors.bg.muted,
+              color: selectedCategories.includes(c.id) ? colors.text.inverse : colors.text.muted,
+              borderColor: selectedCategories.includes(c.id) ? c.color : colors.border.light,
             }}
             onClick={() => toggleCategory(c.id)}
           >
@@ -101,8 +104,9 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
             key={type}
             style={{
               ...styles.chip,
-              backgroundColor: selectedTypes.includes(type) ? '#4A90D9' : '#f0f0f0',
-              color: selectedTypes.includes(type) ? '#fff' : '#333'
+              backgroundColor: selectedTypes.includes(type) ? colors.primary : colors.bg.muted,
+              color: selectedTypes.includes(type) ? colors.text.inverse : colors.text.muted,
+              borderColor: selectedTypes.includes(type) ? colors.primary : colors.border.light,
             }}
             onClick={() => toggleType(type)}
           >
@@ -119,40 +123,80 @@ function FilterPanel({ categories, onApply, onClearSearch }: FilterPanelProps): 
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px', marginBottom: '12px' },
-  row: { display: 'flex', gap: '16px', marginBottom: '12px' },
-  field: { display: 'flex', alignItems: 'center', gap: '4px' },
-  label: { fontSize: '12px', fontWeight: 500, color: '#555', marginRight: '4px' },
-  input: { padding: '6px 8px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '4px', width: '130px' },
-  smallInput: { padding: '6px 8px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '4px', width: '80px' },
-  separator: { margin: '0 4px', color: '#888' },
-  chips: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' },
-  chip: {
-    padding: '4px 10px',
-    fontSize: '12px',
-    border: '1px solid #ddd',
-    borderRadius: '12px',
-    cursor: 'pointer'
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.md,
   },
-  buttons: { display: 'flex', gap: '8px', marginTop: '8px' },
+  row: {
+    display: 'flex',
+    gap: spacing.xxl,
+  },
+  field: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  label: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.disabled,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+    marginRight: spacing.xs,
+  },
+  smallInput: {
+    padding: `${spacing.xs} ${spacing.sm}`,
+    fontSize: fontSize.sm,
+    border: `${borderWidth.default} solid ${colors.border.input}`,
+    borderRadius: borderRadius.sm,
+    width: '80px',
+    outline: 'none',
+    backgroundColor: colors.bg.muted,
+  },
+  separator: {
+    color: colors.text.disabled,
+    fontSize: fontSize.sm,
+  },
+  chips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  chip: {
+    padding: `${spacing.xs} ${spacing.md}`,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.sm,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  buttons: {
+    display: 'flex',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   applyBtn: {
-    padding: '6px 14px',
-    fontSize: '13px',
-    color: '#fff',
-    backgroundColor: '#4A90D9',
+    padding: `${spacing.xs} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
   },
   clearBtn: {
-    padding: '6px 14px',
-    fontSize: '13px',
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
+    padding: `${spacing.xs} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
 }
 
 export default FilterPanel

@@ -15,7 +15,6 @@ import Modal from '../components/Modal'
 import ImportModal from '../components/ImportModal'
 import SearchBar from '../components/SearchBar'
 import FilterPanel from '../components/FilterPanel'
-import { overflow } from 'html2canvas/dist/types/css/property-descriptors/overflow'
 
 function TransactionPage(): JSX.Element {
   const { t } = useTranslation()
@@ -284,64 +283,79 @@ function TransactionPage(): JSX.Element {
 
   return (
     <DropZone onFileDrop={handleFileDrop}>
-      <motion.div style={styles.container}>
-      <div style={styles.header}>
-        <h2 style={styles.title}>{t('transaction.title')}</h2>
-        <div style={styles.headerRight}>
-          <motion.button
-            style={styles.importBtn}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleImportClick}
-          >
-            {t('import.importFile')}
-          </motion.button>
-          <motion.button
-            style={styles.addBtn}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => { setShowForm(true); setEditId(null) }}
-          >
-            {t('transaction.add')}
-          </motion.button>
-          <div style={styles.exportWrapper}>
-            <motion.button
-              style={styles.exportBtn}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              disabled={exporting}
-            >
-              {exporting ? t('common.loading') : t('common.export')}
-            </motion.button>
-            {showExportMenu && (
-              <div style={styles.exportDropdown}>
-                <button style={styles.dropdownItem} onClick={() => handleExport('csv')}>
-                  CSV
-                </button>
-                <button style={styles.dropdownItem} onClick={() => handleExport('xlsx')}>
-                  XLSX
-                </button>
-              </div>
-            )}
+      <div style={styles.page}>
+        <aside style={styles.aside}>
+          <div style={styles.asideHeader}>
+            <span style={styles.asideTitle}>{t('common.filter')}</span>
           </div>
-          <motion.button
-            style={styles.closeBtn}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => { clearDataset(); updateSettings({ lastOpenedDataset: null }) }}
-          >
-            {t('common.closeDataset')}
-          </motion.button>
-        </div>
-      </div>
+          <div style={styles.asideContent}>
+            <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} vertical />
+          </div>
+        </aside>
 
-      <div style={styles.toolbar}>
-        <SearchBar onSearch={setSearchKeyword} />
-        <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} />
-      </div>
-      <div style={{overflowY: 'scroll', maxHeight: '350px'}}>
-        <TransactionList transactions={filteredTransactions} categories={categories} onEdit={handleEdit} />
+        <div style={styles.mainContent}>
+          <div style={styles.header}>
+            <div style={styles.headerLeft}>
+              <h2 style={styles.title}>{t('transaction.title')}</h2>
+              <p style={styles.subtitle}>{filteredTransactions.length} of {transactions.length} transactions</p>
+            </div>
+            <div style={styles.headerActions}>
+              <motion.button
+                style={styles.importBtn}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleImportClick}
+              >
+                {t('import.importFile')}
+              </motion.button>
+              <motion.button
+                style={styles.addBtn}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { setShowForm(true); setEditId(null) }}
+              >
+                + {t('transaction.add')}
+              </motion.button>
+              <div style={styles.exportWrapper}>
+                <motion.button
+                  style={styles.exportBtn}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={exporting}
+                >
+                  {exporting ? t('common.loading') : t('common.export')}
+                </motion.button>
+                {showExportMenu && (
+                  <div style={styles.exportDropdown}>
+                    <button style={styles.dropdownItem} onClick={() => handleExport('csv')}>CSV</button>
+                    <button style={styles.dropdownItem} onClick={() => handleExport('xlsx')}>XLSX</button>
+                  </div>
+                )}
+              </div>
+              <motion.button
+                style={styles.closeBtn}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { clearDataset(); updateSettings({ lastOpenedDataset: null }) }}
+              >
+                {t('common.closeDataset')}
+              </motion.button>
+            </div>
+          </div>
+
+          <SearchBar onSearch={setSearchKeyword} />
+
+          <div style={styles.tableCard}>
+            <div style={styles.tableScroll}>
+              <TransactionList transactions={filteredTransactions} categories={categories} onEdit={handleEdit} />
+            </div>
+          </div>
+
+          {dropError && (
+            <div style={styles.dropError}>{dropError}</div>
+          )}
+        </div>
       </div>
 
       <Modal
@@ -359,7 +373,6 @@ function TransactionPage(): JSX.Element {
           onCancel={() => { setShowForm(false); setEditId(null) }}
         />
       </Modal>
-      {dropError && <p style={styles.dropError}>{dropError}</p>}
 
       {dropShowImportModal && (
         <ImportModal
@@ -375,29 +388,74 @@ function TransactionPage(): JSX.Element {
           onCancel={handleDropCancelImport}
         />
       )}
-    </motion.div>
     </DropZone>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: padding.page },
+  page: {
+    display: 'flex',
+    flexDirection: 'row',
+    height: '100%',
+    overflow: 'hidden',
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    alignItems: 'flex-start',
+    flexShrink: 0,
   },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
-  headerRight: { display: 'flex', alignItems: 'center', gap: spacing.md },
-  exportWrapper: { position: 'relative', display: 'inline-block' },
-  exportBtn: {
-    padding: padding.button,
-    fontSize: fontSize.base,
+  headerLeft: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.xs,
+  },
+  title: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.semibold,
+    margin: 0,
+    color: colors.text.primary,
+  },
+  subtitle: {
+    fontSize: fontSize.sm,
+    color: colors.text.disabled,
+    margin: 0,
+  },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  importBtn: {
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
+  addBtn: {
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.text.inverse,
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
     border: 'none',
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
+  exportWrapper: {
+    position: 'relative',
+  },
+  exportBtn: {
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.inverse,
+    backgroundColor: colors.success,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.md,
     cursor: 'pointer',
   },
@@ -407,54 +465,92 @@ const styles: Record<string, React.CSSProperties> = {
     right: 0,
     marginTop: spacing.xs,
     backgroundColor: colors.bg.card,
-    border: `${borderWidth.default} solid ${colors.border.strong}`,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.md,
     boxShadow: shadow.dropdown,
     zIndex: zIndex.dropdown,
-    minWidth: '120px',
+    minWidth: '100px',
+    overflow: 'hidden',
   },
   dropdownItem: {
     display: 'block',
     width: '100%',
-    padding: padding.button,
-    fontSize: fontSize.md,
+    padding: `${spacing.sm} ${spacing.md}`,
+    fontSize: fontSize.sm,
     textAlign: 'left',
     border: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
   },
   closeBtn: {
-    padding: padding.button,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.inverse,
-    backgroundColor: colors.danger,
-    border: 'none',
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.danger,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.md,
     cursor: 'pointer',
   },
-  importBtn: {
-    padding: padding.button,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.inverse,
-    backgroundColor: colors.primary,
-    border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer',
+  aside: {
+    backgroundColor: colors.bg.card,
+    borderRight: `${borderWidth.default} solid ${colors.border.light}`,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    flex:0.25,
   },
-  addBtn: {
-    padding: padding.button,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    color: colors.text.inverse,
-    backgroundColor: colors.primary,
-    border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer',
+  asideHeader: {
+    padding: `${spacing.lg} ${spacing.lg} ${spacing.md}`,
+    borderBottom: `${borderWidth.default} solid ${colors.border.light}`,
   },
-  dropError: { color: colors.text.expense, fontSize: fontSize.base, padding: padding.input, backgroundColor: colors.bg.expense, borderRadius: borderRadius.md, marginTop: spacing.md },
-  toolbar: { marginBottom: spacing.lg },
+  asideTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+  },
+  asideContent: {
+    flex: 1,
+    // overflowY: 'auto',
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    width: '100%',
+    // backgroundColor: 'red'
+  },
+  mainContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: spacing.xxl,
+    overflow: 'hidden',
+    minWidth: 0,
+    gap: spacing.lg,
+  },
+  tableCard: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: colors.bg.card,
+    borderRadius: borderRadius.lg,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  tableScroll: {
+    overflow: 'scroll',
+    maxHeight: 600,
+  
+  },
+  dropError: {
+    padding: `${spacing.md} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    color: colors.text.expense,
+    backgroundColor: colors.bg.expense,
+    borderRadius: borderRadius.md,
+    border: `${borderWidth.default} solid ${colors.danger}`,
+    flexShrink: 0,
+  },
 }
 
 export default TransactionPage

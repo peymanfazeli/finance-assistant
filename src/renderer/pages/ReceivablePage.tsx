@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
@@ -7,6 +7,8 @@ import { addToast } from '../components/ToastContainer'
 import ReceivableList from '../components/ReceivableList'
 import ReceivableForm from '../components/ReceivableForm'
 import ReceivableDetailModal from '../components/ReceivableDetailModal'
+import PersianCalendar from '../components/PersianCalendar'
+import { ReceivableService } from '../../core/services/ReceivableService'
 import Modal from '../components/Modal'
 
 function ReceivablePage(): JSX.Element {
@@ -19,10 +21,29 @@ function ReceivablePage(): JSX.Element {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const receivables = dataset?.receivables ?? []
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
+
+  const hasDateFilter = dateFrom !== '' || dateTo !== ''
+
+  const filteredReceivables = useMemo(() => {
+    if (!hasDateFilter) {
+      return receivables.filter((r) => {
+        const remaining = ReceivableService.getRemainingAmount(r, transactions)
+        return remaining > 0
+      })
+    }
+    return receivables.filter((r) => {
+      const dateStr = r.askDate || r.createdAt.slice(0, 10)
+      if (dateFrom && dateStr < dateFrom) return false
+      if (dateTo && dateStr > dateTo) return false
+      return true
+    })
+  }, [receivables, transactions, hasDateFilter, dateFrom, dateTo])
 
   const handleSave = useCallback(
     (data: {
@@ -66,20 +87,42 @@ function ReceivablePage(): JSX.Element {
   return (
     <motion.div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>{t('receivable.title')}</h2>
-        <motion.button
-          style={styles.addBtn}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => { setShowForm(true); setEditId(null) }}
-        >
-          {t('receivable.add')}
-        </motion.button>
+        <div>
+          <h2 style={styles.title}>{t('receivable.title')}</h2>
+          <p style={styles.subtitle}>
+            {hasDateFilter
+              ? `${filteredReceivables.length} ${t('receivable.title').toLowerCase()}`
+              : `${filteredReceivables.length} active`}
+          </p>
+        </div>
+        <div style={styles.headerRight}>
+          <div style={styles.dateFilter}>
+            <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder="From" compact />
+            <span style={styles.dateSep}>-</span>
+            <PersianCalendar value={dateTo} onChange={setDateTo} placeholder="To" compact />
+            {hasDateFilter && (
+              <button
+                style={styles.clearBtn}
+                onClick={() => { setDateFrom(''); setDateTo('') }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <motion.button
+            style={styles.addBtn}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => { setShowForm(true); setEditId(null) }}
+          >
+            {t('receivable.add')}
+          </motion.button>
+        </div>
       </div>
 
       <div style={{ overflowY: 'scroll', maxHeight: 'calc(100vh - 200px)' }}>
         <ReceivableList
-          receivables={receivables}
+          receivables={filteredReceivables}
           transactions={transactions}
           categories={categories}
           onEdit={handleEdit}
@@ -114,10 +157,31 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
+  subtitle: { fontSize: fontSize.sm, color: colors.text.disabled, margin: `${spacing.xs} 0 0` },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  dateFilter: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  dateSep: { color: colors.text.disabled },
+  clearBtn: {
+    padding: `${spacing.xs} ${spacing.sm}`,
+    fontSize: fontSize.sm,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.sm,
+    cursor: 'pointer',
+  },
   addBtn: {
     padding: padding.button,
     fontSize: fontSize.base,
@@ -127,6 +191,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: borderRadius.md,
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
 }
 

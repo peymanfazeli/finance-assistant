@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ExportService } from '../../core/services/ExportService'
+import { colors, spacing, fontSize, fontWeight, borderRadius, shadow, borderWidth, zIndex } from '../../core/utils/styles'
 import html2canvas from 'html2canvas'
 
 interface ExportButtonProps {
@@ -102,39 +103,44 @@ function ExportButton({ data, filename = 'report', reportTitle, chartRef, curren
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  wrapper: { position: 'relative', display: 'inline-block' },
+  wrapper: {
+    position: 'relative',
+    display: 'inline-block',
+  },
   button: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    fontWeight: 500,
-    color: '#fff',
-    backgroundColor: '#28a745',
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.inverse,
+    backgroundColor: colors.success,
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
   },
   dropdown: {
     position: 'absolute',
     top: '100%',
     right: 0,
-    marginTop: '4px',
-    backgroundColor: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    zIndex: 10,
-    minWidth: '160px'
+    marginTop: spacing.xs,
+    backgroundColor: colors.bg.card,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    boxShadow: shadow.dropdown,
+    zIndex: zIndex.dropdown,
+    minWidth: '140px',
+    overflow: 'hidden',
   },
   dropdownItem: {
     display: 'block',
     width: '100%',
-    padding: '8px 16px',
-    fontSize: '13px',
+    padding: `${spacing.sm} ${spacing.md}`,
+    fontSize: fontSize.sm,
     textAlign: 'left',
     border: 'none',
     backgroundColor: 'transparent',
-    cursor: 'pointer'
-  }
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
+  },
 }
 
 export default ExportButton

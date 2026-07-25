@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
 import { DashboardCardId } from '../../core/models/types'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
 import Modal from './Modal'
@@ -11,13 +10,13 @@ interface DashboardCustomizationDialogProps {
   onClose: () => void
 }
 
-const ALL_CARDS: { id: DashboardCardId; label: string }[] = [
-  { id: 'totalIncome', label: 'Total Income' },
-  { id: 'totalExpenses', label: 'Total Expenses' },
-  { id: 'netBalance', label: 'Net Balance' },
-  { id: 'transactionCount', label: 'Transactions' },
-  { id: 'avgDailySpending', label: 'Avg Daily Spending' },
-  { id: 'avgWeeklySpending', label: 'Avg Weekly Spending' }
+const ALL_CARDS: { id: DashboardCardId; labelKey: string }[] = [
+  { id: 'totalIncome', labelKey: 'dashboard.totalIncome' },
+  { id: 'totalExpenses', labelKey: 'dashboard.totalExpenses' },
+  { id: 'netBalance', labelKey: 'dashboard.netBalance' },
+  { id: 'transactionCount', labelKey: 'dashboard.transactionCount' },
+  { id: 'avgDailySpending', labelKey: 'dashboard.avgDailySpending' },
+  { id: 'avgWeeklySpending', labelKey: 'dashboard.avgWeeklySpending' }
 ]
 
 function DashboardCustomizationDialog({
@@ -30,34 +29,112 @@ function DashboardCustomizationDialog({
 
   return (
     <Modal open={open} onClose={onClose} title={t('dashboard.customize')}>
-      {ALL_CARDS.map((card) => (
-        <label key={card.id} style={styles.item}>
-          <input
-            type="checkbox"
-            checked={visibleCards.includes(card.id)}
-            onChange={() => onToggle(card.id)}
-          />
-          {card.label}
-        </label>
-      ))}
-      <div style={styles.buttons}>
-        <motion.button
-          style={styles.closeBtn}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={onClose}
-        >
+      <p style={styles.description}>
+        Choose which cards to display on your dashboard.
+      </p>
+      <div style={styles.list}>
+        {ALL_CARDS.map((card) => (
+          <label key={card.id} style={styles.item}>
+            <div style={styles.itemLeft}>
+              <span style={styles.cardName}>{t(card.labelKey)}</span>
+            </div>
+            <div
+              style={{
+                ...styles.toggle,
+                ...(visibleCards.includes(card.id) ? styles.toggleOn : {}),
+              }}
+              onClick={() => onToggle(card.id)}
+            >
+              <div style={{
+                ...styles.toggleThumb,
+                ...(visibleCards.includes(card.id) ? styles.toggleThumbOn : {}),
+              }} />
+            </div>
+          </label>
+        ))}
+      </div>
+      <div style={styles.footer}>
+        <button style={styles.closeBtn} onClick={onClose}>
           {t('common.close')}
-        </motion.button>
+        </button>
       </div>
     </Modal>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  item: { display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `${spacing.sm} 0`, fontSize: fontSize.base, cursor: 'pointer' },
-  buttons: { marginTop: spacing.lg, display: 'flex', justifyContent: 'flex-end' },
-  closeBtn: { padding: padding.button, fontSize: fontSize.md, color: colors.text.inverse, backgroundColor: colors.primary, border: 'none', borderRadius: borderRadius.md, cursor: 'pointer' },
+  description: {
+    fontSize: fontSize.sm,
+    color: colors.text.subtle,
+    margin: `0 0 ${spacing.lg}`,
+    lineHeight: '1.5',
+  },
+  list: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
+  item: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: `${spacing.sm} ${spacing.md}`,
+    backgroundColor: colors.bg.muted,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
+  },
+  itemLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardName: {
+    fontSize: fontSize.sm,
+    color: colors.text.primary,
+  },
+  toggle: {
+    position: 'relative',
+    width: '36px',
+    height: '20px',
+    backgroundColor: colors.border.default,
+    borderRadius: '10px',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
+  },
+  toggleOn: {
+    backgroundColor: colors.primary,
+  },
+  toggleThumb: {
+    position: 'absolute',
+    left: '2px',
+    top: '2px',
+    width: '16px',
+    height: '16px',
+    backgroundColor: colors.bg.card,
+    borderRadius: borderRadius.full,
+    transition: 'transform 0.15s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+  },
+  toggleThumbOn: {
+    transform: 'translateX(16px)',
+  },
+  footer: {
+    marginTop: spacing.xl,
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+  closeBtn: {
+    padding: `${spacing.sm} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
 }
 
 export default DashboardCustomizationDialog

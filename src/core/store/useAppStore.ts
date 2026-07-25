@@ -307,7 +307,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updated = ReceivableService.create(dataset.receivables, data)
     set({ dataset: { ...dataset, receivables: updated } })
     get().saveDatasetQueued()
-    get().syncReceivablesConfig()
   },
 
   updateReceivable: (id, updates) => {
@@ -316,7 +315,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updated = ReceivableService.update(dataset.receivables, id, updates)
     set({ dataset: { ...dataset, receivables: updated } })
     get().saveDatasetQueued()
-    get().syncReceivablesConfig()
   },
 
   deleteReceivable: (id) => {
@@ -325,7 +323,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     const updated = ReceivableService.delete(dataset.receivables, id)
     set({ dataset: { ...dataset, receivables: updated } })
     get().saveDatasetQueued()
-    get().syncReceivablesConfig()
   },
 
   setFilters: (filters) => set({ filters }),

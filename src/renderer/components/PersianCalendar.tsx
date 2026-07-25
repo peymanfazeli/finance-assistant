@@ -39,6 +39,7 @@ function PersianCalendar({ value, onChange, placeholder, compact = false }: Pers
   const lang = i18n.language === 'fa' ? 'fa' : 'en'
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 
   const today = getTodayJalali()
 
@@ -64,16 +65,33 @@ function PersianCalendar({ value, onChange, placeholder, compact = false }: Pers
     }
   }, [value])
 
+  const updatePosition = useCallback((): void => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left })
+    }
+  }, [])
+
   useEffect(() => {
     if (!open) return
+    updatePosition()
     const handleClick = (e: MouseEvent): void => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        const dropdown = document.querySelector('[data-calendar-dropdown]')
+        if (dropdown && dropdown.contains(e.target as Node)) return
         setOpen(false)
       }
     }
+    const handleScroll = (): void => {
+      updatePosition()
+    }
     document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
+    window.addEventListener('scroll', handleScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [open, updatePosition])
 
   const handleDayClick = useCallback((day: number): void => {
     const dateStr = jalaliToGregorianDateStrFromParts(viewYear, viewMonth, day)
@@ -160,7 +178,7 @@ function PersianCalendar({ value, onChange, placeholder, compact = false }: Pers
       </button>
 
       {open && (
-        <div style={styles.dropdown}>
+        <div data-calendar-dropdown style={{ ...styles.dropdown, position: 'fixed', top: dropdownPos.top, left: dropdownPos.left }}>
           <div style={styles.header}>
             <button type="button" onClick={prevMonth} style={styles.navBtn}>◀</button>
             <div style={styles.headerCenter}>
@@ -243,15 +261,12 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   dropdown: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '4px',
+    position: 'fixed',
     backgroundColor: colors.bg.card,
     border: `${borderWidth.default} solid ${colors.border.default}`,
     borderRadius: borderRadius.lg,
     boxShadow: shadow.dropdown,
-    zIndex: 50,
+    zIndex: 1000,
     padding: spacing.md,
     minWidth: '280px',
     userSelect: 'none',

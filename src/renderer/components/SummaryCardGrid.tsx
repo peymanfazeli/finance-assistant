@@ -1,11 +1,12 @@
 import { DashboardStats, DashboardCardId } from '../../core/models/types'
 import SummaryCard from './SummaryCard'
 import { formatCurrency } from '../../core/utils/format'
+import { spacing, borderRadius, colors, borderWidth } from '../../core/utils/styles'
+import { useTranslation } from 'react-i18next'
 
 interface SummaryCardConfig {
   id: DashboardCardId
-  title: string
-  icon: string
+  titleKey: string
   color: string
   getValue: (stats: DashboardStats, currency: string, locale: string) => string
 }
@@ -15,46 +16,34 @@ function createCardConfigs(currency: string, locale: string): SummaryCardConfig[
   return [
     {
       id: 'totalIncome',
-      title: 'Total Income',
-      icon: '💰',
-      color: '#155724',
+      titleKey: 'dashboard.totalIncome',
+      color: colors.text.income,
       getValue: (s) => fmt(s.totalIncome)
     },
     {
       id: 'totalExpenses',
-      title: 'Total Expenses',
-      icon: '💸',
-      color: '#721c24',
-      getValue: (s) => fmt(-s.totalExpenses)
-    },
-    {
-      id: 'netBalance',
-      title: 'Net Balance',
-      icon: '📊',
-      color: '#856404',
-      getValue: (s) => fmt(s.netBalance)
+      titleKey: 'dashboard.totalExpenses',
+      color: colors.text.expense,
+      getValue: (s) => fmt(s.totalExpenses)
     },
     {
       id: 'transactionCount',
-      title: 'Transactions',
-      icon: '📝',
-      color: '#4A90D9',
-      getValue: () => ''
+      titleKey: 'dashboard.transactionCount',
+      color: colors.primary,
+      getValue: (s) => String(s.transactionCount)
     },
     {
       id: 'avgDailySpending',
-      title: 'Avg Daily Spending',
-      icon: '📅',
-      color: '#6c757d',
+      titleKey: 'dashboard.avgDailySpending',
+      color: colors.text.investment,
       getValue: (s) => fmt(s.avgDailySpending)
     },
     {
       id: 'avgWeeklySpending',
-      title: 'Avg Weekly Spending',
-      icon: '📆',
-      color: '#6c757d',
+      titleKey: 'dashboard.avgWeeklySpending',
+      color: colors.text.refund,
       getValue: (s) => fmt(s.avgWeeklySpending)
-    }
+    },
   ]
 }
 
@@ -66,6 +55,7 @@ interface SummaryCardGridProps {
 }
 
 function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en-US' }: SummaryCardGridProps): JSX.Element {
+  const { t } = useTranslation()
   const CARD_CONFIGS = createCardConfigs(currency, locale)
   const visible = CARD_CONFIGS.filter((c) => visibleCards.includes(c.id))
 
@@ -74,9 +64,8 @@ function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en
       {visible.map((card) => (
         <SummaryCard
           key={card.id}
-          title={card.title}
-          value={card.id === 'transactionCount' ? String(stats.transactionCount) : card.getValue(stats, currency, locale)}
-          icon={card.icon}
+          title={t(card.titleKey)}
+          value={card.getValue(stats, currency, locale)}
           color={card.color}
         />
       ))}
@@ -87,9 +76,8 @@ function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en
 const styles: Record<string, React.CSSProperties> = {
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-    gap: '16px',
-    padding: '16px 0'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+    gap: spacing.md,
   }
 }
 

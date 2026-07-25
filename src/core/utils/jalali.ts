@@ -163,6 +163,11 @@ export function jalaaliMonthLength(jy: number, jm: number): number {
 
 export function gregorianDateToJalali(dateStr: string): JalaliDate {
   const parts = dateStr.split('-')
+  if (parts.length === 2) {
+    const gy = parseInt(parts[0], 10)
+    const gm = parseInt(parts[1], 10)
+    return gregorianToJalali(gy, gm, 1)
+  }
   if (parts.length !== 3) throw new Error(`Invalid date format: ${dateStr}`)
   const gy = parseInt(parts[0], 10)
   const gm = parseInt(parts[1], 10)
@@ -181,6 +186,21 @@ export function toPersianDigits(num: number | string): string {
 }
 
 export function formatJalaliDate(dateStr: string, usePersianDigits = true): string {
+  const parts = dateStr.split('-')
+  if (parts.length === 2) {
+    const gy = parseInt(parts[0], 10)
+    const gm = parseInt(parts[1], 10)
+    const j = gregorianToJalali(gy, gm, 1)
+    const jm = usePersianDigits ? toPersianDigits(JALALI_MONTHS_FA[j.jm - 1]) : JALALI_MONTHS_FA[j.jm - 1]
+    const jy = usePersianDigits ? toPersianDigits(j.jy) : j.jy.toString()
+    return `${jm} ${jy}`
+  }
+  if (parts.length === 1) {
+    const gy = parseInt(parts[0], 10)
+    const j = gregorianToJalali(gy, 6, 15)
+    const jy = usePersianDigits ? toPersianDigits(j.jy) : j.jy.toString()
+    return `${jy}`
+  }
   const jalali = gregorianDateToJalali(dateStr)
   const jd = usePersianDigits ? toPersianDigits(jalali.jd) : jalali.jd.toString()
   const jy = usePersianDigits ? toPersianDigits(jalali.jy) : jalali.jy.toString()
@@ -188,6 +208,18 @@ export function formatJalaliDate(dateStr: string, usePersianDigits = true): stri
 }
 
 export function formatJalaliDateEn(dateStr: string): string {
+  const parts = dateStr.split('-')
+  if (parts.length === 2) {
+    const gy = parseInt(parts[0], 10)
+    const gm = parseInt(parts[1], 10)
+    const j = gregorianToJalali(gy, gm, 1)
+    return `${JALALI_MONTHS_EN[j.jm - 1]} ${j.jy}`
+  }
+  if (parts.length === 1) {
+    const gy = parseInt(parts[0], 10)
+    const j = gregorianToJalali(gy, 6, 15)
+    return `${j.jy}`
+  }
   const jalali = gregorianDateToJalali(dateStr)
   return `${jalali.jd} ${JALALI_MONTHS_EN[jalali.jm - 1]} ${jalali.jy}`
 }

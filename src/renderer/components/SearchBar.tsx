@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
 
 interface SearchBarProps {
   onSearch: (keyword: string) => void
@@ -16,6 +17,7 @@ function SearchBar({ onSearch }: SearchBarProps): JSX.Element {
 
   return (
     <div style={styles.container}>
+      <span style={styles.icon}>🔍</span>
       <input
         style={styles.input}
         value={value}
@@ -32,26 +34,41 @@ function SearchBar({ onSearch }: SearchBarProps): JSX.Element {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { position: 'relative', display: 'inline-block' },
+  container: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  icon: {
+    position: 'absolute',
+    left: spacing.md,
+    fontSize: fontSize.sm,
+    pointerEvents: 'none',
+    opacity: 0.5,
+  },
   input: {
-    padding: '8px 12px',
-    paddingRight: '28px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    width: '220px'
+    width: '100%',
+    padding: `${spacing.sm} ${spacing.xxl} ${spacing.sm} ${spacing.xxxl}`,
+    fontSize: fontSize.sm,
+    border: `${borderWidth.default} solid ${colors.border.input}`,
+    borderRadius: borderRadius.md,
+    outline: 'none',
+    backgroundColor: colors.bg.muted,
+    transition: 'border-color 0.15s ease, background-color 0.15s ease',
   },
   clear: {
     position: 'absolute',
-    right: '6px',
+    right: spacing.sm,
     top: '50%',
     transform: 'translateY(-50%)',
     border: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    color: '#888',
-    fontSize: '14px'
-  }
+    color: colors.text.disabled,
+    fontSize: fontSize.sm,
+    padding: spacing.xs,
+    lineHeight: 1,
+  },
 }
 
 export default SearchBar

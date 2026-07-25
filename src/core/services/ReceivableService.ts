@@ -1,5 +1,24 @@
 import { Receivable, Transaction, TransactionType } from '../models/types'
 import { generateId } from '../utils/id'
+import { gregorianDateToJalali } from '../utils/jalali'
+
+function getReceivableMonth(dateStr: string): { jy: number; jm: number } | null {
+  try {
+    const j = gregorianDateToJalali(dateStr)
+    return { jy: j.jy, jm: j.jm }
+  } catch {
+    return null
+  }
+}
+
+function isInSameMonth(dateStr: string, target: { jy: number; jm: number }): boolean {
+  try {
+    const j = gregorianDateToJalali(dateStr)
+    return j.jy === target.jy && j.jm === target.jm
+  } catch {
+    return false
+  }
+}
 
 export class ReceivableService {
   static create(
@@ -44,8 +63,17 @@ export class ReceivableService {
   }
 
   static getLinkedTransactions(receivable: Receivable, transactions: Transaction[]): Transaction[] {
+    const refDate = receivable.askDate || receivable.createdAt.slice(0, 10)
+    const month = getReceivableMonth(refDate)
+    const isIncomeType = (t: Transaction) => t.type === TransactionType.Income || t.type === TransactionType.Refund
+
+    if (month) {
+      return transactions.filter(
+        (t) => t.categoryId === receivable.categoryId && isIncomeType(t) && isInSameMonth(t.date, month)
+      )
+    }
     return transactions.filter(
-      (t) => t.categoryId === receivable.categoryId && (t.type === TransactionType.Income || t.type === TransactionType.Refund)
+      (t) => t.categoryId === receivable.categoryId && isIncomeType(t)
     )
   }
 

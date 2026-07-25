@@ -9,18 +9,19 @@ interface SummaryCardProps {
   color?: string
 }
 
-function SummaryCard({ title, value, icon, color }: SummaryCardProps): JSX.Element {
+function SummaryCard({ title, value, color }: SummaryCardProps): JSX.Element {
   const prefersReduced = useReducedMotion()
+  const accent = color ?? colors.primary
 
   return (
     <motion.div
       style={styles.card}
-      whileHover={prefersReduced ? {} : { y: -3, boxShadow: shadow.elevated }}
+      whileHover={prefersReduced ? {} : { y: -2, boxShadow: shadow.elevated }}
     >
-      {icon && <span style={styles.icon}>{icon}</span>}
+      <div style={{ ...styles.accent, backgroundColor: accent }} />
       <div style={styles.content}>
         <span style={styles.title}>{title}</span>
-        <span style={{ ...styles.value, color: color ?? colors.text.primary }}>{value}</span>
+        <span style={{ ...styles.value, color: colors.text.primary }}>{value}</span>
       </div>
     </motion.div>
   )
@@ -28,20 +29,42 @@ function SummaryCard({ title, value, icon, color }: SummaryCardProps): JSX.Eleme
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
+    position: 'relative',
+    overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
-    gap: spacing.lg,
     padding: padding.card,
     backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.xl,
-    boxShadow: shadow.elevated,
+    borderRadius: borderRadius.lg,
+    boxShadow: shadow.card,
     border: `${borderWidth.default} solid ${colors.border.light}`,
     transition: 'box-shadow 0.15s',
   },
-  icon: { fontSize: fontSize.icon },
-  content: { display: 'flex', flexDirection: 'column', gap: spacing.xs },
-  title: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text.disabled, textTransform: 'uppercase' },
-  value: { fontSize: fontSize.xxxl, fontWeight: fontWeight.bold },
+  accent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '3px',
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.xs,
+    paddingLeft: spacing.sm,
+  },
+  title: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.text.disabled,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  value: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    fontVariantNumeric: 'tabular-nums',
+  },
 }
 
 export default SummaryCard

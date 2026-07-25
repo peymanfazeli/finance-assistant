@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Grouping, Aggregation } from '../../core/services/ReportService'
+import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
 
 interface Props {
   grouping: Grouping
@@ -28,29 +29,71 @@ function GroupingSelector({ grouping, aggregation, onGroupingChange, onAggregati
     <div style={styles.container}>
       <div style={styles.field}>
         <label style={styles.label}>{t('customReport.grouping')}</label>
-        <select style={styles.select} value={grouping} onChange={(e) => onGroupingChange(e.target.value as Grouping)}>
+        <div style={styles.segmentedControl}>
           {GROUPING_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
+            <button
+              key={opt.value}
+              style={{
+                ...styles.segmentBtn,
+                ...(grouping === opt.value ? styles.segmentBtnActive : {}),
+              }}
+              onClick={() => onGroupingChange(opt.value)}
+            >
+              {t(opt.labelKey)}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
       <div style={styles.field}>
-        <label style={styles.label}>Aggregation</label>
-        <select style={styles.select} value={aggregation} onChange={(e) => onAggregationChange(e.target.value as Aggregation)}>
+        <label style={styles.label}>{t('reports.chartType')}</label>
+        <div style={styles.segmentedControl}>
           {AGGREGATION_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.labelKey}</option>
+            <button
+              key={opt.value}
+              style={{
+                ...styles.segmentBtn,
+                ...(aggregation === opt.value ? styles.segmentBtnActive : {}),
+              }}
+              onClick={() => onAggregationChange(opt.value)}
+            >
+              {opt.labelKey}
+            </button>
           ))}
-        </select>
+        </div>
       </div>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', gap: '16px', flexWrap: 'wrap' },
-  field: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '12px', fontWeight: 600, color: '#555' },
-  select: { padding: '8px 12px', fontSize: '13px', border: '1px solid #ccc', borderRadius: '6px', backgroundColor: '#fff' }
+  container: { display: 'flex', flexDirection: 'column', gap: spacing.lg },
+  field: { display: 'flex', flexDirection: 'column', gap: spacing.sm },
+  label: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.5px' },
+  segmentedControl: {
+    display: 'flex',
+    gap: '2px',
+    backgroundColor: colors.bg.muted,
+    borderRadius: borderRadius.md,
+    padding: '3px',
+  },
+  segmentBtn: {
+    flex: 1,
+    padding: `${spacing.xs} ${spacing.sm}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: borderRadius.sm,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.bg.card,
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+  },
 }
 
 export default GroupingSelector

@@ -19,7 +19,7 @@ describe('formatCurrency', () => {
   it('formats Toman', () => {
     const result = formatCurrency(100000, 'toman')
     expect(result).toMatch(/100/)
-    expect(result).toMatch(/toman/)
+    expect(result).toMatch(/تومان/)
   })
 })
 
