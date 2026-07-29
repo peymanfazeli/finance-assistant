@@ -88,6 +88,8 @@
     "avgDailySpending": "Avg Daily Spending",
     "avgWeeklySpending": "Avg Weekly Spending",
     "customize": "Customize Dashboard",
+    "showAmounts": "Show amounts",
+    "hideAmounts": "Hide amounts",
     "noTransactions": "No transactions yet. Add or import data to see your summary."
   },
   "import": {

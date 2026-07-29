@@ -88,6 +88,8 @@
     "avgDailySpending": "میانگین هزینه روزانه",
     "avgWeeklySpending": "میانگین هزینه هفتگی",
     "customize": "سفارشی‌سازی داشبورد",
+    "showAmounts": "نمایش مبالغ",
+    "hideAmounts": "مخفی کردن مبالغ",
     "noTransactions": "هنوز تراکنشی وجود ندارد. داده اضافه یا وارد کنید تا خلاصه خود را ببینید."
   },
   "import": {

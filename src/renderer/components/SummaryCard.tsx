@@ -7,9 +7,10 @@ interface SummaryCardProps {
   value: string
   icon?: string
   color?: string
+  isMasked?: boolean
 }
 
-function SummaryCard({ title, value, color }: SummaryCardProps): JSX.Element {
+function SummaryCard({ title, value, color, isMasked }: SummaryCardProps): JSX.Element {
   const prefersReduced = useReducedMotion()
   const accent = color ?? colors.primary
 
@@ -21,7 +22,7 @@ function SummaryCard({ title, value, color }: SummaryCardProps): JSX.Element {
       <div style={{ ...styles.accent, backgroundColor: accent }} />
       <div style={styles.content}>
         <span style={styles.title}>{title}</span>
-        <span style={{ ...styles.value, color: colors.text.primary }}>{value}</span>
+        <span style={{ ...styles.value, color: colors.text.primary }}>{isMasked ? '***' : value}</span>
       </div>
     </motion.div>
   )

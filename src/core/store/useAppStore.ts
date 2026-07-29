@@ -27,6 +27,7 @@ interface AppState {
   filters: TransactionFilter
   sortConfig: SortConfig
   visibleCards: DashboardCardId[]
+  showFinancialDetails: boolean
 
   setDataset: (dataset: Dataset, path: string) => void
   setConfigBaseName: (name: string) => void
@@ -68,6 +69,7 @@ interface AppState {
   setFilters: (filters: TransactionFilter) => void
   setSortConfig: (config: SortConfig) => void
   setVisibleCards: (cards: DashboardCardId[]) => void
+  setShowFinancialDetails: (show: boolean) => void
 
   setLanguage: (language: Language) => void
   updateSettings: (updates: Partial<ApplicationSettings>) => void
@@ -111,6 +113,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   filters: {},
   sortConfig: { field: 'date', direction: 'desc' },
   visibleCards: defaultSettings.visibleDashboardCards,
+  showFinancialDetails: false,
 
   setDataset: (dataset, path) => {
     set({
@@ -332,6 +335,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setVisibleCards: (cards) => {
     set({ visibleCards: cards })
     get().updateSettings({ visibleDashboardCards: cards })
+  },
+
+  setShowFinancialDetails: (show) => {
+    set({ showFinancialDetails: show })
   },
 
   setLanguage: (language) => {

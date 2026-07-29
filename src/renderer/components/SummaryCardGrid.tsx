@@ -52,9 +52,10 @@ interface SummaryCardGridProps {
   visibleCards: DashboardCardId[]
   currency?: string
   locale?: string
+  showFinancialDetails?: boolean
 }
 
-function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en-US' }: SummaryCardGridProps): JSX.Element {
+function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en-US', showFinancialDetails = false }: SummaryCardGridProps): JSX.Element {
   const { t } = useTranslation()
   const CARD_CONFIGS = createCardConfigs(currency, locale)
   const visible = CARD_CONFIGS.filter((c) => visibleCards.includes(c.id))
@@ -67,6 +68,7 @@ function SummaryCardGrid({ stats, visibleCards, currency = 'toman', locale = 'en
           title={t(card.titleKey)}
           value={card.getValue(stats, currency, locale)}
           color={card.color}
+          isMasked={!showFinancialDetails}
         />
       ))}
     </div>
