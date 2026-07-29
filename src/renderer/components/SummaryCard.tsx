@@ -10,19 +10,27 @@ interface SummaryCardProps {
   isMasked?: boolean
 }
 
-function SummaryCard({ title, value, color, isMasked }: SummaryCardProps): JSX.Element {
+function SummaryCard({ title, value, color, icon, isMasked }: SummaryCardProps): JSX.Element {
   const prefersReduced = useReducedMotion()
   const accent = color ?? colors.primary
 
   return (
     <motion.div
       style={styles.card}
-      whileHover={prefersReduced ? {} : { y: -2, boxShadow: shadow.elevated }}
+      whileHover={prefersReduced ? {} : {
+        y: -3,
+        boxShadow: shadow.hero,
+        borderColor: accent,
+      }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div style={{ ...styles.accent, backgroundColor: accent }} />
       <div style={styles.content}>
-        <span style={styles.title}>{title}</span>
-        <span style={{ ...styles.value, color: colors.text.primary }}>{isMasked ? '***' : value}</span>
+        <div style={styles.titleRow}>
+          {icon && <span style={styles.icon}>{icon}</span>}
+          <span style={styles.title}>{title}</span>
+        </div>
+        <span style={styles.value}>{isMasked ? '***' : value}</span>
       </div>
     </motion.div>
   )
@@ -39,20 +47,32 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.lg,
     boxShadow: shadow.card,
     border: `${borderWidth.default} solid ${colors.border.light}`,
-    transition: 'box-shadow 0.15s',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
   },
   accent: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: '3px',
+    width: '4px',
+    borderRadius: '0 2px 2px 0',
   },
   content: {
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.xs,
-    paddingLeft: spacing.sm,
+    paddingLeft: spacing.md,
+    flex: 1,
+  },
+  titleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  icon: {
+    fontSize: '14px',
+    lineHeight: 1,
+    flexShrink: 0,
   },
   title: {
     fontSize: fontSize.xs,
@@ -65,6 +85,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
     fontVariantNumeric: 'tabular-nums',
+    color: colors.text.primary,
   },
 }
 

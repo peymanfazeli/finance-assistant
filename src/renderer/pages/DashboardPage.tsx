@@ -6,13 +6,22 @@ import { DashboardCardId } from '../../core/models/types'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
 import DashboardCustomizationDialog from '../components/DashboardCustomizationDialog'
+import Modal from '../components/Modal'
+import TransactionForm from '../components/TransactionForm'
+import useReducedMotion from '../hooks/useReducedMotion'
 
 function DashboardPage(): JSX.Element {
   const { t, i18n } = useTranslation()
-  const { stats, visibleCards, setVisibleCards, dataset, showFinancialDetails, setShowFinancialDetails } = useAppStore()
+  const {
+    stats, visibleCards, setVisibleCards, dataset,
+    showFinancialDetails, setShowFinancialDetails,
+    addTransaction
+  } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'toman'
   const [showCustomize, setShowCustomize] = useState(false)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const prefersReduced = useReducedMotion()
 
   const handleToggle = (cardId: DashboardCardId): void => {
     const updated = visibleCards.includes(cardId)
@@ -22,73 +31,154 @@ function DashboardPage(): JSX.Element {
   }
 
   const hasNoData = stats.transactionCount === 0
-  const netBalancePositive = stats.netBalance > 0
+  const netBalancePositive = stats.netBalance >= 0
+  const categories = dataset?.categories ?? []
+  const categoryTypeMap = dataset?.categoryTypeMap
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.35, ease: 'easeOut' },
+    },
+  }
+
+  const containerVariants = {
+    hidden: { opacity: 1 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: prefersReduced ? 0 : 0.08,
+        delayChildren: prefersReduced ? 0 : 0.05,
+      },
+    },
+  }
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <h2 style={styles.title}>{t('dashboard.title')}</h2>
+      <motion.div
+        style={styles.container}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={prefersReduced ? undefined : sectionVariants}>
+          <div style={styles.header}>
+            <div style={styles.headerLeft}>
+              <h2 style={styles.title}>{t('dashboard.title')}</h2>
               <p style={styles.subtitle}>
                 {stats.transactionCount > 0
                   ? `${showFinancialDetails ? stats.transactionCount : '***'} transactions`
                   : t('dashboard.noTransactions')
                 }
               </p>
+            </div>
+            <div style={styles.headerActions}>
+              <motion.button
+                style={styles.eyeToggle}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowFinancialDetails(!showFinancialDetails)}
+                title={showFinancialDetails ? t('dashboard.hideAmounts') : t('dashboard.showAmounts')}
+              >
+                {showFinancialDetails ? EyeOpenIcon : EyeClosedIcon}
+              </motion.button>
+              <motion.button
+                style={styles.customizeBtn}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowCustomize(true)}
+              >
+                {t('dashboard.customize')}
+              </motion.button>
+            </div>
           </div>
-          <div style={styles.headerActions}>
-            <motion.button
-              style={styles.eyeToggle}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowFinancialDetails(!showFinancialDetails)}
-              title={showFinancialDetails ? t('dashboard.hideAmounts') : t('dashboard.showAmounts')}
-            >
-              {showFinancialDetails ? EyeOpenIcon : EyeClosedIcon}
-            </motion.button>
-            <motion.button
-              style={styles.customizeBtn}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowCustomize(true)}
-            >
-              {t('dashboard.customize')}
-            </motion.button>
-          </div>
-        </div>
+        </motion.div>
 
         {hasNoData ? (
-          <div style={styles.emptyCard}>
-            <div style={styles.emptyIcon}>📊</div>
-            <h3 style={styles.emptyTitle}>No Data Yet</h3>
-            <p style={styles.emptyText}>{t('dashboard.noTransactions')}</p>
-          </div>
+          <motion.div
+            variants={prefersReduced ? undefined : sectionVariants}
+            style={styles.emptyCard}
+          >
+            <motion.div
+              style={styles.emptyIconArea}
+              initial={prefersReduced ? {} : { scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              📊
+            </motion.div>
+            <h3 style={styles.emptyTitle}>{t('dashboard.noDataTitle')}</h3>
+            <p style={styles.emptyText}>{t('dashboard.noDataDescription')}</p>
+            <div style={styles.emptyActions}>
+              <motion.button
+                style={styles.emptyPrimaryBtn}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowQuickAdd(true)}
+              >
+                {t('dashboard.addTransaction')}
+              </motion.button>
+            </div>
+          </motion.div>
         ) : (
           <>
-            <div style={styles.netBalanceCard}>
-              <div style={styles.netBalanceHeader}>
-                <span style={styles.netBalanceLabel}>{t('dashboard.netBalance')}</span>
+            <motion.div
+              variants={prefersReduced ? undefined : sectionVariants}
+              style={{
+                ...styles.heroCard,
+                background: netBalancePositive
+                  ? 'linear-gradient(135deg, #f0faf0 0%, #f8fff8 100%)'
+                  : 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%)',
+                borderColor: netBalancePositive ? '#d4edda' : '#f5c6cb',
+              }}
+            >
+              <div style={styles.heroHeader}>
+                <span style={styles.heroLabel}>{t('dashboard.netBalance')}</span>
                 <span style={{
-                  ...styles.netBalanceDot,
+                  ...styles.heroDot,
                   backgroundColor: netBalancePositive ? colors.success : colors.danger,
                 }} />
               </div>
-              <span style={{
-                ...styles.netBalanceValue,
-                color: netBalancePositive ? colors.text.income : colors.text.expense,
-              }}>
+              <motion.span
+                key={showFinancialDetails ? `val-${stats.netBalance}` : 'val-hidden'}
+                style={{
+                  ...styles.heroValue,
+                  color: netBalancePositive ? colors.text.income : colors.text.expense,
+                }}
+                initial={prefersReduced ? {} : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
                 {showFinancialDetails
                   ? `${stats.netBalance >= 0 ? '+' : ''}${formatCurrencyCompact(stats.netBalance, currency, locale)}`
                   : '***'
                 }
-              </span>
-            </div>
+              </motion.span>
+            </motion.div>
 
-            <SummaryCardGrid stats={stats} visibleCards={visibleCards} currency={currency} locale={locale} showFinancialDetails={showFinancialDetails} />
+            <motion.div variants={prefersReduced ? undefined : sectionVariants}>
+              <SummaryCardGrid stats={stats} visibleCards={visibleCards} currency={currency} locale={locale} showFinancialDetails={showFinancialDetails} />
+            </motion.div>
           </>
         )}
-      </div>
+      </motion.div>
+
+      {!hasNoData && (
+        <motion.button
+          style={styles.fab}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setShowQuickAdd(true)}
+          title={t('dashboard.quickAdd')}
+          initial={prefersReduced ? {} : { scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.4, type: 'spring', damping: 20, stiffness: 300 }}
+        >
+          +
+        </motion.button>
+      )}
 
       <DashboardCustomizationDialog
         open={showCustomize}
@@ -96,6 +186,20 @@ function DashboardPage(): JSX.Element {
         onToggle={handleToggle}
         onClose={() => setShowCustomize(false)}
       />
+
+      {showQuickAdd && (
+        <Modal open={showQuickAdd} onClose={() => setShowQuickAdd(false)} title={t('transaction.add')}>
+          <TransactionForm
+            categories={categories}
+            categoryTypeMap={categoryTypeMap}
+            onSave={(data) => {
+              addTransaction(data)
+              setShowQuickAdd(false)
+            }}
+            onCancel={() => setShowQuickAdd(false)}
+          />
+        </Modal>
+      )}
     </div>
   )
 }
@@ -131,6 +235,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     overflow: 'auto',
     padding: spacing.xxl,
+    position: 'relative',
   },
   container: {
     maxWidth: '900px',
@@ -188,35 +293,35 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     transition: 'all 0.15s ease',
   },
-  netBalanceCard: {
-    backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.lg,
-    border: `${borderWidth.default} solid ${colors.border.light}`,
+  heroCard: {
+    borderRadius: borderRadius.xl,
+    border: `${borderWidth.thick} solid`,
     padding: `${spacing.xl} ${spacing.xxl}`,
     marginBottom: spacing.xl,
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.xs,
+    boxShadow: shadow.hero,
   },
-  netBalanceHeader: {
+  heroHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  netBalanceDot: {
+  heroDot: {
     width: '8px',
     height: '8px',
     borderRadius: borderRadius.full,
   },
-  netBalanceLabel: {
+  heroLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.text.disabled,
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },
-  netBalanceValue: {
-    fontSize: fontSize.display,
+  heroValue: {
+    fontSize: fontSize.hero,
     fontWeight: fontWeight.bold,
     fontVariantNumeric: 'tabular-nums',
   },
@@ -224,15 +329,17 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bg.card,
     borderRadius: borderRadius.lg,
     border: `${borderWidth.default} solid ${colors.border.light}`,
-    padding: `${spacing.huge} ${spacing.xxxl}`,
+    padding: `${spacing.massive} ${spacing.xxxl}`,
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+    boxShadow: shadow.card,
   },
-  emptyIcon: {
-    fontSize: '40px',
+  emptyIconArea: {
+    fontSize: '48px',
+    lineHeight: 1,
     marginBottom: spacing.sm,
   },
   emptyTitle: {
@@ -247,6 +354,43 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     maxWidth: '360px',
     lineHeight: '1.5',
+  },
+  emptyActions: {
+    display: 'flex',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  emptyPrimaryBtn: {
+    padding: `${spacing.sm} ${spacing.xl}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
+    border: 'none',
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  fab: {
+    position: 'fixed',
+    bottom: spacing.xxl,
+    right: spacing.xxl,
+    width: '48px',
+    height: '48px',
+    padding: 0,
+    fontSize: '22px',
+    fontWeight: fontWeight.bold,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
+    border: 'none',
+    borderRadius: borderRadius.full,
+    cursor: 'pointer',
+    boxShadow: shadow.dropdown,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    zIndex: 100,
   },
 }
 

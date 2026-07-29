@@ -111,6 +111,7 @@ export const fontSize = {
   xxl: '20px',
   xxxl: '22px',
   display: '28px',
+  hero: '36px',
   icon: '48px',
 }
 
@@ -126,6 +127,7 @@ export const shadow = {
   dropdown: '0 4px 12px rgba(0,0,0,0.1)',
   modal: '0 4px 24px rgba(0,0,0,0.15)',
   welcome: '0 2px 12px rgba(0,0,0,0.1)',
+  hero: '0 4px 20px rgba(0,0,0,0.06)',
 }
 
 export const borderWidth = {

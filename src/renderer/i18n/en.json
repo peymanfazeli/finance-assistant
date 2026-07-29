@@ -90,7 +90,11 @@
     "customize": "Customize Dashboard",
     "showAmounts": "Show amounts",
     "hideAmounts": "Hide amounts",
-    "noTransactions": "No transactions yet. Add or import data to see your summary."
+    "noTransactions": "No transactions yet. Add or import data to see your summary.",
+    "noDataTitle": "No Transactions Yet",
+    "noDataDescription": "Start tracking your finances by adding your first transaction.",
+    "addTransaction": "Add Transaction",
+    "quickAdd": "Quick Add"
   },
   "import": {
     "title": "Import Data",
