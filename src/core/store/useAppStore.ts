@@ -28,6 +28,8 @@ interface AppState {
   sortConfig: SortConfig
   visibleCards: DashboardCardId[]
   showFinancialDetails: boolean
+  reportDateFrom: string
+  reportDateTo: string
 
   setDataset: (dataset: Dataset, path: string) => void
   setConfigBaseName: (name: string) => void
@@ -70,6 +72,7 @@ interface AppState {
   setSortConfig: (config: SortConfig) => void
   setVisibleCards: (cards: DashboardCardId[]) => void
   setShowFinancialDetails: (show: boolean) => void
+  setReportDateRange: (from: string, to: string) => void
 
   setLanguage: (language: Language) => void
   updateSettings: (updates: Partial<ApplicationSettings>) => void
@@ -114,6 +117,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   sortConfig: { field: 'date', direction: 'desc' },
   visibleCards: defaultSettings.visibleDashboardCards,
   showFinancialDetails: false,
+  reportDateFrom: '',
+  reportDateTo: '',
 
   setDataset: (dataset, path) => {
     set({
@@ -339,6 +344,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setShowFinancialDetails: (show) => {
     set({ showFinancialDetails: show })
+  },
+
+  setReportDateRange: (from, to) => {
+    set({ reportDateFrom: from, reportDateTo: to })
   },
 
   setLanguage: (language) => {

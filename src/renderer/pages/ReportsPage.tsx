@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
@@ -6,7 +6,7 @@ import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint,
 import ExportButton from '../components/ExportButton'
 import AIAnalysisModal from '../components/AIAnalysisModal'
 import { formatCurrency } from '../../core/utils/format'
-import { formatJalaliDateEn } from '../../core/utils/jalali'
+import { formatJalaliDateEn, getTodayJalali, jalaliToGregorianDateStr, jalaliToGregorianDateStrFromParts } from '../../core/utils/jalali'
 import PersianCalendar from '../components/PersianCalendar'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import {
@@ -80,18 +80,30 @@ const SEARCH_CHART_TYPES: ChartType[] = ['bar', 'line', 'area']
 
 function ReportsPage(): JSX.Element {
   const { t, i18n } = useTranslation()
-  const { dataset } = useAppStore()
+  const { dataset, reportDateFrom, reportDateTo, setReportDateRange } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'toman'
   const [selectedReport, setSelectedReport] = useState<ReportType>('expenseByCategory')
   const [chartType, setChartType] = useState<ChartType>('bar')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchGrouping, setSearchGrouping] = useState<SearchGrouping>('category')
   const [searchGenerated, setSearchGenerated] = useState(false)
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
   const [activeCategory, setActiveCategory] = useState('expense')
+
+  const dateFrom = reportDateFrom
+  const dateTo = reportDateTo
+
+  useEffect(() => {
+    if (!reportDateFrom && !reportDateTo) {
+      const today = getTodayJalali()
+      setReportDateRange(
+        jalaliToGregorianDateStrFromParts(today.jy, today.jm, 1),
+        jalaliToGregorianDateStr(today)
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
@@ -294,8 +306,8 @@ function ReportsPage(): JSX.Element {
 
         <div style={styles.sidebarFilterSection}>
           <div style={styles.filterLabel}>{t('common.filter')}</div>
-          <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder="From" compact />
-          <PersianCalendar value={dateTo} onChange={setDateTo} placeholder="To" compact />
+          <PersianCalendar value={dateFrom} onChange={(v) => setReportDateRange(v, dateTo)} placeholder="From" compact />
+          <PersianCalendar value={dateTo} onChange={(v) => setReportDateRange(dateFrom, v)} placeholder="To" compact />
         </div>
 
         <nav style={styles.categoryNav}>

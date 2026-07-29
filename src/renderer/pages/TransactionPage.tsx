@@ -289,7 +289,7 @@ function TransactionPage(): JSX.Element {
             <span style={styles.asideTitle}>{t('common.filter')}</span>
           </div>
           <div style={styles.asideContent}>
-            <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} vertical />
+            <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} vertical initialFilters={filters} />
           </div>
         </aside>
 

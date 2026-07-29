@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TransactionType, Category, TransactionFilter } from '../../core/models/types'
 import PersianCalendar from './PersianCalendar'
+import { getTodayJalali, jalaliToGregorianDateStr, jalaliToGregorianDateStrFromParts } from '../../core/utils/jalali'
 import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
 
 interface FilterPanelProps {
@@ -9,16 +10,30 @@ interface FilterPanelProps {
   onApply: (filter: TransactionFilter) => void
   onClearSearch?: () => void
   vertical?: boolean
+  initialFilters?: TransactionFilter
 }
 
-function FilterPanel({ categories, onApply, onClearSearch, vertical }: FilterPanelProps): JSX.Element {
+function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilters }: FilterPanelProps): JSX.Element {
   const { t } = useTranslation()
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedTypes, setSelectedTypes] = useState<TransactionType[]>([])
-  const [amountMin, setAmountMin] = useState('')
-  const [amountMax, setAmountMax] = useState('')
+  const today = getTodayJalali()
+  const [dateFrom, setDateFrom] = useState(
+    initialFilters?.dateFrom ?? jalaliToGregorianDateStrFromParts(today.jy, today.jm, 1)
+  )
+  const [dateTo, setDateTo] = useState(
+    initialFilters?.dateTo ?? jalaliToGregorianDateStr(today)
+  )
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialFilters?.categoryIds ?? []
+  )
+  const [selectedTypes, setSelectedTypes] = useState<TransactionType[]>(
+    initialFilters?.types ?? []
+  )
+  const [amountMin, setAmountMin] = useState(
+    initialFilters?.amountMin !== undefined ? String(initialFilters.amountMin) : ''
+  )
+  const [amountMax, setAmountMax] = useState(
+    initialFilters?.amountMax !== undefined ? String(initialFilters.amountMax) : ''
+  )
 
   const apply = (): void => {
     onApply({
@@ -30,6 +45,13 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical }: FilterPan
       amountMax: amountMax ? parseFloat(amountMax) : undefined
     })
   }
+
+  useEffect(() => {
+    if (!initialFilters?.dateFrom && !initialFilters?.dateTo) {
+      apply()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const clear = (): void => {
     setDateFrom('')
