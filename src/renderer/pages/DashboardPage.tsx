@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { DashboardCardId } from '../../core/models/types'
+import { DashboardPeriod, resolveDashboardPeriod } from '../../core/utils/dashboardPeriod'
+import { getTodayJalali } from '../../core/utils/jalali'
+import { StatsService } from '../../core/services/StatsService'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
 import DashboardCustomizationDialog from '../components/DashboardCustomizationDialog'
@@ -15,6 +18,7 @@ function DashboardPage(): JSX.Element {
   const {
     stats, visibleCards, setVisibleCards, dataset,
     showFinancialDetails, setShowFinancialDetails,
+    dashboardPeriod, setDashboardPeriod,
     addTransaction
   } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
@@ -23,6 +27,21 @@ function DashboardPage(): JSX.Element {
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const prefersReduced = useReducedMotion()
 
+  const transactions = dataset?.transactions ?? []
+
+  const { periodStats, isFiltered, hasPeriodData, periodLabelKey } = useMemo(() => {
+    const { from, to } = resolveDashboardPeriod(dashboardPeriod, getTodayJalali())
+    const filtered = from || to
+      ? transactions.filter((tr) => (!from || tr.date >= from) && (!to || tr.date <= to))
+      : transactions
+    return {
+      periodStats: StatsService.calculate(filtered),
+      isFiltered: Boolean(from || to),
+      hasPeriodData: filtered.length > 0,
+      periodLabelKey: `dashboard.period.${dashboardPeriod.preset}`
+    }
+  }, [transactions, dashboardPeriod])
+
   const handleToggle = (cardId: DashboardCardId): void => {
     const updated = visibleCards.includes(cardId)
       ? visibleCards.filter((id) => id !== cardId)
@@ -30,8 +49,12 @@ function DashboardPage(): JSX.Element {
     setVisibleCards(updated)
   }
 
+  const handlePeriodChange = (period: DashboardPeriod): void => {
+    setDashboardPeriod(period)
+  }
+
   const hasNoData = stats.transactionCount === 0
-  const netBalancePositive = stats.netBalance >= 0
+  const netBalancePositive = periodStats.netBalance >= 0
   const categories = dataset?.categories ?? []
   const categoryTypeMap = dataset?.categoryTypeMap
 
@@ -68,13 +91,20 @@ function DashboardPage(): JSX.Element {
             <div style={styles.headerLeft}>
               <h2 style={styles.title}>{t('dashboard.title')}</h2>
               <p style={styles.subtitle}>
-                {stats.transactionCount > 0
-                  ? `${showFinancialDetails ? stats.transactionCount : '***'} transactions`
-                  : t('dashboard.noTransactions')
+                {periodStats.transactionCount > 0
+                  ? `${showFinancialDetails ? periodStats.transactionCount : '***'} transactions`
+                  : isFiltered
+                    ? t('dashboard.period.noTransactions')
+                    : t('dashboard.noTransactions')
                 }
               </p>
             </div>
             <div style={styles.headerActions}>
+              {isFiltered && (
+                <span style={styles.periodChip}>
+                  {t(periodLabelKey)}
+                </span>
+              )}
               <motion.button
                 style={styles.eyeToggle}
                 whileHover={{ scale: 1.05 }}
@@ -142,7 +172,7 @@ function DashboardPage(): JSX.Element {
                 }} />
               </div>
               <motion.span
-                key={showFinancialDetails ? `val-${stats.netBalance}` : 'val-hidden'}
+                key={showFinancialDetails ? `val-${periodStats.netBalance}` : 'val-hidden'}
                 style={{
                   ...styles.heroValue,
                   color: netBalancePositive ? colors.text.income : colors.text.expense,
@@ -152,14 +182,24 @@ function DashboardPage(): JSX.Element {
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
                 {showFinancialDetails
-                  ? `${stats.netBalance >= 0 ? '+' : ''}${formatCurrencyCompact(stats.netBalance, currency, locale)}`
+                  ? `${periodStats.netBalance >= 0 ? '+' : ''}${formatCurrencyCompact(periodStats.netBalance, currency, locale)}`
                   : '***'
                 }
               </motion.span>
             </motion.div>
 
+            {isFiltered && !hasPeriodData && (
+              <motion.div
+                variants={prefersReduced ? undefined : sectionVariants}
+                style={styles.periodEmpty}
+              >
+                <span style={styles.periodEmptyIcon}>🗓️</span>
+                <span>{t('dashboard.period.noTransactions')}</span>
+              </motion.div>
+            )}
+
             <motion.div variants={prefersReduced ? undefined : sectionVariants}>
-              <SummaryCardGrid stats={stats} visibleCards={visibleCards} currency={currency} locale={locale} showFinancialDetails={showFinancialDetails} />
+              <SummaryCardGrid stats={periodStats} visibleCards={visibleCards} currency={currency} locale={locale} showFinancialDetails={showFinancialDetails} />
             </motion.div>
           </>
         )}
@@ -183,6 +223,8 @@ function DashboardPage(): JSX.Element {
       <DashboardCustomizationDialog
         open={showCustomize}
         visibleCards={visibleCards}
+        period={dashboardPeriod}
+        onPeriodChange={handlePeriodChange}
         onToggle={handleToggle}
         onClose={() => setShowCustomize(false)}
       />
@@ -267,6 +309,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  periodChip: {
+    padding: `${spacing.xs} ${spacing.md}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.primary,
+    backgroundColor: colors.bg.active,
+    border: `${borderWidth.default} solid ${colors.primary}`,
+    borderRadius: borderRadius.full,
+    whiteSpace: 'nowrap',
   },
   eyeToggle: {
     display: 'flex',
@@ -359,6 +411,23 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  periodEmpty: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: `${spacing.sm} ${spacing.md}`,
+    marginBottom: spacing.xl,
+    fontSize: fontSize.sm,
+    color: colors.text.warning,
+    backgroundColor: colors.bg.warning,
+    borderRadius: borderRadius.md,
+    border: `${borderWidth.default} solid ${colors.border.default}`,
+  },
+  periodEmptyIcon: {
+    fontSize: '16px',
+    lineHeight: 1,
   },
   emptyPrimaryBtn: {
     padding: `${spacing.sm} ${spacing.xl}`,

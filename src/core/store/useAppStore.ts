@@ -17,6 +17,7 @@ import { CategoryService } from '../services/CategoryService'
 import { TransactionService } from '../services/TransactionService'
 import { ReceivableService } from '../services/ReceivableService'
 import { StatsService, DashboardStats } from '../services/StatsService'
+import { DashboardPeriod } from '../utils/dashboardPeriod'
 
 interface AppState {
   dataset: Dataset | null
@@ -28,6 +29,7 @@ interface AppState {
   sortConfig: SortConfig
   visibleCards: DashboardCardId[]
   showFinancialDetails: boolean
+  dashboardPeriod: DashboardPeriod
   reportDateFrom: string
   reportDateTo: string
 
@@ -72,6 +74,7 @@ interface AppState {
   setSortConfig: (config: SortConfig) => void
   setVisibleCards: (cards: DashboardCardId[]) => void
   setShowFinancialDetails: (show: boolean) => void
+  setDashboardPeriod: (period: DashboardPeriod) => void
   setReportDateRange: (from: string, to: string) => void
 
   setLanguage: (language: Language) => void
@@ -117,6 +120,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   sortConfig: { field: 'date', direction: 'desc' },
   visibleCards: defaultSettings.visibleDashboardCards,
   showFinancialDetails: false,
+  dashboardPeriod: { preset: 'all' },
   reportDateFrom: '',
   reportDateTo: '',
 
@@ -344,6 +348,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setShowFinancialDetails: (show) => {
     set({ showFinancialDetails: show })
+  },
+
+  setDashboardPeriod: (period) => {
+    set({ dashboardPeriod: period })
   },
 
   setReportDateRange: (from, to) => {
