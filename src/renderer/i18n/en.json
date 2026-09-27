@@ -8,6 +8,7 @@
     "receivables": "Receivables",
     "import": "Import",
     "categories": "Categories",
+    "budget": "Budget",
     "reports": "Reports",
     "customReports": "Custom",
     "settings": "Settings",
@@ -200,6 +201,23 @@
     "created": "Category created",
     "updated": "Category updated",
     "deleted": "Category deleted"
+  },
+  "budget": {
+    "title": "Budget Planning",
+    "subtitle": "Set a percentage of this month's income and refunds for each category",
+    "enterAmounts": "Enter Amounts",
+    "amountsTitle": "Set Budget Amounts",
+    "enteredTotal": "Entered Total",
+    "noIncomeBase": "This month has no income or refunds yet, so amounts cannot be converted to percentages. Use the sliders or add income first.",
+    "monthBase": "This Month Income + Refunds",
+    "allocated": "Allocated",
+    "remaining": "Remaining",
+    "overAllocated": "Over Budget",
+    "category": "Category",
+    "percent": "Percent",
+    "amount": "Amount",
+    "total": "Total",
+    "noAllocations": "No percentages set yet. Use the sliders above to allocate your income."
   },
   "receivable": {
     "title": "Receivables",

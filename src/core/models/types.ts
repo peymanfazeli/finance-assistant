@@ -53,6 +53,7 @@ export interface Dataset {
   categories: Category[]
   receivables: Receivable[]
   categoryTypeMap?: Record<string, TransactionType>
+  budgetPercentages?: Record<string, number>
 }
 
 export interface ApplicationSettings {

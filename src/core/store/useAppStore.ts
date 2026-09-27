@@ -58,6 +58,7 @@ interface AppState {
   deleteCategory: (id: string, reassignToId: string) => void
   syncCategoriesConfig: () => void
   updateCategoryTypeMap: (categoryId: string, type: TransactionType | null) => void
+  setBudgetPercentages: (percentages: Record<string, number>) => void
 
   addReceivable: (data: {
     title: string
@@ -272,12 +273,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     )
     const categoryTypeMap = { ...dataset.categoryTypeMap }
     delete categoryTypeMap[id]
+    const budgetPercentages = { ...dataset.budgetPercentages }
+    delete budgetPercentages[id]
     set({
       dataset: {
         ...dataset,
         categories: updatedCategories,
         transactions,
-        categoryTypeMap
+        categoryTypeMap,
+        budgetPercentages
       }
     })
     get().saveDatasetQueued()
@@ -294,6 +298,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       categoryTypeMap[categoryId] = type
     }
     set({ dataset: { ...dataset, categoryTypeMap } })
+    get().saveDatasetQueued()
+  },
+
+  setBudgetPercentages: (percentages) => {
+    const { dataset } = get()
+    if (!dataset) return
+    set({ dataset: { ...dataset, budgetPercentages: percentages } })
     get().saveDatasetQueued()
   },
 

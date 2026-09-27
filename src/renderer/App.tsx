@@ -19,10 +19,11 @@ import ReportsPage from './pages/ReportsPage'
 import CustomReportBuilderPage from './pages/CustomReportBuilderPage'
 import SettingsPage from './pages/SettingsPage'
 import ReceivablePage from './pages/ReceivablePage'
+import BudgetPage from './pages/BudgetPage'
 import { ApplicationSettings } from '../core/models/types'
 import useReducedMotion from './hooks/useReducedMotion'
 
-type Page = 'dashboard' | 'transactions' | 'receivables' | 'categories' | 'reports' | 'customReports' | 'settings'
+type Page = 'dashboard' | 'transactions' | 'receivables' | 'categories' | 'budget' | 'reports' | 'customReports' | 'settings'
 
 const pageVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -272,6 +273,7 @@ function App(): JSX.Element {
     { page: 'transactions', label: t('nav.transactions') },
     { page: 'receivables', label: t('nav.receivables') },
     { page: 'categories', label: t('nav.categories') },
+    { page: 'budget', label: t('nav.budget') },
     { page: 'reports', label: t('nav.reports') },
     { page: 'customReports', label: t('nav.customReports') },
     { page: 'settings', label: t('nav.settings') }
@@ -321,7 +323,7 @@ function App(): JSX.Element {
           </motion.button>
         </div>
       </nav>
-      <main style={styles.main}>
+      <main style={{ ...styles.main, ...(currentPage === 'budget' ? { overflow: 'hidden' } : {}) }}>
         <ErrorBoundary>
           <AnimatePresence mode="wait">
             <motion.div
@@ -336,6 +338,7 @@ function App(): JSX.Element {
               {currentPage === 'transactions' && <TransactionPage />}
               {currentPage === 'receivables' && <ReceivablePage />}
               {currentPage === 'categories' && <CategoryPage />}
+              {currentPage === 'budget' && <BudgetPage />}
               {currentPage === 'reports' && <ReportsPage />}
               {currentPage === 'customReports' && <CustomReportBuilderPage />}
               {currentPage === 'settings' && <SettingsPage />}

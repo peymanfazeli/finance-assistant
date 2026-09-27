@@ -11,6 +11,7 @@ vi.mock('react-i18next', () => ({
         'categories.edit': 'Edit Category',
         'categories.name': 'Name',
         'categories.color': 'Color',
+        'categories.icon': 'Icon',
         'common.save': 'Save',
         'common.cancel': 'Cancel'
       }
@@ -42,5 +43,19 @@ describe('CategoryFormDialog', () => {
     fireEvent.change(screen.getByDisplayValue(''), { target: { value: 'New Cat' } })
     fireEvent.click(screen.getByText('Save'))
     expect(onSave).toHaveBeenCalled()
+  })
+
+  it('saves the picked icon instead of a hardcoded one', () => {
+    const onSave = vi.fn()
+    render(<CategoryFormDialog open={true} onSave={onSave} onClose={() => {}} />)
+    fireEvent.change(screen.getByDisplayValue(''), { target: { value: 'New Cat' } })
+    fireEvent.click(screen.getByLabelText('🚗'))
+    fireEvent.click(screen.getByText('Save'))
+    expect(onSave).toHaveBeenCalledWith('New Cat', expect.any(String), '🚗')
+  })
+
+  it('keeps an existing custom icon selected when editing', () => {
+    render(<CategoryFormDialog open={true} category={mockCategory} onSave={() => {}} onClose={() => {}} />)
+    expect(screen.getByLabelText('test').getAttribute('aria-pressed')).toBe('true')
   })
 })
