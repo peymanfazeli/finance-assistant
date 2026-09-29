@@ -90,7 +90,8 @@ const defaultSettings: ApplicationSettings = {
     'netBalance',
     'transactionCount',
     'avgDailySpending',
-    'avgWeeklySpending'
+    'avgWeeklySpending',
+    'expenseByCategoryPercent'
   ],
   lastOpenedDataset: null,
   recentDatasets: [],

@@ -89,6 +89,12 @@
     "transactionCount": "Transactions",
     "avgDailySpending": "Avg Daily Spending",
     "avgWeeklySpending": "Avg Weekly Spending",
+    "expenseByCategoryPercent": "Spending by Category (% of Income)",
+    "chart": {
+      "noIncome": "No income in this period to compare against",
+      "noExpenseData": "No expenses in this period",
+      "percentOfIncome": "% of income"
+    },
     "customize": "Customize Dashboard",
     "cardsDescription": "Choose which cards to display on your dashboard.",
     "timePeriod": "Time Period",

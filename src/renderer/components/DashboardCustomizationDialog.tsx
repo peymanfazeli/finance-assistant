@@ -20,7 +20,8 @@ const ALL_CARDS: { id: DashboardCardId; labelKey: string }[] = [
   { id: 'netBalance', labelKey: 'dashboard.netBalance' },
   { id: 'transactionCount', labelKey: 'dashboard.transactionCount' },
   { id: 'avgDailySpending', labelKey: 'dashboard.avgDailySpending' },
-  { id: 'avgWeeklySpending', labelKey: 'dashboard.avgWeeklySpending' }
+  { id: 'avgWeeklySpending', labelKey: 'dashboard.avgWeeklySpending' },
+  { id: 'expenseByCategoryPercent', labelKey: 'dashboard.expenseByCategoryPercent' }
 ]
 
 const PERIOD_LABEL_KEYS: Record<DashboardPeriodKey, string> = {

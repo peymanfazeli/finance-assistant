@@ -89,6 +89,12 @@
     "transactionCount": "تعداد تراکنش‌ها",
     "avgDailySpending": "میانگین هزینه روزانه",
     "avgWeeklySpending": "میانگین هزینه هفتگی",
+    "expenseByCategoryPercent": "هزینه به تفکیک دسته‌بندی (درصد از درآمد)",
+    "chart": {
+      "noIncome": "در این بازه زمانی درآمدی برای مقایسه وجود ندارد",
+      "noExpenseData": "در این بازه زمانی هزینه‌ای وجود ندارد",
+      "percentOfIncome": "درصد از درآمد"
+    },
     "customize": "سفارشی‌سازی داشبورد",
     "cardsDescription": "انتخاب کنید کدام کارت‌ها در داشبورد نمایش داده شوند.",
     "timePeriod": "بازه زمانی",

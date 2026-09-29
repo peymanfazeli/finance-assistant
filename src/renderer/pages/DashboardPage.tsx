@@ -8,6 +8,7 @@ import { getTodayJalali } from '../../core/utils/jalali'
 import { StatsService } from '../../core/services/StatsService'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
+import ExpenseByCategoryChart from '../components/ExpenseByCategoryChart'
 import DashboardCustomizationDialog from '../components/DashboardCustomizationDialog'
 import Modal from '../components/Modal'
 import TransactionForm from '../components/TransactionForm'
@@ -29,7 +30,7 @@ function DashboardPage(): JSX.Element {
 
   const transactions = dataset?.transactions ?? []
 
-  const { periodStats, isFiltered, hasPeriodData, periodLabelKey } = useMemo(() => {
+  const { periodStats, isFiltered, hasPeriodData, periodLabelKey, periodTransactions } = useMemo(() => {
     const { from, to } = resolveDashboardPeriod(dashboardPeriod, getTodayJalali())
     const filtered = from || to
       ? transactions.filter((tr) => (!from || tr.date >= from) && (!to || tr.date <= to))
@@ -38,7 +39,8 @@ function DashboardPage(): JSX.Element {
       periodStats: StatsService.calculate(filtered),
       isFiltered: Boolean(from || to),
       hasPeriodData: filtered.length > 0,
-      periodLabelKey: `dashboard.period.${dashboardPeriod.preset}`
+      periodLabelKey: `dashboard.period.${dashboardPeriod.preset}`,
+      periodTransactions: filtered
     }
   }, [transactions, dashboardPeriod])
 
@@ -201,6 +203,19 @@ function DashboardPage(): JSX.Element {
             <motion.div variants={prefersReduced ? undefined : sectionVariants}>
               <SummaryCardGrid stats={periodStats} visibleCards={visibleCards} currency={currency} locale={locale} showFinancialDetails={showFinancialDetails} />
             </motion.div>
+
+            {visibleCards.includes('expenseByCategoryPercent') && (
+              <motion.div variants={prefersReduced ? undefined : sectionVariants}>
+                <ExpenseByCategoryChart
+                  transactions={periodTransactions}
+                  categories={categories}
+                  totalIncome={periodStats.totalIncome}
+                  currency={currency}
+                  locale={locale}
+                  isMasked={!showFinancialDetails}
+                />
+              </motion.div>
+            )}
           </>
         )}
       </motion.div>

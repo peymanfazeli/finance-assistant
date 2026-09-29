@@ -86,3 +86,4 @@ export type DashboardCardId =
   | 'transactionCount'
   | 'avgDailySpending'
   | 'avgWeeklySpending'
+  | 'expenseByCategoryPercent'
