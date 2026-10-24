@@ -421,7 +421,9 @@ function ReportsPage(): JSX.Element {
           const tableData = pieData ?? data
           const firstRow = tableData[0]
           const tableHasDate = !!firstRow && 'date' in firstRow
-          const tableHasIncome = tableHasDate && tableData.some(r => (r as TimeSeriesPoint).income > 0)
+          const tableHasIncome = tableHasDate && tableData.some(r => (r as TimeSeriesPoint).income !== undefined && ((r as TimeSeriesPoint).income > 0 || (r as TimeSeriesPoint).expense !== undefined))
+          const isAllByCategory = selectedReport === 'allByCategory'
+          const tableHasIncomeExpenseSplit = isAllByCategory && tableData.some(r => (r as any).income !== undefined || (r as any).expense !== undefined)
           return (
             <div style={styles.tableCard}>
               <div style={styles.tableHeader}>
@@ -433,8 +435,10 @@ function ReportsPage(): JSX.Element {
                     <tr>
                       <th style={styles.th}>{tableHasDate ? t('transaction.date') : t('transaction.category')}</th>
                       {tableHasDate && <th style={styles.th}>{t('transaction.category')}</th>}
-                      {tableHasIncome && <th style={styles.thRight}>{t('transaction.income')}</th>}
-                      <th style={styles.thRight}>{tableHasIncome ? t('transaction.expense') : 'Value'}</th>
+                      {tableHasIncomeExpenseSplit && <th style={styles.thRight}>{t('transaction.income')}</th>}
+                      {tableHasIncomeExpenseSplit && <th style={styles.thRight}>{t('transaction.expense')}</th>}
+                      {!tableHasIncomeExpenseSplit && tableHasIncome && <th style={styles.thRight}>{t('transaction.income')}</th>}
+                      {!tableHasIncomeExpenseSplit && <th style={styles.thRight}>{tableHasIncome ? t('transaction.expense') : 'Value'}</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -446,15 +450,23 @@ function ReportsPage(): JSX.Element {
                             {rowHasDate ? formatJalaliDateEn((row as TimeSeriesPoint).date) : ('name' in row ? row.name : '')}
                           </td>
                           {tableHasDate && <td style={styles.td}>{'name' in row ? row.name : ''}</td>}
-                          {tableHasIncome && (
-                            <td style={styles.tdRight}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>
+                          {tableHasIncomeExpenseSplit && (
+                            <>
+                              <td style={{ ...styles.tdRight, color: ((row as any).income ?? 0) > 0 ? '#228B22' : styles.tdRight.color }}>{formatCurrency(((row as any).income ?? 0), currency, locale)}</td>
+                              <td style={{ ...styles.tdRight, color: ((row as any).expense ?? 0) > 0 ? '#FF8C00' : styles.tdRight.color }}>{formatCurrency(((row as any).expense ?? 0), currency, locale)}</td>
+                            </>
                           )}
-                          <td style={styles.tdRight}>
-                            {formatCurrency(
-                              'value' in row ? (row as ReportDataPoint).value : (row as TimeSeriesPoint).expense,
-                              currency, locale
-                            )}
-                          </td>
+                          {!tableHasIncomeExpenseSplit && tableHasIncome && (
+                            <td style={{ ...styles.tdRight, color: (row as TimeSeriesPoint).income > 0 ? '#228B22' : styles.tdRight.color }}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>
+                          )}
+                          {!tableHasIncomeExpenseSplit && (
+                            <td style={{ ...styles.tdRight, color: (rowHasDate ? (row as TimeSeriesPoint).expense > 0 : ((row as any).expense ?? (row as ReportDataPoint).value) > 0) ? '#FF8C00' : styles.tdRight.color }}>
+                              {formatCurrency(
+                                'value' in row && !(row as any).income && !(row as any).expense ? (row as ReportDataPoint).value : (rowHasDate ? (row as TimeSeriesPoint).expense : ((row as any).expense ?? (row as ReportDataPoint).value)),
+                                currency, locale
+                              )}
+                            </td>
+                          )}
                         </tr>
                       )
                     })}
@@ -463,7 +475,23 @@ function ReportsPage(): JSX.Element {
                     <tr style={styles.tableFooter}>
                       <td style={{ ...styles.td, fontWeight: fontWeight.semibold }}>Total</td>
                       {tableHasDate && <td style={styles.td}></td>}
-                      {tableHasIncome && (
+                      {tableHasIncomeExpenseSplit && (
+                        <>
+                          <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
+                            {formatCurrency(
+                              tableData.reduce((sum, r) => sum + ((r as any).income ?? 0), 0),
+                              currency, locale
+                            )}
+                          </td>
+                          <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
+                            {formatCurrency(
+                              tableData.reduce((sum, r) => sum + ((r as any).expense ?? 0), 0),
+                              currency, locale
+                            )}
+                          </td>
+                        </>
+                      )}
+                      {!tableHasIncomeExpenseSplit && tableHasIncome && (
                         <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
                           {formatCurrency(
                             tableData.reduce((sum, r) => sum + ((r as TimeSeriesPoint).income ?? 0), 0),
@@ -471,13 +499,17 @@ function ReportsPage(): JSX.Element {
                           )}
                         </td>
                       )}
-                      <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
-                        {formatCurrency(
-                          tableData.reduce((sum, r) =>
-                            sum + ('value' in r ? (r as ReportDataPoint).value : (r as TimeSeriesPoint).expense), 0),
-                          currency, locale
-                        )}
-                      </td>
+                      {!tableHasIncomeExpenseSplit && (
+                        <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
+                          {formatCurrency(
+                            tableData.reduce((sum, r) => {
+                              if ('value' in r && !(r as TimeSeriesPoint).date) return sum + (r as ReportDataPoint).value
+                              return sum + ((r as TimeSeriesPoint).expense ?? 0)
+                            }, 0),
+                            currency, locale
+                          )}
+                        </td>
+                      )}
                     </tr>
                   </tfoot>
                 </table>

@@ -220,22 +220,27 @@ export class ReportService {
   private static allByCategory(
     transactions: Transaction[],
     categories: Category[]
-  ): ReportDataPoint[] {
+  ): (ReportDataPoint & { income?: number; expense?: number })[] {
     const catMap = new Map(categories.map((c) => [c.id, c]))
-    const groups = new Map<string, { value: number; type: TransactionType }>()
+    const groups = new Map<string, { income: number; expense: number; investment: number }>()
     transactions.forEach((t) => {
-      const entry = groups.get(t.categoryId)
-      if (entry) {
-        entry.value += t.amount
-      } else {
-        groups.set(t.categoryId, { value: t.amount, type: t.type })
+      const entry = groups.get(t.categoryId) || { income: 0, expense: 0, investment: 0 }
+      if (t.type === TransactionType.Income || t.type === TransactionType.Refund) entry.income += t.amount
+      else if (t.type === TransactionType.Expense) entry.expense += t.amount
+      else if (t.type === TransactionType.Investment) entry.investment += t.amount
+      groups.set(t.categoryId, entry)
+    })
+    return Array.from(groups.entries()).map(([catId, vals]) => {
+      const cat = catMap.get(catId)
+      const total = vals.income + vals.expense + vals.investment
+      return {
+        name: cat?.name ?? catId,
+        value: Math.round(total * 100) / 100,
+        income: Math.round(vals.income * 100) / 100,
+        expense: Math.round((vals.expense + vals.investment) * 100) / 100,
+        color: cat?.color
       }
     })
-    return Array.from(groups.entries()).map(([catId, { value, type }]) => ({
-      name: catMap.get(catId)?.name ?? catId,
-      value: Math.round(value * 100) / 100,
-      color: type === TransactionType.Income ? '#00b894' : type === TransactionType.Investment ? '#6c5ce7' : '#e17055'
-    }))
   }
 
   private static timeSeries(
