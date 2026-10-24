@@ -43,6 +43,18 @@ export interface Receivable {
   updatedAt: string
 }
 
+export interface Payable {
+  id: string
+  title: string
+  categoryId: string
+  totalAmount: number
+  to: string
+  notes: string
+  dueDate?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Dataset {
   version: number
   name: string
@@ -52,6 +64,7 @@ export interface Dataset {
   transactions: Transaction[]
   categories: Category[]
   receivables: Receivable[]
+  payables?: Payable[]
   categoryTypeMap?: Record<string, TransactionType>
   budgetPercentages?: Record<string, number>
 }

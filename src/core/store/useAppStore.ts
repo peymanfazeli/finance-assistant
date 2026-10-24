@@ -4,6 +4,7 @@ import {
   Transaction,
   Category,
   Receivable,
+  Payable,
   ApplicationSettings,
   TransactionFilter,
   SortConfig,
@@ -16,6 +17,7 @@ import { SettingsService } from '../services/SettingsService'
 import { CategoryService } from '../services/CategoryService'
 import { TransactionService } from '../services/TransactionService'
 import { ReceivableService } from '../services/ReceivableService'
+import { PayableService } from '../services/PayableService'
 import { StatsService, DashboardStats } from '../services/StatsService'
 import { DashboardPeriod } from '../utils/dashboardPeriod'
 
@@ -66,10 +68,23 @@ interface AppState {
     totalAmount: number
     from: string
     notes?: string
+    askDate?: string
   }) => void
-  updateReceivable: (id: string, updates: Partial<Pick<Receivable, 'title' | 'categoryId' | 'totalAmount' | 'from' | 'notes'>>) => void
+  updateReceivable: (id: string, updates: Partial<Pick<Receivable, 'title' | 'categoryId' | 'totalAmount' | 'from' | 'notes' | 'askDate'>>) => void
   deleteReceivable: (id: string) => void
   syncReceivablesConfig: () => void
+
+  addPayable: (data: {
+    title: string
+    categoryId: string
+    totalAmount: number
+    to: string
+    notes?: string
+    dueDate?: string
+  }) => void
+  updatePayable: (id: string, updates: Partial<Pick<Payable, 'title' | 'categoryId' | 'totalAmount' | 'to' | 'notes' | 'dueDate'>>) => void
+  deletePayable: (id: string) => void
+  syncPayablesConfig: () => void
 
   setFilters: (filters: TransactionFilter) => void
   setSortConfig: (config: SortConfig) => void
@@ -325,6 +340,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     window.api.config.syncReceivables(configBaseName ?? dataset.name, configData)
   },
 
+  syncPayablesConfig: () => {
+    const { dataset, configBaseName } = get()
+    if (!dataset) return
+    const payables = (dataset as any).payables || []
+    const configData = payables.map((p: any) => {
+      const cat = dataset.categories.find((c) => c.id === p.categoryId)
+      return {
+        title: p.title,
+        category: cat?.name ?? '',
+        totalAmount: p.totalAmount,
+        to: p.to,
+        notes: p.notes
+      }
+    })
+    if ((window.api.config as any).syncPayables) {
+      ;(window.api.config as any).syncPayables(configBaseName ?? dataset.name, configData)
+    }
+  },
+
   addReceivable: (data) => {
     const { dataset } = get()
     if (!dataset) return
@@ -346,6 +380,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!dataset) return
     const updated = ReceivableService.delete(dataset.receivables, id)
     set({ dataset: { ...dataset, receivables: updated } })
+    get().saveDatasetQueued()
+  },
+
+  addPayable: (data) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const payables = (dataset as any).payables || []
+    const updated = PayableService.create(payables, data)
+    set({ dataset: { ...dataset, payables: updated } as Dataset })
+    get().saveDatasetQueued()
+  },
+
+  updatePayable: (id, updates) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const payables = (dataset as any).payables || []
+    const updated = PayableService.update(payables, id, updates)
+    set({ dataset: { ...dataset, payables: updated } as Dataset })
+    get().saveDatasetQueued()
+  },
+
+  deletePayable: (id) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const payables = (dataset as any).payables || []
+    const updated = PayableService.delete(payables, id)
+    set({ dataset: { ...dataset, payables: updated } as Dataset })
     get().saveDatasetQueued()
   },
 

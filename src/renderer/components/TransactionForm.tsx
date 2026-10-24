@@ -29,6 +29,8 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
   const [type, setType] = useState<TransactionType>(transaction?.type ?? TransactionType.Expense)
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '')
   const [notes, setNotes] = useState(transaction?.notes ?? '')
+  const [isPayable, setIsPayable] = useState(false)
+  const [payableTo, setPayableTo] = useState('')
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
 
@@ -39,6 +41,8 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
     setType(categoryTypeMap?.[categories[0]?.id] ?? TransactionType.Expense)
     setAmount('')
     setNotes('')
+    setIsPayable(false)
+    setPayableTo('')
   }
 
   const handleCategoryChange = (newCategoryId: string): void => {
@@ -54,13 +58,21 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
     if (!title.trim()) fields.push(t('transaction.titleLabel'))
     if (!categoryId) fields.push(t('transaction.category'))
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) fields.push(t('transaction.amount'))
+    if (isPayable && !payableTo.trim()) {
+      fields.push(t('payable.to'))
+    }
     if (fields.length > 0) {
       setMissingFields(fields)
       setShowValidationModal(true)
       return
     }
     try {
-      onSave({ date, title: title.trim(), categoryId, type, amount: parsedAmount, notes })
+      const combinedNotes = isPayable && payableTo.trim()
+        ? notes.trim()
+          ? `${notes.trim()} | To: ${payableTo.trim()}`
+          : `To: ${payableTo.trim()}`
+        : notes
+      onSave({ date, title: title.trim(), categoryId, type, amount: parsedAmount, notes: combinedNotes })
       resetFields()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
@@ -110,6 +122,27 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
           onChange={(e) => setAmount(e.target.value)}
         />
       </div>
+      <div style={styles.field}>
+        <label style={styles.checkboxLabel}>
+          <input
+            type="checkbox"
+            checked={isPayable}
+            onChange={(e) => setIsPayable(e.target.checked)}
+          />
+          {t('payable.title')}
+        </label>
+      </div>
+      {isPayable && (
+        <div style={styles.field}>
+          <label style={styles.label}>{t('payable.to')}</label>
+          <input
+            style={styles.input}
+            value={payableTo}
+            onChange={(e) => setPayableTo(e.target.value)}
+            placeholder={t('payable.toPlaceholder')}
+          />
+        </div>
+      )}
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.notes')}</label>
         <textarea

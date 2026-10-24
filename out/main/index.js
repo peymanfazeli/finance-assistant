@@ -98,7 +98,7 @@ const optimizer = {
 };
 const SCHEMA_VERSION = 3;
 class DatasetService {
-  static create(name, currency, categories, receivables = [], transactions = []) {
+  static create(name, currency, categories, receivables = [], transactions = [], payables = []) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
     return {
       version: SCHEMA_VERSION,
@@ -108,7 +108,8 @@ class DatasetService {
       updatedAt: now,
       transactions,
       categories,
-      receivables
+      receivables,
+      payables
     };
   }
   static serialize(dataset) {
@@ -123,6 +124,9 @@ class DatasetService {
     }
     if (!data.receivables) {
       data.receivables = [];
+    }
+    if (!data.payables) {
+      data.payables = [];
     }
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {};

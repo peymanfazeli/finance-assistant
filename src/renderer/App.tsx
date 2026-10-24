@@ -19,11 +19,12 @@ import ReportsPage from './pages/ReportsPage'
 import CustomReportBuilderPage from './pages/CustomReportBuilderPage'
 import SettingsPage from './pages/SettingsPage'
 import ReceivablePage from './pages/ReceivablePage'
+import PayablePage from './pages/PayablePage'
 import BudgetPage from './pages/BudgetPage'
 import { ApplicationSettings } from '../core/models/types'
 import useReducedMotion from './hooks/useReducedMotion'
 
-type Page = 'dashboard' | 'transactions' | 'receivables' | 'categories' | 'budget' | 'reports' | 'customReports' | 'settings'
+type Page = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'categories' | 'budget' | 'reports' | 'customReports' | 'settings'
 
 const pageVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -176,6 +177,7 @@ function App(): JSX.Element {
   const handleCreateDataset = async (name: string, currency: string): Promise<void> => {
     const categories = ConfigService.getCategories()
     const receivables = ConfigService.getReceivables(categories)
+    const payables: any[] = (ConfigService as any).getPayables ? (ConfigService as any).getPayables(categories) : []
     const result = await window.api.dataset.createNamed(name, currency, categories, receivables)
     if (!result.success || !result.path) {
       alert(t('errors.generic') + ': ' + (result.error || t('import.importError')))
@@ -186,7 +188,13 @@ function App(): JSX.Element {
       alert(t('errors.generic') + ': ' + (datasetResult.error || t('import.importError')))
       return
     }
-    setDataset(datasetResult.data, result.path)
+    const ds = datasetResult.data as any
+    if (payables.length > 0 && !ds.payables) {
+      ds.payables = payables
+    } else if (!ds.payables) {
+      ds.payables = []
+    }
+    setDataset(ds, result.path)
     setConfigBaseName(name)
     await window.api.config.createDatasetConfigs(name)
     setShowCreateDialog(false)
@@ -272,6 +280,7 @@ function App(): JSX.Element {
     { page: 'dashboard', label: t('nav.dashboard') },
     { page: 'transactions', label: t('nav.transactions') },
     { page: 'receivables', label: t('nav.receivables') },
+    { page: 'payables', label: t('nav.payables') },
     { page: 'categories', label: t('nav.categories') },
     { page: 'budget', label: t('nav.budget') },
     { page: 'reports', label: t('nav.reports') },
@@ -334,14 +343,15 @@ function App(): JSX.Element {
               exit="exit"
               style={{ height: '100%', overflow: 'hidden', position: 'relative' }}
             >
-              {currentPage === 'dashboard' && <DashboardPage />}
-              {currentPage === 'transactions' && <TransactionPage />}
-              {currentPage === 'receivables' && <ReceivablePage />}
-              {currentPage === 'categories' && <CategoryPage />}
-              {currentPage === 'budget' && <BudgetPage />}
-              {currentPage === 'reports' && <ReportsPage />}
-              {currentPage === 'customReports' && <CustomReportBuilderPage />}
-              {currentPage === 'settings' && <SettingsPage />}
+               {currentPage === 'dashboard' && <DashboardPage />}
+               {currentPage === 'transactions' && <TransactionPage />}
+               {currentPage === 'receivables' && <ReceivablePage />}
+               {currentPage === 'payables' && <PayablePage />}
+               {currentPage === 'categories' && <CategoryPage />}
+               {currentPage === 'budget' && <BudgetPage />}
+               {currentPage === 'reports' && <ReportsPage />}
+               {currentPage === 'customReports' && <CustomReportBuilderPage />}
+               {currentPage === 'settings' && <SettingsPage />}
             </motion.div>
           </AnimatePresence>
         </ErrorBoundary>

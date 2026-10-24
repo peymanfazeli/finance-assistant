@@ -1,4 +1,4 @@
-import { Category, Receivable, Transaction, TransactionType } from '../models/types'
+import { Category, Receivable, Payable, Transaction, TransactionType } from '../models/types'
 import { generateId } from '../utils/id'
 import { DEFAULT_CATEGORIES } from '../../Configs/def_cat'
 import { DEFAULT_RECEIVABLES, ReceivableConfig } from '../../Configs/def_reciev'
@@ -28,6 +28,11 @@ export class ConfigService {
         updatedAt: now
       }
     })
+  }
+
+  static getPayables(categories: Category[]): Payable[] {
+    const now = new Date().toISOString()
+    return []
   }
 
   static parseTransactionsCSV(csvContent: string, categories: Category[]): Transaction[] {

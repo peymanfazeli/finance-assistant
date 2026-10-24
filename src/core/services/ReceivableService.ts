@@ -63,17 +63,23 @@ export class ReceivableService {
   }
 
   static getLinkedTransactions(receivable: Receivable, transactions: Transaction[]): Transaction[] {
-    const refDate = receivable.askDate || receivable.createdAt.slice(0, 10)
+    const refDate = (receivable as any).askDate || receivable.createdAt.slice(0, 10)
     const month = getReceivableMonth(refDate)
     const isIncomeType = (t: Transaction) => t.type === TransactionType.Income || t.type === TransactionType.Refund
+    const from = ((receivable as any).from || '').toLowerCase().trim()
+    const matchesFrom = (t: Transaction) => {
+      if (!from) return true
+      const hay = `${t.title} ${t.notes}`.toLowerCase()
+      return hay.includes(from)
+    }
 
     if (month) {
       return transactions.filter(
-        (t) => t.categoryId === receivable.categoryId && isIncomeType(t) && isInSameMonth(t.date, month)
+        (t) => t.categoryId === receivable.categoryId && isIncomeType(t) && matchesFrom(t) && isInSameMonth(t.date, month)
       )
     }
     return transactions.filter(
-      (t) => t.categoryId === receivable.categoryId && isIncomeType(t)
+      (t) => t.categoryId === receivable.categoryId && isIncomeType(t) && matchesFrom(t)
     )
   }
 

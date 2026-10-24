@@ -8,7 +8,8 @@ export class DatasetService {
     currency: string,
     categories: Category[],
     receivables: Receivable[] = [],
-    transactions: Transaction[] = []
+    transactions: Transaction[] = [],
+    payables: any[] = []
   ): Dataset {
     const now = new Date().toISOString()
     return {
@@ -19,8 +20,9 @@ export class DatasetService {
       updatedAt: now,
       transactions,
       categories,
-      receivables
-    }
+      receivables,
+      payables
+    } as Dataset
   }
 
   static serialize(dataset: Dataset): string {
@@ -36,6 +38,9 @@ export class DatasetService {
     }
     if (!data.receivables) {
       data.receivables = []
+    }
+    if (!(data as any).payables) {
+      (data as any).payables = []
     }
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {}
