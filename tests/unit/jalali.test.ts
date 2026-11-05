@@ -186,6 +186,20 @@ describe('formatJalaliDateEn', () => {
   })
 })
 
+describe('format with malformed dates', () => {
+  it('formatJalaliDate does not throw and returns the input', () => {
+    expect(formatJalaliDate('160-32 = 128')).toBe('160-32 = 128')
+    expect(formatJalaliDate('foo-200-bar-94.200')).toBe('foo-200-bar-94.200')
+    expect(formatJalaliDate('2026-02-31')).toBe('2026-02-31')
+    expect(formatJalaliDate('')).toBe('')
+  })
+
+  it('formatJalaliDateEn does not throw and returns the input', () => {
+    expect(formatJalaliDateEn('foo-200-bar-94.200')).toBe('foo-200-bar-94.200')
+    expect(formatJalaliDateEn('')).toBe('')
+  })
+})
+
 describe('getJalaliMonthName', () => {
   it('returns Persian name for fa', () => {
     expect(getJalaliMonthName(1, 'fa')).toBe('فروردین')

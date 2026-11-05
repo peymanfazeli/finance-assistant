@@ -185,7 +185,26 @@ export function toPersianDigits(num: number | string): string {
   return num.toString().replace(/\d/g, (d) => persianDigits[parseInt(d)])
 }
 
+function isParsableGregorianDateStr(dateStr: string): boolean {
+  const parts = dateStr.split('-')
+  if (parts.length < 1 || parts.length > 3) return false
+  if (!parts.every((p) => /^\d+$/.test(p))) return false
+  if (parts.length >= 2) {
+    const gm = parseInt(parts[1], 10)
+    if (gm < 1 || gm > 12) return false
+    if (parts.length === 3) {
+      const gy = parseInt(parts[0], 10)
+      const gd = parseInt(parts[2], 10)
+      const isLeap = gy % 4 === 0 && (gy % 100 !== 0 || gy % 400 === 0)
+      const monthLengths = [31, isLeap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+      if (gd < 1 || gd > monthLengths[gm - 1]) return false
+    }
+  }
+  return true
+}
+
 export function formatJalaliDate(dateStr: string, usePersianDigits = true): string {
+  if (!isParsableGregorianDateStr(dateStr)) return dateStr
   const parts = dateStr.split('-')
   if (parts.length === 2) {
     const gy = parseInt(parts[0], 10)
@@ -208,6 +227,7 @@ export function formatJalaliDate(dateStr: string, usePersianDigits = true): stri
 }
 
 export function formatJalaliDateEn(dateStr: string): string {
+  if (!isParsableGregorianDateStr(dateStr)) return dateStr
   const parts = dateStr.split('-')
   if (parts.length === 2) {
     const gy = parseInt(parts[0], 10)
