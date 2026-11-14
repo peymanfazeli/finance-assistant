@@ -52,6 +52,42 @@ describe('TransactionService', () => {
     expect(result[1].id).not.toBe(tx.id)
   })
 
+  it('creates a transfer with source and destination wallets', () => {
+    const result = TransactionService.create([], {
+      date: '2026-06-01',
+      title: 'Move money',
+      categoryId: '',
+      type: TransactionType.Transfer,
+      amount: 250,
+      walletId: 'w1',
+      toWalletId: 'w2'
+    })
+    expect(result[0].type).toBe(TransactionType.Transfer)
+    expect(result[0].walletId).toBe('w1')
+    expect(result[0].toWalletId).toBe('w2')
+  })
+
+  it('filters transactions by wallet', () => {
+    const transactions = [
+      makeTx({ id: '1', walletId: 'w1' }),
+      makeTx({ id: '2', walletId: 'w2' }),
+      makeTx({ id: '3', walletId: undefined })
+    ]
+    const result = TransactionService.filter(transactions, { walletIds: ['w1'] })
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('1')
+  })
+
+  it('filters transfers by source or destination wallet', () => {
+    const transactions = [
+      makeTx({ id: '1', type: TransactionType.Transfer, walletId: 'w1', toWalletId: 'w2' }),
+      makeTx({ id: '2', type: TransactionType.Transfer, walletId: 'w3', toWalletId: 'w2' }),
+      makeTx({ id: '3', walletId: 'w1' })
+    ]
+    const result = TransactionService.filter(transactions, { walletIds: ['w2'] })
+    expect(result.map((t) => t.id)).toEqual(['1', '2'])
+  })
+
   it('detects duplicates', () => {
     const tx = makeTx()
     const candidates = [

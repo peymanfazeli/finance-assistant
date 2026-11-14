@@ -5,6 +5,7 @@ import { useAppStore } from '../../core/store/useAppStore'
 import { Language, TransactionType } from '../../core/models/types'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import Modal from '../components/Modal'
+import WalletManager from '../components/WalletManager'
 
 function SettingsPage(): JSX.Element {
   const { t, i18n } = useTranslation()
@@ -68,6 +69,17 @@ function SettingsPage(): JSX.Element {
               <span style={styles.langName}>{t('settings.persian')}</span>
             </button>
           </div>
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <span style={styles.cardIcon}>👛</span>
+            <div>
+              <h3 style={styles.cardTitle}>{t('settings.wallets')}</h3>
+              <p style={styles.cardDescription}>{t('settings.walletsDescription')}</p>
+            </div>
+          </div>
+          <WalletManager />
         </div>
 
         <div style={styles.card}>

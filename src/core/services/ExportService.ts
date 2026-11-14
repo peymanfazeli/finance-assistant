@@ -1,4 +1,4 @@
-import { Transaction, TransactionType, Category } from '../models/types'
+import { Transaction, TransactionType, Category, Wallet } from '../models/types'
 import { ReportDataPoint, TimeSeriesPoint } from './ReportService'
 import { formatCurrency } from '../utils/format'
 import { formatJalaliDateEn } from '../utils/jalali'
@@ -14,17 +14,22 @@ function csvEscape(value: string | number): string {
 }
 
 export class ExportService {
-  static toTransactionCSV(transactions: Transaction[], categories: Category[]): string {
+  static toTransactionCSV(transactions: Transaction[], categories: Category[], wallets: Wallet[] = []): string {
     const catMap = new Map(categories.map((c) => [c.id, c.name]))
-    const header = 'Date,Jalali Date,Title,Category,Type,Amount,Notes\n'
+    const walletMap = new Map(wallets.map((w) => [w.id, w.name]))
+    const header = 'Date,Jalali Date,Title,Category,Wallet,To Wallet,Type,Amount,Notes\n'
     const rows = transactions
       .map((t) => {
-        const catName = catMap.get(t.categoryId) || 'Other'
+        const catName = t.type === TransactionType.Transfer ? 'Transfer' : catMap.get(t.categoryId) || 'Other'
+        const walletName = t.walletId ? walletMap.get(t.walletId) || '' : ''
+        const toWalletName = t.toWalletId ? walletMap.get(t.toWalletId) || '' : ''
         return [
           csvEscape(t.date),
           csvEscape(formatJalaliDateEn(t.date)),
           csvEscape(t.title),
           csvEscape(catName),
+          csvEscape(walletName),
+          csvEscape(toWalletName),
           csvEscape(t.type),
           csvEscape(t.amount),
           csvEscape(t.notes)
@@ -144,13 +149,16 @@ export class ExportService {
     return doc.output('datauristring').split(',')[1]
   }
 
-  static toTransactionXLSXBase64(transactions: Transaction[], categories: Category[]): string {
+  static toTransactionXLSXBase64(transactions: Transaction[], categories: Category[], wallets: Wallet[] = []): string {
     const catMap = new Map(categories.map((c) => [c.id, c.name]))
+    const walletMap = new Map(wallets.map((w) => [w.id, w.name]))
     const rows = transactions.map((t) => ({
       Date: t.date,
       'Jalali Date': formatJalaliDateEn(t.date),
       Title: t.title,
-      Category: catMap.get(t.categoryId) || 'Other',
+      Category: t.type === TransactionType.Transfer ? 'Transfer' : catMap.get(t.categoryId) || 'Other',
+      Wallet: t.walletId ? walletMap.get(t.walletId) || '' : '',
+      'To Wallet': t.toWalletId ? walletMap.get(t.toWalletId) || '' : '',
       Type: t.type,
       Amount: t.amount,
       Notes: t.notes

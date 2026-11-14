@@ -11,6 +11,8 @@ export class TransactionService {
       type: TransactionType
       amount: number
       notes?: string
+      walletId?: string
+      toWalletId?: string
     }
   ): Transaction[] {
     const now = new Date().toISOString()
@@ -22,6 +24,8 @@ export class TransactionService {
       type: data.type,
       amount: data.amount,
       notes: data.notes ?? '',
+      walletId: data.walletId,
+      toWalletId: data.toWalletId,
       createdAt: now,
       updatedAt: now
     }
@@ -31,7 +35,7 @@ export class TransactionService {
   static update(
     transactions: Transaction[],
     id: string,
-    updates: Partial<Pick<Transaction, 'date' | 'title' | 'categoryId' | 'type' | 'amount' | 'notes'>>
+    updates: Partial<Pick<Transaction, 'date' | 'title' | 'categoryId' | 'type' | 'amount' | 'notes' | 'walletId' | 'toWalletId'>>
   ): Transaction[] {
     const now = new Date().toISOString()
     return transactions.map((t) =>
@@ -78,6 +82,12 @@ export class TransactionService {
       if (filter.dateTo && t.date > filter.dateTo) return false
       if (filter.categoryIds && filter.categoryIds.length > 0 && !filter.categoryIds.includes(t.categoryId)) {
         return false
+      }
+      if (filter.walletIds && filter.walletIds.length > 0) {
+        const matchesWallet =
+          (!!t.walletId && filter.walletIds.includes(t.walletId)) ||
+          (!!t.toWalletId && filter.walletIds.includes(t.toWalletId))
+        if (!matchesWallet) return false
       }
       if (filter.types && filter.types.length > 0 && !filter.types.includes(t.type)) {
         return false

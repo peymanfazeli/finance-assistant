@@ -5,6 +5,7 @@ import {
   Category,
   Receivable,
   Payable,
+  Wallet,
   ApplicationSettings,
   TransactionFilter,
   SortConfig,
@@ -16,6 +17,7 @@ import { DatasetService } from '../services/DatasetService'
 import { SettingsService } from '../services/SettingsService'
 import { CategoryService } from '../services/CategoryService'
 import { TransactionService } from '../services/TransactionService'
+import { WalletService } from '../services/WalletService'
 import { ReceivableService } from '../services/ReceivableService'
 import { PayableService } from '../services/PayableService'
 import { StatsService, DashboardStats } from '../services/StatsService'
@@ -32,6 +34,7 @@ interface AppState {
   visibleCards: DashboardCardId[]
   showFinancialDetails: boolean
   dashboardPeriod: DashboardPeriod
+  dashboardWalletId: string | null
   reportDateFrom: string
   reportDateTo: string
 
@@ -50,6 +53,8 @@ interface AppState {
     type: TransactionType
     amount: number
     notes?: string
+    walletId?: string
+    toWalletId?: string
   }) => void
   updateTransaction: (id: string, updates: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
@@ -86,11 +91,16 @@ interface AppState {
   deletePayable: (id: string) => void
   syncPayablesConfig: () => void
 
+  addWallet: (data: { name: string; initialBalance: number; color: string }) => void
+  updateWallet: (id: string, updates: Partial<Pick<Wallet, 'name' | 'initialBalance' | 'color'>>) => void
+  deleteWallet: (id: string) => void
+
   setFilters: (filters: TransactionFilter) => void
   setSortConfig: (config: SortConfig) => void
   setVisibleCards: (cards: DashboardCardId[]) => void
   setShowFinancialDetails: (show: boolean) => void
   setDashboardPeriod: (period: DashboardPeriod) => void
+  setDashboardWalletId: (walletId: string | null) => void
   setReportDateRange: (from: string, to: string) => void
 
   setLanguage: (language: Language) => void
@@ -138,14 +148,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   visibleCards: defaultSettings.visibleDashboardCards,
   showFinancialDetails: false,
   dashboardPeriod: { preset: 'all' },
+  dashboardWalletId: null,
   reportDateFrom: '',
   reportDateTo: '',
 
   setDataset: (dataset, path) => {
+    const normalized: Dataset = { ...dataset, wallets: dataset.wallets ?? [] }
     set({
-      dataset,
+      dataset: normalized,
       datasetPath: path,
-      stats: StatsService.calculate(dataset.transactions)
+      dashboardWalletId: null,
+      stats: StatsService.calculate(normalized.transactions)
     })
     if (path) {
       get().updateSettings({ lastOpenedDataset: path })
@@ -163,6 +176,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       dataset: null,
       datasetPath: null,
       configBaseName: null,
+      dashboardWalletId: null,
       stats: {
         totalIncome: 0,
         totalExpenses: 0,
@@ -410,6 +424,39 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveDatasetQueued()
   },
 
+  addWallet: (data) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const wallets = WalletService.create(dataset.wallets ?? [], data)
+    set({ dataset: { ...dataset, wallets } })
+    get().saveDatasetQueued()
+  },
+
+  updateWallet: (id, updates) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const wallets = WalletService.update(dataset.wallets ?? [], id, updates)
+    set({ dataset: { ...dataset, wallets } })
+    get().saveDatasetQueued()
+  },
+
+  deleteWallet: (id) => {
+    const { dataset, dashboardWalletId } = get()
+    if (!dataset) return
+    const wallets = WalletService.delete(dataset.wallets ?? [], id)
+    const transactions = dataset.transactions.map((t) =>
+      t.walletId === id || t.toWalletId === id
+        ? { ...t, walletId: undefined, toWalletId: undefined }
+        : t
+    )
+    set({
+      dataset: { ...dataset, wallets, transactions },
+      dashboardWalletId: dashboardWalletId === id ? null : dashboardWalletId,
+      stats: StatsService.calculate(transactions)
+    })
+    get().saveDatasetQueued()
+  },
+
   setFilters: (filters) => set({ filters }),
 
   setSortConfig: (config) => set({ sortConfig: config }),
@@ -425,6 +472,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setDashboardPeriod: (period) => {
     set({ dashboardPeriod: period })
+  },
+
+  setDashboardWalletId: (walletId) => {
+    set({ dashboardWalletId: walletId })
   },
 
   setReportDateRange: (from, to) => {

@@ -1,4 +1,5 @@
-import { Transaction, TransactionType, Category } from '../models/types'
+import { Transaction, TransactionType, Category, Wallet } from '../models/types'
+import { WalletService } from './WalletService'
 
 export interface ReportDataPoint {
   name: string
@@ -11,6 +12,19 @@ export interface TimeSeriesPoint {
   income: number
   expense: number
   investment: number
+}
+
+export interface WalletReportRow {
+  walletId: string
+  name: string
+  color: string
+  openingBalance: number
+  income: number
+  expense: number
+  transfersIn: number
+  transfersOut: number
+  netChange: number
+  endingBalance: number
 }
 
 export type ReportType =
@@ -28,6 +42,7 @@ export type ReportType =
   | 'topIncome'
   | 'spendingTrends'
   | 'searchReport'
+  | 'walletReport'
 
 export type SearchGrouping = 'category' | 'month'
 
@@ -114,6 +129,56 @@ export class ReportService {
       default:
         return []
     }
+  }
+
+  static generateWalletReport(
+    wallets: Wallet[],
+    transactions: Transaction[],
+    dateFrom?: string,
+    dateTo?: string
+  ): WalletReportRow[] {
+    return wallets.map((wallet) => {
+      const beforeRange = dateFrom
+        ? transactions.filter((t) => t.date < dateFrom)
+        : []
+      let income = 0
+      let expense = 0
+      let transfersIn = 0
+      let transfersOut = 0
+
+      transactions.forEach((t) => {
+        if (dateFrom && t.date < dateFrom) return
+        if (dateTo && t.date > dateTo) return
+
+        if (t.type === TransactionType.Transfer) {
+          if (t.walletId === wallet.id) transfersOut += t.amount
+          if (t.toWalletId === wallet.id) transfersIn += t.amount
+          return
+        }
+
+        if (t.walletId !== wallet.id) return
+        if (t.type === TransactionType.Income || t.type === TransactionType.Refund) {
+          income += t.amount
+        } else if (t.type === TransactionType.Expense || t.type === TransactionType.Investment) {
+          expense += t.amount
+        }
+      })
+
+      const openingBalance = WalletService.calculateBalance(wallet, beforeRange)
+      const netChange = income - expense + transfersIn - transfersOut
+      return {
+        walletId: wallet.id,
+        name: wallet.name,
+        color: wallet.color,
+        openingBalance,
+        income,
+        expense,
+        transfersIn,
+        transfersOut,
+        netChange,
+        endingBalance: openingBalance + netChange
+      }
+    })
   }
 
   static generateCustom(

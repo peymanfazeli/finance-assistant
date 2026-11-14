@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TransactionType, Category, TransactionFilter } from '../../core/models/types'
+import { TransactionType, Category, Wallet, TransactionFilter } from '../../core/models/types'
 import PersianCalendar from './PersianCalendar'
 import { getTodayJalali, jalaliToGregorianDateStr, jalaliToGregorianDateStrFromParts } from '../../core/utils/jalali'
 import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
 
 interface FilterPanelProps {
   categories: Category[]
+  wallets?: Wallet[]
   onApply: (filter: TransactionFilter) => void
   onClearSearch?: () => void
   vertical?: boolean
   initialFilters?: TransactionFilter
 }
 
-function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilters }: FilterPanelProps): JSX.Element {
+function FilterPanel({ categories, wallets = [], onApply, onClearSearch, vertical, initialFilters }: FilterPanelProps): JSX.Element {
   const { t } = useTranslation()
   const today = getTodayJalali()
   const [dateFrom, setDateFrom] = useState(
@@ -24,6 +25,9 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilt
   )
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     initialFilters?.categoryIds ?? []
+  )
+  const [selectedWallets, setSelectedWallets] = useState<string[]>(
+    initialFilters?.walletIds ?? []
   )
   const [selectedTypes, setSelectedTypes] = useState<TransactionType[]>(
     initialFilters?.types ?? []
@@ -40,6 +44,7 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilt
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
       categoryIds: selectedCategories.length > 0 ? selectedCategories : undefined,
+      walletIds: selectedWallets.length > 0 ? selectedWallets : undefined,
       types: selectedTypes.length > 0 ? selectedTypes : undefined,
       amountMin: amountMin ? parseFloat(amountMin) : undefined,
       amountMax: amountMax ? parseFloat(amountMax) : undefined
@@ -57,6 +62,7 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilt
     setDateFrom('')
     setDateTo('')
     setSelectedCategories([])
+    setSelectedWallets([])
     setSelectedTypes([])
     setAmountMin('')
     setAmountMax('')
@@ -67,6 +73,12 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilt
   const toggleCategory = (id: string): void => {
     setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    )
+  }
+
+  const toggleWallet = (id: string): void => {
+    setSelectedWallets((prev) =>
+      prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]
     )
   }
 
@@ -120,8 +132,29 @@ function FilterPanel({ categories, onApply, onClearSearch, vertical, initialFilt
           </button>
         ))}
       </div>
+      {wallets.length > 0 && (
+        <div style={styles.chipSection}>
+          <span style={styles.chipLabel}>{t('wallet.title')}</span>
+          <div style={styles.chips}>
+            {wallets.map((w) => (
+              <button
+                key={w.id}
+                style={{
+                  ...styles.chip,
+                  backgroundColor: selectedWallets.includes(w.id) ? w.color : colors.bg.muted,
+                  color: selectedWallets.includes(w.id) ? colors.text.inverse : colors.text.muted,
+                  borderColor: selectedWallets.includes(w.id) ? w.color : colors.border.light,
+                }}
+                onClick={() => toggleWallet(w.id)}
+              >
+                {w.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={styles.chips}>
-        {[TransactionType.Income, TransactionType.Expense, TransactionType.Refund, TransactionType.Investment].map((type) => (
+        {[TransactionType.Income, TransactionType.Expense, TransactionType.Refund, TransactionType.Investment, TransactionType.Transfer].map((type) => (
           <button
             key={type}
             style={{
@@ -179,6 +212,18 @@ const styles: Record<string, React.CSSProperties> = {
   separator: {
     color: colors.text.disabled,
     fontSize: fontSize.sm,
+  },
+  chipSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.xs,
+  },
+  chipLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.disabled,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
   chips: {
     display: 'flex',

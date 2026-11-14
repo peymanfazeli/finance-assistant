@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TransactionType, Transaction, Category } from '../../core/models/types'
+import { TransactionType, Transaction, Category, Wallet } from '../../core/models/types'
 import Modal from './Modal'
 import PersianCalendar from './PersianCalendar'
 
 interface TransactionFormProps {
   transaction?: Transaction
   categories: Category[]
+  wallets?: Wallet[]
+  defaultWalletId?: string
+  initialType?: TransactionType
   categoryTypeMap?: Record<string, TransactionType>
   keepOpen?: boolean
   onKeepOpenChange?: (value: boolean) => void
@@ -17,30 +20,45 @@ interface TransactionFormProps {
     type: TransactionType
     amount: number
     notes: string
+    walletId?: string
+    toWalletId?: string
   }) => void
   onCancel: () => void
 }
 
-function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
+function TransactionForm({ transaction, categories, wallets = [], defaultWalletId, initialType, categoryTypeMap, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
   const { t } = useTranslation()
+  const initialMainWalletId = transaction ? transaction.walletId ?? '' : defaultWalletId ?? wallets[0]?.id ?? ''
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0])
   const [title, setTitle] = useState(transaction?.title ?? '')
   const [categoryId, setCategoryId] = useState(transaction?.categoryId ?? categories[0]?.id ?? '')
-  const [type, setType] = useState<TransactionType>(transaction?.type ?? TransactionType.Expense)
+  const [type, setType] = useState<TransactionType>(transaction?.type ?? initialType ?? TransactionType.Expense)
   const [amount, setAmount] = useState(transaction?.amount?.toString() ?? '')
   const [notes, setNotes] = useState(transaction?.notes ?? '')
+  const [walletId, setWalletId] = useState(initialMainWalletId)
+  const [toWalletId, setToWalletId] = useState(() => {
+    if (transaction?.toWalletId) return transaction.toWalletId
+    if ((transaction?.type ?? initialType) === TransactionType.Transfer) {
+      return wallets.find((w) => w.id !== initialMainWalletId)?.id ?? ''
+    }
+    return ''
+  })
+  const isTransfer = type === TransactionType.Transfer
   const [isPayable, setIsPayable] = useState(false)
   const [payableTo, setPayableTo] = useState('')
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
 
   const resetFields = (): void => {
+    const nextMainWalletId = defaultWalletId ?? wallets[0]?.id ?? ''
     setDate(new Date().toISOString().split('T')[0])
     setTitle('')
     setCategoryId(categories[0]?.id ?? '')
-    setType(categoryTypeMap?.[categories[0]?.id] ?? TransactionType.Expense)
+    setType(initialType ?? categoryTypeMap?.[categories[0]?.id] ?? TransactionType.Expense)
     setAmount('')
     setNotes('')
+    setWalletId(nextMainWalletId)
+    setToWalletId(wallets.find((w) => w.id !== nextMainWalletId)?.id ?? '')
     setIsPayable(false)
     setPayableTo('')
   }
@@ -49,6 +67,27 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
     setCategoryId(newCategoryId)
     if (categoryTypeMap?.[newCategoryId]) {
       setType(categoryTypeMap[newCategoryId])
+      setToWalletId('')
+    }
+  }
+
+  const handleTypeChange = (nextType: TransactionType): void => {
+    setType(nextType)
+    if (nextType === TransactionType.Transfer) {
+      const mainWalletId = walletId || defaultWalletId || wallets[0]?.id || ''
+      setWalletId(mainWalletId)
+      if (!toWalletId || toWalletId === mainWalletId) {
+        setToWalletId(wallets.find((w) => w.id !== mainWalletId)?.id ?? '')
+      }
+    } else {
+      setToWalletId('')
+    }
+  }
+
+  const handleWalletChange = (nextWalletId: string): void => {
+    setWalletId(nextWalletId)
+    if (isTransfer && toWalletId === nextWalletId) {
+      setToWalletId(wallets.find((w) => w.id !== nextWalletId)?.id ?? '')
     }
   }
 
@@ -56,9 +95,15 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
     const parsedAmount = parseFloat(amount)
     const fields: string[] = []
     if (!title.trim()) fields.push(t('transaction.titleLabel'))
-    if (!categoryId) fields.push(t('transaction.category'))
+    if (!isTransfer && !categoryId) fields.push(t('transaction.category'))
+    if (isTransfer) {
+      if (wallets.length < 2) fields.push(t('transaction.needTwoWallets'))
+      if (!walletId) fields.push(t('transaction.mainWallet'))
+      if (!toWalletId) fields.push(t('transaction.toWallet'))
+      if (walletId && toWalletId && walletId === toWalletId) fields.push(t('transaction.sameWallet'))
+    }
     if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) fields.push(t('transaction.amount'))
-    if (isPayable && !payableTo.trim()) {
+    if (!isTransfer && isPayable && !payableTo.trim()) {
       fields.push(t('payable.to'))
     }
     if (fields.length > 0) {
@@ -67,12 +112,21 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
       return
     }
     try {
-      const combinedNotes = isPayable && payableTo.trim()
+      const combinedNotes = !isTransfer && isPayable && payableTo.trim()
         ? notes.trim()
           ? `${notes.trim()} | To: ${payableTo.trim()}`
           : `To: ${payableTo.trim()}`
         : notes
-      onSave({ date, title: title.trim(), categoryId, type, amount: parsedAmount, notes: combinedNotes })
+      onSave({
+        date,
+        title: title.trim(),
+        categoryId: isTransfer ? '' : categoryId,
+        type,
+        amount: parsedAmount,
+        notes: combinedNotes,
+        walletId: walletId || undefined,
+        toWalletId: isTransfer ? toWalletId || undefined : undefined
+      })
       resetFields()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
@@ -95,22 +149,59 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
         />
       </div>
       <div style={styles.field}>
-        <label style={styles.label}>{t('transaction.category')}</label>
-        <select style={styles.select} value={categoryId} onChange={(e) => handleCategoryChange(e.target.value)}>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-      </div>
-      <div style={styles.field}>
         <label style={styles.label}>{t('transaction.type')}</label>
-        <select style={styles.select} value={type} onChange={(e) => setType(e.target.value as TransactionType)}>
+        <select style={styles.select} value={type} onChange={(e) => handleTypeChange(e.target.value as TransactionType)}>
           <option value={TransactionType.Income}>{t('transaction.income')}</option>
           <option value={TransactionType.Expense}>{t('transaction.expense')}</option>
           <option value={TransactionType.Refund}>{t('transaction.refund')}</option>
           <option value={TransactionType.Investment}>{t('transaction.investment')}</option>
+          <option value={TransactionType.Transfer}>{t('transaction.transfer')}</option>
         </select>
       </div>
+      {isTransfer ? (
+        <>
+          <div style={styles.field}>
+            <label style={styles.label}>{t('transaction.mainWallet')}</label>
+            <select style={styles.select} value={walletId} onChange={(e) => handleWalletChange(e.target.value)}>
+              <option value="">{t('wallet.unassigned')}</option>
+              {wallets.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+          <div style={styles.field}>
+            <label style={styles.label}>{t('transaction.toWallet')}</label>
+            <select style={styles.select} value={toWalletId} onChange={(e) => setToWalletId(e.target.value)}>
+              <option value="">{t('transaction.selectWallet')}</option>
+              {wallets.filter((w) => w.id !== walletId).map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={styles.field}>
+            <label style={styles.label}>{t('transaction.category')}</label>
+            <select style={styles.select} value={categoryId} onChange={(e) => handleCategoryChange(e.target.value)}>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          {wallets.length > 0 && (
+            <div style={styles.field}>
+              <label style={styles.label}>{t('transaction.wallet')}</label>
+              <select style={styles.select} value={walletId} onChange={(e) => handleWalletChange(e.target.value)}>
+                <option value="">{t('wallet.unassigned')}</option>
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </>
+      )}
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.amount')}</label>
         <input
@@ -122,26 +213,30 @@ function TransactionForm({ transaction, categories, categoryTypeMap, keepOpen, o
           onChange={(e) => setAmount(e.target.value)}
         />
       </div>
-      <div style={styles.field}>
-        <label style={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            checked={isPayable}
-            onChange={(e) => setIsPayable(e.target.checked)}
-          />
-          {t('payable.title')}
-        </label>
-      </div>
-      {isPayable && (
-        <div style={styles.field}>
-          <label style={styles.label}>{t('payable.to')}</label>
-          <input
-            style={styles.input}
-            value={payableTo}
-            onChange={(e) => setPayableTo(e.target.value)}
-            placeholder={t('payable.toPlaceholder')}
-          />
-        </div>
+      {!isTransfer && (
+        <>
+          <div style={styles.field}>
+            <label style={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={isPayable}
+                onChange={(e) => setIsPayable(e.target.checked)}
+              />
+              {t('payable.title')}
+            </label>
+          </div>
+          {isPayable && (
+            <div style={styles.field}>
+              <label style={styles.label}>{t('payable.to')}</label>
+              <input
+                style={styles.input}
+                value={payableTo}
+                onChange={(e) => setPayableTo(e.target.value)}
+                placeholder={t('payable.toPlaceholder')}
+              />
+            </div>
+          )}
+        </>
       )}
       <div style={styles.field}>
         <label style={styles.label}>{t('transaction.notes')}</label>

@@ -142,7 +142,7 @@ function App(): JSX.Element {
 
   const handleCloseExport = useCallback(async (): Promise<void> => {
     if (!dataset) return
-    const csv = ExportService.toTransactionCSV(dataset.transactions, dataset.categories)
+    const csv = ExportService.toTransactionCSV(dataset.transactions, dataset.categories, dataset.wallets ?? [])
     const result = await window.api.export.showSaveDialog('transactions.csv', [
       { name: 'CSV', extensions: ['csv'] }
     ])

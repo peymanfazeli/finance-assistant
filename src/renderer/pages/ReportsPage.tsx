@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
-import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint, SearchGrouping } from '../../core/services/ReportService'
+import { ReportService, ReportType, ChartType, ReportDataPoint, TimeSeriesPoint, SearchGrouping, WalletReportRow } from '../../core/services/ReportService'
 import ExportButton from '../components/ExportButton'
 import AIAnalysisModal from '../components/AIAnalysisModal'
 import { formatCurrency } from '../../core/utils/format'
@@ -52,6 +52,14 @@ function getReportCategories(t: (key: string) => string): ReportCategory[] {
         { id: 'investByCategory', label: t('reports.investByCategory') },
         { id: 'investVsIncome', label: t('reports.investVsIncome') },
         { id: 'investVsExpense', label: t('reports.investVsExpense') },
+      ]
+    },
+    {
+      id: 'wallets',
+      label: t('wallet.title'),
+      icon: '👛',
+      reports: [
+        { id: 'walletReport', label: t('reports.walletReport') },
       ]
     },
     {
@@ -107,9 +115,18 @@ function ReportsPage(): JSX.Element {
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
+  const wallets = dataset?.wallets ?? []
   const categoriesList = useMemo(() => getReportCategories(t), [t])
 
   const isSearch = selectedReport === 'searchReport'
+  const isWalletReport = selectedReport === 'walletReport'
+
+  const walletRows = useMemo(
+    () => isWalletReport
+      ? ReportService.generateWalletReport(wallets, transactions, dateFrom || undefined, dateTo || undefined)
+      : [],
+    [isWalletReport, wallets, transactions, dateFrom, dateTo]
+  )
 
   const data = useMemo(
     () => {
@@ -117,9 +134,16 @@ function ReportsPage(): JSX.Element {
         if (!searchGenerated || !searchKeyword.trim()) return []
         return ReportService.generateSearch(transactions, categories, searchKeyword.trim(), searchGrouping, dateFrom || undefined, dateTo || undefined)
       }
+      if (isWalletReport) {
+        return walletRows.map((row) => ({
+          name: row.name,
+          value: row.endingBalance,
+          color: row.color
+        }))
+      }
       return ReportService.generate(transactions, categories, selectedReport, dateFrom || undefined, dateTo || undefined)
     },
-    [transactions, categories, selectedReport, dateFrom, dateTo, isSearch, searchKeyword, searchGrouping, searchGenerated]
+    [transactions, categories, selectedReport, dateFrom, dateTo, isSearch, searchKeyword, searchGrouping, searchGenerated, isWalletReport, walletRows]
   )
 
   const chartRef = useRef<HTMLDivElement>(null)
@@ -366,7 +390,10 @@ function ReportsPage(): JSX.Element {
         <div style={styles.mainHeader}>
           <div style={styles.mainHeaderLeft}>
             <h2 style={styles.title}>{currentReportLabel}</h2>
-            <p style={styles.subtitle}>{currentCategory?.icon} {currentCategory?.label}</p>
+            <p style={styles.subtitle}>
+              {currentCategory?.icon} {currentCategory?.label}
+              {isWalletReport && dateFrom && dateTo && ` · ${formatJalaliDateEn(dateFrom)} – ${formatJalaliDateEn(dateTo)}`}
+            </p>
           </div>
           <div style={styles.chartTypeBar}>
             {displayChartTypes.map((ct) => (
@@ -417,7 +444,80 @@ function ReportsPage(): JSX.Element {
           {renderChart()}
         </div>
 
-        {hasData && (() => {
+        {isWalletReport && walletRows.length > 0 && (
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}>
+              <span style={styles.tableRowCount}>{walletRows.length} {t('wallet.title')}</span>
+            </div>
+            <div style={styles.tableScroll}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>{t('wallet.name')}</th>
+                    <th style={styles.thRight}>{t('wallet.openingBalance')}</th>
+                    <th style={styles.thRight}>{t('transaction.income')}</th>
+                    <th style={styles.thRight}>{t('transaction.expense')}</th>
+                    <th style={styles.thRight}>{t('reports.transfersIn')}</th>
+                    <th style={styles.thRight}>{t('reports.transfersOut')}</th>
+                    <th style={styles.thRight}>{t('reports.netChange')}</th>
+                    <th style={styles.thRight}>{t('reports.endingBalance')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {walletRows.map((row: WalletReportRow, i: number) => (
+                    <tr key={row.walletId} style={i % 2 === 0 ? styles.tableRowEven : undefined}>
+                      <td style={styles.td}>
+                        <span style={styles.walletNameCell}>
+                          <span style={{ ...styles.walletDot, backgroundColor: row.color }} />
+                          {row.name}
+                        </span>
+                      </td>
+                      <td style={styles.tdRight}>{formatCurrency(row.openingBalance, currency, locale)}</td>
+                      <td style={{ ...styles.tdRight, color: row.income > 0 ? '#228B22' : styles.tdRight.color }}>
+                        {formatCurrency(row.income, currency, locale)}
+                      </td>
+                      <td style={{ ...styles.tdRight, color: row.expense > 0 ? '#FF8C00' : styles.tdRight.color }}>
+                        {formatCurrency(row.expense, currency, locale)}
+                      </td>
+                      <td style={styles.tdRight}>{formatCurrency(row.transfersIn, currency, locale)}</td>
+                      <td style={styles.tdRight}>{formatCurrency(row.transfersOut, currency, locale)}</td>
+                      <td style={{
+                        ...styles.tdRight,
+                        fontWeight: fontWeight.semibold,
+                        color: row.netChange >= 0 ? '#228B22' : '#FF8C00'
+                      }}>
+                        {formatCurrency(row.netChange, currency, locale)}
+                      </td>
+                      <td style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
+                        {formatCurrency(row.endingBalance, currency, locale)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={styles.tableFooter}>
+                    <td style={{ ...styles.td, fontWeight: fontWeight.semibold }}>Total</td>
+                    {[
+                      walletRows.reduce((sum, r) => sum + r.openingBalance, 0),
+                      walletRows.reduce((sum, r) => sum + r.income, 0),
+                      walletRows.reduce((sum, r) => sum + r.expense, 0),
+                      walletRows.reduce((sum, r) => sum + r.transfersIn, 0),
+                      walletRows.reduce((sum, r) => sum + r.transfersOut, 0),
+                      walletRows.reduce((sum, r) => sum + r.netChange, 0),
+                      walletRows.reduce((sum, r) => sum + r.endingBalance, 0)
+                    ].map((value, idx) => (
+                      <td key={idx} style={{ ...styles.tdRight, fontWeight: fontWeight.semibold }}>
+                        {formatCurrency(value, currency, locale)}
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {!isWalletReport && hasData && (() => {
           const tableData = pieData ?? data
           const firstRow = tableData[0]
           const tableHasDate = !!firstRow && 'date' in firstRow
@@ -839,6 +939,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tableFooter: {
     backgroundColor: colors.bg.muted,
+  },
+  walletNameCell: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+    fontWeight: fontWeight.medium,
+  },
+  walletDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: borderRadius.full,
+    flexShrink: 0,
   },
 }
 

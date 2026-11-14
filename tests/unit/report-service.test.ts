@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ReportService, Grouping, Aggregation } from '../../src/core/services/ReportService'
-import { Transaction, TransactionType, Category } from '../../src/core/models/types'
+import { Transaction, TransactionType, Category, Wallet } from '../../src/core/models/types'
 
 const categories: Category[] = [
   { id: 'c1', name: 'Food', color: '#f00', icon: 'a', isDefault: true, createdAt: '' },
@@ -158,5 +158,38 @@ describe('ReportService.generateCustom', () => {
       dateFrom: '2030-01-01'
     })
     expect(result).toHaveLength(0)
+  })
+
+  it('generates a wallet report for the selected date range', () => {
+    const wallets: Wallet[] = [
+      { id: 'w1', name: 'Bank', initialBalance: 1000, color: '#000', createdAt: '' },
+      { id: 'w2', name: 'Cash', initialBalance: 500, color: '#fff', createdAt: '' }
+    ]
+    const txs: Transaction[] = [
+      { id: '1', date: '2026-01-10', title: 'Salary', categoryId: 'c2', type: TransactionType.Income, amount: 300, notes: '', walletId: 'w1', createdAt: '', updatedAt: '' },
+      { id: '2', date: '2026-01-15', title: 'Food', categoryId: 'c1', type: TransactionType.Expense, amount: 100, notes: '', walletId: 'w1', createdAt: '', updatedAt: '' },
+      { id: '3', date: '2026-01-20', title: 'Move', categoryId: '', type: TransactionType.Transfer, amount: 200, notes: '', walletId: 'w1', toWalletId: 'w2', createdAt: '', updatedAt: '' },
+      { id: '4', date: '2026-02-05', title: 'Food', categoryId: 'c1', type: TransactionType.Expense, amount: 50, notes: '', walletId: 'w2', createdAt: '', updatedAt: '' }
+    ]
+
+    const january = ReportService.generateWalletReport(wallets, txs, '2026-01-01', '2026-01-31')
+    const bank = january.find((r) => r.walletId === 'w1')
+    const cash = january.find((r) => r.walletId === 'w2')
+    expect(bank?.openingBalance).toBe(1000)
+    expect(bank?.income).toBe(300)
+    expect(bank?.expense).toBe(100)
+    expect(bank?.transfersOut).toBe(200)
+    expect(bank?.netChange).toBe(0)
+    expect(bank?.endingBalance).toBe(1000)
+    expect(cash?.openingBalance).toBe(500)
+    expect(cash?.transfersIn).toBe(200)
+    expect(cash?.endingBalance).toBe(700)
+    expect(january.reduce((sum, r) => sum + r.netChange, 0)).toBe(200)
+
+    const february = ReportService.generateWalletReport(wallets, txs, '2026-02-01', '2026-02-28')
+    const cashInFeb = february.find((r) => r.walletId === 'w2')
+    expect(cashInFeb?.openingBalance).toBe(700)
+    expect(cashInFeb?.expense).toBe(50)
+    expect(cashInFeb?.endingBalance).toBe(650)
   })
 })

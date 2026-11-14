@@ -50,6 +50,7 @@ function TransactionPage(): JSX.Element {
 
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
+  const wallets = dataset?.wallets ?? []
 
   const filteredTransactions = useMemo(() => {
     let result = transactions
@@ -76,6 +77,8 @@ function TransactionPage(): JSX.Element {
       type: import('../../core/models/types').TransactionType
       amount: number
       notes: string
+      walletId?: string
+      toWalletId?: string
     }) => {
       if (editId) {
         updateTransaction(editId, data)
@@ -99,14 +102,14 @@ function TransactionPage(): JSX.Element {
       setShowExportMenu(false)
       try {
         if (format === 'csv') {
-          const csv = ExportService.toTransactionCSV(transactions, categories)
+          const csv = ExportService.toTransactionCSV(transactions, categories, wallets)
           const result = await window.api.export.showSaveDialog('transactions.csv', [
             { name: 'CSV', extensions: ['csv'] }
           ])
           if (result.canceled || !result.filePath) return
           await window.api.export.saveFile(result.filePath, csv)
         } else {
-          const base64 = ExportService.toTransactionXLSXBase64(transactions, categories)
+          const base64 = ExportService.toTransactionXLSXBase64(transactions, categories, wallets)
           const result = await window.api.export.showSaveDialog('transactions.xlsx', [
             { name: 'Excel', extensions: ['xlsx'] }
           ])
@@ -121,7 +124,7 @@ function TransactionPage(): JSX.Element {
         setExporting(false)
       }
     },
-    [dataset, transactions, categories, t]
+    [dataset, transactions, categories, wallets, t]
   )
 
   const handleEdit = useCallback((id: string) => {
@@ -289,7 +292,7 @@ function TransactionPage(): JSX.Element {
             <span style={styles.asideTitle}>{t('common.filter')}</span>
           </div>
           <div style={styles.asideContent}>
-            <FilterPanel categories={categories} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} vertical initialFilters={filters} />
+            <FilterPanel categories={categories} wallets={wallets} onApply={setFilters} onClearSearch={() => setSearchKeyword('')} vertical initialFilters={filters} />
           </div>
         </aside>
 
@@ -366,6 +369,7 @@ function TransactionPage(): JSX.Element {
         <TransactionForm
           transaction={editingTransaction}
           categories={categories}
+          wallets={wallets}
           categoryTypeMap={dataset?.categoryTypeMap}
           keepOpen={keepFormOpen}
           onKeepOpenChange={setKeepFormOpen}

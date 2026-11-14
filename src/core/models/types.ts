@@ -2,7 +2,8 @@ export enum TransactionType {
   Income = 'income',
   Expense = 'expense',
   Refund = 'refund',
-  Investment = 'investment'
+  Investment = 'investment',
+  Transfer = 'transfer'
 }
 
 export enum Language {
@@ -19,6 +20,14 @@ export interface Category {
   createdAt: string
 }
 
+export interface Wallet {
+  id: string
+  name: string
+  initialBalance: number
+  color: string
+  createdAt: string
+}
+
 export interface Transaction {
   id: string
   date: string
@@ -27,6 +36,8 @@ export interface Transaction {
   type: TransactionType
   amount: number
   notes: string
+  walletId?: string
+  toWalletId?: string
   createdAt: string
   updatedAt: string
 }
@@ -64,6 +75,7 @@ export interface Dataset {
   transactions: Transaction[]
   categories: Category[]
   receivables: Receivable[]
+  wallets?: Wallet[]
   payables?: Payable[]
   categoryTypeMap?: Record<string, TransactionType>
   budgetPercentages?: Record<string, number>
@@ -82,6 +94,7 @@ export type TransactionFilter = {
   dateFrom?: string
   dateTo?: string
   categoryIds?: string[]
+  walletIds?: string[]
   types?: TransactionType[]
   amountMin?: number
   amountMax?: number

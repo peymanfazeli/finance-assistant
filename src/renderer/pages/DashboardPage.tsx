@@ -6,6 +6,7 @@ import { DashboardCardId } from '../../core/models/types'
 import { DashboardPeriod, resolveDashboardPeriod } from '../../core/utils/dashboardPeriod'
 import { getTodayJalali } from '../../core/utils/jalali'
 import { StatsService } from '../../core/services/StatsService'
+import { WalletService } from '../../core/services/WalletService'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
 import ExpenseByCategoryChart from '../components/ExpenseByCategoryChart'
@@ -17,9 +18,10 @@ import useReducedMotion from '../hooks/useReducedMotion'
 function DashboardPage(): JSX.Element {
   const { t, i18n } = useTranslation()
   const {
-    stats, visibleCards, setVisibleCards, dataset,
+    visibleCards, setVisibleCards, dataset,
     showFinancialDetails, setShowFinancialDetails,
     dashboardPeriod, setDashboardPeriod,
+    dashboardWalletId, setDashboardWalletId,
     addTransaction
   } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
@@ -29,12 +31,27 @@ function DashboardPage(): JSX.Element {
   const prefersReduced = useReducedMotion()
 
   const transactions = dataset?.transactions ?? []
+  const wallets = dataset?.wallets ?? []
+  const selectedWallet = dashboardWalletId
+    ? wallets.find((w) => w.id === dashboardWalletId) ?? null
+    : null
+
+  const scopedTransactions = useMemo(
+    () => (dashboardWalletId
+      ? transactions.filter((tr) => tr.walletId === dashboardWalletId || tr.toWalletId === dashboardWalletId)
+      : transactions),
+    [transactions, dashboardWalletId]
+  )
+
+  const walletBalance = selectedWallet
+    ? WalletService.calculateBalance(selectedWallet, transactions)
+    : null
 
   const { periodStats, isFiltered, hasPeriodData, periodLabelKey, periodTransactions } = useMemo(() => {
     const { from, to } = resolveDashboardPeriod(dashboardPeriod, getTodayJalali())
     const filtered = from || to
-      ? transactions.filter((tr) => (!from || tr.date >= from) && (!to || tr.date <= to))
-      : transactions
+      ? scopedTransactions.filter((tr) => (!from || tr.date >= from) && (!to || tr.date <= to))
+      : scopedTransactions
     return {
       periodStats: StatsService.calculate(filtered),
       isFiltered: Boolean(from || to),
@@ -42,7 +59,7 @@ function DashboardPage(): JSX.Element {
       periodLabelKey: `dashboard.period.${dashboardPeriod.preset}`,
       periodTransactions: filtered
     }
-  }, [transactions, dashboardPeriod])
+  }, [scopedTransactions, dashboardPeriod])
 
   const handleToggle = (cardId: DashboardCardId): void => {
     const updated = visibleCards.includes(cardId)
@@ -55,7 +72,7 @@ function DashboardPage(): JSX.Element {
     setDashboardPeriod(period)
   }
 
-  const hasNoData = stats.transactionCount === 0
+  const hasNoData = scopedTransactions.length === 0
   const netBalancePositive = periodStats.netBalance >= 0
   const categories = dataset?.categories ?? []
   const categoryTypeMap = dataset?.categoryTypeMap
@@ -128,6 +145,42 @@ function DashboardPage(): JSX.Element {
           </div>
         </motion.div>
 
+        {wallets.length > 0 && (
+          <motion.div
+            variants={prefersReduced ? undefined : sectionVariants}
+            style={styles.walletBar}
+          >
+            <span style={styles.walletBarLabel}>{t('transaction.wallet')}</span>
+            <div style={styles.walletChips}>
+              <button
+                style={{
+                  ...styles.walletChip,
+                  ...(dashboardWalletId === null ? styles.walletChipActive : {}),
+                }}
+                onClick={() => setDashboardWalletId(null)}
+              >
+                {t('wallet.allWallets')}
+              </button>
+              {wallets.map((wallet) => {
+                const active = dashboardWalletId === wallet.id
+                return (
+                  <button
+                    key={wallet.id}
+                    style={{
+                      ...styles.walletChip,
+                      ...(active ? styles.walletChipActive : {}),
+                    }}
+                    onClick={() => setDashboardWalletId(wallet.id)}
+                  >
+                    <span style={{ ...styles.walletDot, backgroundColor: wallet.color }} />
+                    {wallet.name}
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {hasNoData ? (
           <motion.div
             variants={prefersReduced ? undefined : sectionVariants}
@@ -141,8 +194,12 @@ function DashboardPage(): JSX.Element {
             >
               📊
             </motion.div>
-            <h3 style={styles.emptyTitle}>{t('dashboard.noDataTitle')}</h3>
-            <p style={styles.emptyText}>{t('dashboard.noDataDescription')}</p>
+            <h3 style={styles.emptyTitle}>
+              {selectedWallet ? selectedWallet.name : t('dashboard.noDataTitle')}
+            </h3>
+            <p style={styles.emptyText}>
+              {selectedWallet ? t('dashboard.noWalletTransactions') : t('dashboard.noDataDescription')}
+            </p>
             <div style={styles.emptyActions}>
               <motion.button
                 style={styles.emptyPrimaryBtn}
@@ -188,6 +245,14 @@ function DashboardPage(): JSX.Element {
                   : '***'
                 }
               </motion.span>
+              {selectedWallet && walletBalance !== null && (
+                <div style={styles.walletBalanceRow}>
+                  <span style={styles.walletBalanceLabel}>{t('wallet.currentBalance')}</span>
+                  <span style={styles.walletBalanceValue}>
+                    {showFinancialDetails ? formatCurrencyCompact(walletBalance, currency, locale) : '***'}
+                  </span>
+                </div>
+              )}
             </motion.div>
 
             {isFiltered && !hasPeriodData && (
@@ -248,6 +313,8 @@ function DashboardPage(): JSX.Element {
         <Modal open={showQuickAdd} onClose={() => setShowQuickAdd(false)} title={t('transaction.add')}>
           <TransactionForm
             categories={categories}
+            wallets={wallets}
+            defaultWalletId={dashboardWalletId ?? undefined}
             categoryTypeMap={categoryTypeMap}
             onSave={(data) => {
               addTransaction(data)
@@ -359,6 +426,69 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.md,
     cursor: 'pointer',
     transition: 'all 0.15s ease',
+  },
+  walletBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xl,
+    flexWrap: 'wrap',
+  },
+  walletBarLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.disabled,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  walletChips: {
+    display: 'flex',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  walletChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: `${spacing.xs} ${spacing.md}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.full,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  walletChipActive: {
+    color: colors.primary,
+    backgroundColor: colors.bg.active,
+    borderColor: colors.primary,
+  },
+  walletDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: borderRadius.full,
+    flexShrink: 0,
+  },
+  walletBalanceRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  walletBalanceLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.text.disabled,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
+  },
+  walletBalanceValue: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.secondary,
+    fontVariantNumeric: 'tabular-nums',
   },
   heroCard: {
     borderRadius: borderRadius.xl,

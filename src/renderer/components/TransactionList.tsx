@@ -32,6 +32,7 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
   const { sortConfig, setSortConfig, deleteTransaction, duplicateTransaction, dataset } = useAppStore()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const currency = dataset?.currency || 'toman'
+  const wallets = dataset?.wallets ?? []
   const prefersReduced = useReducedMotion()
   const usePersianDigits = i18n.language === 'fa'
 
@@ -76,6 +77,7 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
             <th style={styles.th} onClick={() => handleSort('categoryId')}>
               {t('transaction.category')}{sortIndicator('categoryId')}
             </th>
+            <th style={styles.th}>{t('transaction.wallet')}</th>
             <th style={styles.th} onClick={() => handleSort('type')}>
               {t('transaction.type')}{sortIndicator('type')}
             </th>
@@ -100,7 +102,12 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                 <span style={styles.titleText}>{tx.title}</span>
               </td>
               <td style={styles.td}>
-                {(() => {
+                {tx.type === TransactionType.Transfer ? (
+                  <span style={styles.categoryBadge}>
+                    <span>↔</span>
+                    <span>{t('transaction.transfer')}</span>
+                  </span>
+                ) : (() => {
                   const cat = categories.find((c) => c.id === tx.categoryId)
                   return cat ? (
                     <span style={styles.categoryBadge}>
@@ -108,6 +115,31 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                       <span>{cat.name}</span>
                     </span>
                   ) : tx.categoryId
+                })()}
+              </td>
+              <td style={styles.td}>
+                {(() => {
+                  const wallet = wallets.find((w) => w.id === tx.walletId)
+                  const toWallet = wallets.find((w) => w.id === tx.toWalletId)
+                  if (tx.type === TransactionType.Transfer) {
+                    return (
+                      <span style={styles.walletBadge}>
+                        {wallet && <span style={{ ...styles.walletDot, backgroundColor: wallet.color }} />}
+                        <span>{wallet?.name ?? t('wallet.unassigned')}</span>
+                        <span style={styles.transferArrow}>→</span>
+                        {toWallet && <span style={{ ...styles.walletDot, backgroundColor: toWallet.color }} />}
+                        <span>{toWallet?.name ?? t('wallet.unassigned')}</span>
+                      </span>
+                    )
+                  }
+                  return wallet ? (
+                    <span style={styles.walletBadge}>
+                      <span style={{ ...styles.walletDot, backgroundColor: wallet.color }} />
+                      <span>{wallet.name}</span>
+                    </span>
+                  ) : (
+                    <span style={styles.unassigned}>{t('wallet.unassigned')}</span>
+                  )
                 })()}
               </td>
               <td style={styles.td}>
@@ -121,7 +153,9 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                           ? colors.bg.expense
                           : tx.type === TransactionType.Investment
                             ? colors.bg.investment
-                            : colors.bg.refund,
+                            : tx.type === TransactionType.Transfer
+                              ? colors.bg.active
+                              : colors.bg.refund,
                     color:
                       tx.type === TransactionType.Income
                         ? colors.text.income
@@ -129,7 +163,9 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                           ? colors.text.expense
                           : tx.type === TransactionType.Investment
                             ? colors.text.investment
-                            : colors.text.refund,
+                            : tx.type === TransactionType.Transfer
+                              ? colors.primary
+                              : colors.text.refund,
                   }}
                 >
                   {t(`transaction.${tx.type}`)}
@@ -140,15 +176,21 @@ function TransactionList({ transactions, categories, onEdit }: TransactionListPr
                   fontWeight: fontWeight.semibold,
                   fontVariantNumeric: 'tabular-nums',
                   color:
-                    tx.type === TransactionType.Income
-                      ? colors.text.income
-                      : tx.type === TransactionType.Expense
-                        ? colors.text.expense
-                        : tx.type === TransactionType.Investment
-                          ? colors.text.investment
-                          : colors.text.refund,
+                    tx.type === TransactionType.Transfer
+                      ? colors.text.secondary
+                      : tx.type === TransactionType.Income
+                        ? colors.text.income
+                        : tx.type === TransactionType.Expense
+                          ? colors.text.expense
+                          : tx.type === TransactionType.Investment
+                            ? colors.text.investment
+                            : colors.text.refund,
                 }}>
-                  {tx.type === TransactionType.Expense || tx.type === TransactionType.Investment ? '-' : '+'}
+                  {tx.type === TransactionType.Transfer
+                    ? ''
+                    : tx.type === TransactionType.Expense || tx.type === TransactionType.Investment
+                      ? '-'
+                      : '+'}
                   {formatCurrency(tx.amount, currency, locale)}
                 </span>
               </td>
@@ -254,6 +296,25 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  walletBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  walletDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: borderRadius.full,
+    flexShrink: 0,
+  },
+  transferArrow: {
+    color: colors.text.disabled,
+    fontSize: fontSize.xs,
+  },
+  unassigned: {
+    color: colors.text.disabled,
+    fontSize: fontSize.xs,
   },
   typeBadge: {
     display: 'inline-block',

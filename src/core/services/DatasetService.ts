@@ -1,6 +1,6 @@
-import { Dataset, Category, Receivable, Transaction } from '../models/types'
+import { Dataset, Category, Receivable, Transaction, Wallet } from '../models/types'
 
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 export class DatasetService {
   static create(
@@ -9,7 +9,8 @@ export class DatasetService {
     categories: Category[],
     receivables: Receivable[] = [],
     transactions: Transaction[] = [],
-    payables: any[] = []
+    payables: any[] = [],
+    wallets: Wallet[] = []
   ): Dataset {
     const now = new Date().toISOString()
     return {
@@ -21,6 +22,7 @@ export class DatasetService {
       transactions,
       categories,
       receivables,
+      wallets,
       payables
     } as Dataset
   }
@@ -42,9 +44,13 @@ export class DatasetService {
     if (!(data as any).payables) {
       (data as any).payables = []
     }
+    if (!data.wallets) {
+      data.wallets = []
+    }
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {}
     }
+    data.version = SCHEMA_VERSION
     return data
   }
 }

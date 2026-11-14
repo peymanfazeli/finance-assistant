@@ -96,9 +96,9 @@ const optimizer = {
     });
   }
 };
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 class DatasetService {
-  static create(name, currency, categories, receivables = [], transactions = [], payables = []) {
+  static create(name, currency, categories, receivables = [], transactions = [], payables = [], wallets = []) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
     return {
       version: SCHEMA_VERSION,
@@ -109,6 +109,7 @@ class DatasetService {
       transactions,
       categories,
       receivables,
+      wallets,
       payables
     };
   }
@@ -128,9 +129,13 @@ class DatasetService {
     if (!data.payables) {
       data.payables = [];
     }
+    if (!data.wallets) {
+      data.wallets = [];
+    }
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {};
     }
+    data.version = SCHEMA_VERSION;
     return data;
   }
 }
