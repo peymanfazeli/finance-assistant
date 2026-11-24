@@ -7,7 +7,8 @@ import { DashboardPeriod, resolveDashboardPeriod } from '../../core/utils/dashbo
 import { getTodayJalali } from '../../core/utils/jalali'
 import { StatsService } from '../../core/services/StatsService'
 import { WalletService } from '../../core/services/WalletService'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth, transitions } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 import SummaryCardGrid from '../components/SummaryCardGrid'
 import ExpenseByCategoryChart from '../components/ExpenseByCategoryChart'
 import DashboardCustomizationDialog from '../components/DashboardCustomizationDialog'
@@ -218,9 +219,9 @@ function DashboardPage(): JSX.Element {
               style={{
                 ...styles.heroCard,
                 background: netBalancePositive
-                  ? 'linear-gradient(135deg, #f0faf0 0%, #f8fff8 100%)'
-                  : 'linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%)',
-                borderColor: netBalancePositive ? '#d4edda' : '#f5c6cb',
+                  ? `linear-gradient(135deg, ${colors.bg.income} 0%, ${colors.bg.card} 100%)`
+                  : `linear-gradient(135deg, ${colors.bg.expense} 0%, ${colors.bg.card} 100%)`,
+                borderColor: netBalancePositive ? colors.success : colors.danger,
               }}
             >
               <div style={styles.heroHeader}>
@@ -403,6 +404,7 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
   },
   eyeToggle: {
+    ...uiStyles.buttonSecondary,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -414,9 +416,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.md,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   customizeBtn: {
+    ...uiStyles.buttonSecondary,
     padding: `${spacing.sm} ${spacing.lg}`,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -425,7 +428,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.md,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   walletBar: {
     display: 'flex',
@@ -447,6 +450,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
   },
   walletChip: {
+    ...uiStyles.chip,
     display: 'inline-flex',
     alignItems: 'center',
     gap: spacing.xs,
@@ -458,7 +462,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: `${borderWidth.default} solid ${colors.border.light}`,
     borderRadius: borderRadius.full,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   walletChipActive: {
     color: colors.primary,
@@ -575,6 +579,8 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1,
   },
   emptyPrimaryBtn: {
+    ...uiStyles.button,
+    display: 'inline-block',
     padding: `${spacing.sm} ${spacing.xl}`,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -583,9 +589,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: borderRadius.md,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   fab: {
+    ...uiStyles.button,
     position: 'fixed',
     bottom: spacing.xxl,
     right: spacing.xxl,

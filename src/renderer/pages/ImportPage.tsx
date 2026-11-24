@@ -10,6 +10,7 @@ import ImportPreview from '../components/ImportPreview'
 import ColumnMapping from '../components/ColumnMapping'
 import DuplicateReview from '../components/DuplicateReview'
 import ImportConfirmDialog from '../components/ImportConfirmDialog'
+import { uiStyles } from '../uiStyles'
 
 function ImportPage(): JSX.Element {
   const { t, i18n } = useTranslation()
@@ -140,7 +141,7 @@ function ImportPage(): JSX.Element {
       const existingNames = new Set(dataset?.categories.map((c) => c.name.toLowerCase()) ?? [])
       const importedNames = new Set(imported.map((r) => r.category.toLowerCase()).filter(Boolean))
       const missingNames = [...importedNames].filter((name) => !existingNames.has(name))
-      missingNames.forEach((name) => addCategory(name, '#808080', '📁'))
+      missingNames.forEach((name) => addCategory(name, colors.text.muted, '📁'))
 
       const currentCategories = useAppStore.getState().dataset?.categories ?? []
       let count = 0
@@ -226,14 +227,11 @@ const styles: Record<string, React.CSSProperties> = {
   error: { color: colors.text.expense, fontSize: fontSize.base, padding: padding.input, backgroundColor: colors.bg.expense, borderRadius: borderRadius.md },
   actions: { marginTop: spacing.lg },
   importBtn: {
+    ...uiStyles.button,
     padding: padding.buttonLg,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
     color: colors.text.inverse,
     backgroundColor: colors.success,
     border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer',
   },
 }
 

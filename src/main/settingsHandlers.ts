@@ -2,9 +2,21 @@ import { ipcMain, app } from 'electron'
 import { writeFileSync, renameSync, readFileSync, existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
 import { SettingsService } from '../core/services/SettingsService'
+import { Theme } from '../core/models/types'
 
 function getSettingsPath(): string {
   return `${app.getPath('userData')}/settings.json`
+}
+
+function getInitialTheme(): Theme {
+  try {
+    const settingsPath = getSettingsPath()
+    if (!existsSync(settingsPath)) return Theme.Dark
+    const settings = SettingsService.deserialize(readFileSync(settingsPath, 'utf-8'))
+    return settings.theme
+  } catch {
+    return Theme.Dark
+  }
 }
 
 function writeAtomic(filePath: string, content: string): void {
@@ -18,6 +30,10 @@ function writeAtomic(filePath: string, content: string): void {
 }
 
 export function registerSettingsHandlers(): void {
+  ipcMain.on('theme:get', (event) => {
+    event.returnValue = getInitialTheme()
+  })
+
   ipcMain.handle('settings:load', async () => {
     try {
       const settingsPath = getSettingsPath()

@@ -3,12 +3,14 @@ import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../core/store/useAppStore'
 import { Language, TransactionType } from '../../core/models/types'
+import { applyLanguage } from '../i18n/runtime'
+import ThemeToggle from '../components/ThemeToggle'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import Modal from '../components/Modal'
 import WalletManager from '../components/WalletManager'
 
 function SettingsPage(): JSX.Element {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { settings, setLanguage, dataset, updateCategoryTypeMap } = useAppStore()
   const [showMappingModal, setShowMappingModal] = useState(false)
   const categoryTypeMap = dataset?.categoryTypeMap ?? {}
@@ -16,9 +18,7 @@ function SettingsPage(): JSX.Element {
 
   const handleLanguageChange = (lang: Language): void => {
     setLanguage(lang)
-    i18n.changeLanguage(lang)
-    document.documentElement.dir = lang === Language.Fa ? 'rtl' : 'ltr'
-    document.documentElement.lang = lang
+    applyLanguage(lang)
   }
 
   const typeOptions = [
@@ -69,6 +69,17 @@ function SettingsPage(): JSX.Element {
               <span style={styles.langName}>{t('settings.persian')}</span>
             </button>
           </div>
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <span style={styles.cardIcon}>◐</span>
+            <div>
+              <h3 style={styles.cardTitle}>{t('settings.theme')}</h3>
+              <p style={styles.cardDescription}>{t('theme.dark')} / {t('theme.light')}</p>
+            </div>
+          </div>
+          <ThemeToggle />
         </div>
 
         <div style={styles.card}>

@@ -5,7 +5,7 @@ import './i18n'
 import { useAppStore } from '../core/store/useAppStore'
 import { SettingsService } from '../core/services/SettingsService'
 import { ConfigService } from '../core/services/ConfigService'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, zIndex, borderWidth, sizes, transitions } from '../core/utils/styles'
+import { colors, gradients, spacing, fontSize, fontWeight, borderRadius, padding, shadow, zIndex, borderWidth, sizes, transitions } from '../core/utils/styles'
 import { ExportService } from '../core/services/ExportService'
 import WelcomePage from './pages/WelcomePage'
 import CreateDatasetDialog from './components/CreateDatasetDialog'
@@ -21,7 +21,10 @@ import SettingsPage from './pages/SettingsPage'
 import ReceivablePage from './pages/ReceivablePage'
 import PayablePage from './pages/PayablePage'
 import BudgetPage from './pages/BudgetPage'
-import { ApplicationSettings } from '../core/models/types'
+import { ApplicationSettings, Language, Theme } from '../core/models/types'
+import { applyTheme } from '../core/utils/theme'
+import { applyLanguage } from './i18n/runtime'
+import ThemeToggle from './components/ThemeToggle'
 import useReducedMotion from './hooks/useReducedMotion'
 
 type Page = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'categories' | 'budget' | 'reports' | 'customReports' | 'settings'
@@ -61,6 +64,8 @@ function App(): JSX.Element {
         if (settingsResult.success && settingsResult.data) {
           const loadedSettings: ApplicationSettings = settingsResult.data
           setSettings(loadedSettings)
+          applyTheme(loadedSettings.theme)
+          applyLanguage(loadedSettings.language)
           if (window.api?.menu) {
             window.api.menu.updateLanguage(loadedSettings.language)
           }
@@ -76,6 +81,8 @@ function App(): JSX.Element {
             }
           }
         } else {
+          applyTheme(Theme.Dark)
+          applyLanguage(Language.En)
           const defaultResult = await window.api.dataset.createDefault()
           if (defaultResult.success && defaultResult.path) {
             const datasetResult = await window.api.dataset.load(defaultResult.path)
@@ -298,91 +305,174 @@ function App(): JSX.Element {
           onCancel={handleCancelClose}
         />
       )}
-      <nav style={styles.nav}>
-        <div style={styles.navTitle}>{t('app.title')}</div>
-        <div style={styles.navLinks}>
-          {navItems.map((item) => (
-            <motion.button
-              key={item.page}
-              style={{
-                ...styles.navButton,
-                backgroundColor: currentPage === item.page ? colors.bg.active : 'transparent',
-                color: currentPage === item.page ? colors.primary : colors.text.muted,
-              }}
-              whileHover={prefersReduced ? {} : { scale: 1.03, backgroundColor: colors.bg.hover }}
-              whileTap={prefersReduced ? {} : { scale: 0.97 }}
-              onClick={() => setCurrentPage(item.page)}
-            >
-              {item.label}
-            </motion.button>
-          ))}
-          <motion.button
-            style={{
-              ...styles.navButton,
-              color: colors.text.muted,
-              marginLeft: spacing.sm,
-              borderLeft: `1px solid ${colors.border}`,
-              paddingLeft: spacing.sm
-            }}
-            whileHover={prefersReduced ? {} : { scale: 1.03, backgroundColor: colors.bg.hover }}
-            whileTap={prefersReduced ? {} : { scale: 0.97 }}
-            onClick={() => clearDataset()}
-          >
-            {t('nav.close')}
-          </motion.button>
+      <aside className="pfa-sidebar" style={styles.sidebar}>
+        <div style={styles.brand}>
+          <div style={styles.brandMark}>FA</div>
+          <div className="pfa-brand-text" style={styles.brandText}>{t('app.title')}</div>
         </div>
-      </nav>
-      <main style={{ ...styles.main, ...(currentPage === 'budget' ? { overflow: 'hidden' } : {}) }}>
-        <ErrorBoundary>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentPage}
-              variants={animProps}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              style={{ height: '100%', overflow: 'hidden', position: 'relative' }}
-            >
-               {currentPage === 'dashboard' && <DashboardPage />}
-               {currentPage === 'transactions' && <TransactionPage />}
-               {currentPage === 'receivables' && <ReceivablePage />}
-               {currentPage === 'payables' && <PayablePage />}
-               {currentPage === 'categories' && <CategoryPage />}
-               {currentPage === 'budget' && <BudgetPage />}
-               {currentPage === 'reports' && <ReportsPage />}
-               {currentPage === 'customReports' && <CustomReportBuilderPage />}
-               {currentPage === 'settings' && <SettingsPage />}
-            </motion.div>
-          </AnimatePresence>
-        </ErrorBoundary>
+        <div style={styles.navLinks}>
+          {navItems.map((item) => {
+            const active = currentPage === item.page
+            return (
+              <motion.button
+                key={item.page}
+                type="button"
+                data-active={active ? 'true' : 'false'}
+                className="pfa-nav-button"
+                style={{
+                  ...styles.navButton,
+                  backgroundColor: active ? colors.bg.active : 'transparent',
+                  color: active ? colors.primary : colors.text.muted,
+                }}
+                whileHover={prefersReduced ? {} : { backgroundColor: colors.bg.hover }}
+                whileTap={prefersReduced ? {} : { opacity: 0.8 }}
+                onClick={() => setCurrentPage(item.page)}
+              >
+                <span className="pfa-nav-label">{item.label}</span>
+              </motion.button>
+            )
+          })}
+        </div>
+        <div className="pfa-sidebar-footer" style={styles.sidebarFooter}>
+          <ThemeToggle compact />
+          <button type="button" className="pfa-nav-label" style={styles.closeButton} onClick={() => clearDataset()}>
+            {t('nav.close')}
+          </button>
+        </div>
+      </aside>
+      <main style={styles.main}>
+        <div style={styles.pageFrame}>
+          <ErrorBoundary>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentPage}
+                variants={animProps}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                style={{ height: '100%', minHeight: 0, position: 'relative' }}
+              >
+                 {currentPage === 'dashboard' && <DashboardPage />}
+                 {currentPage === 'transactions' && <TransactionPage />}
+                 {currentPage === 'receivables' && <ReceivablePage />}
+                 {currentPage === 'payables' && <PayablePage />}
+                 {currentPage === 'categories' && <CategoryPage />}
+                 {currentPage === 'budget' && <BudgetPage />}
+                 {currentPage === 'reports' && <ReportsPage />}
+                 {currentPage === 'customReports' && <CustomReportBuilderPage />}
+                 {currentPage === 'settings' && <SettingsPage />}
+              </motion.div>
+            </AnimatePresence>
+          </ErrorBoundary>
+        </div>
       </main>
+
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  app: { display: 'flex', flexDirection: 'column', height: '100vh' },
-  nav: {
+  app: {
+    display: 'flex',
+    flexDirection: 'row',
+    height: '100vh',
+    backgroundColor: colors.bg.page,
+  },
+  sidebar: {
+    width: sizes.sidebarWidth,
+    flexShrink: 0,
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.lg,
+    padding: spacing.lg,
+    backgroundColor: colors.bg.surface,
+    borderInlineEnd: `${borderWidth.default} solid ${colors.border.default}`,
+  },
+  brand: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: `0 ${spacing.xxl}`,
-    height: sizes.navHeight,
-    backgroundColor: colors.bg.card,
-    borderBottom: `${borderWidth.default} solid ${colors.border.default}`,
+    gap: spacing.md,
+    padding: `${spacing.sm} ${spacing.xs}`,
   },
-  navTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text.primary },
-  navLinks: { display: 'flex', gap: spacing.xs },
+  brandMark: {
+    width: '38px',
+    height: '38px',
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.lg,
+    background: gradients.accent,
+    color: colors.text.inverse,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    letterSpacing: '0.02em',
+  },
+  brandText: {
+    color: colors.text.primary,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    whiteSpace: 'nowrap',
+  },
+  navLinks: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.xxs,
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
+  },
   navButton: {
-    padding: padding.button,
+    width: '100%',
+    display: 'block',
+    padding: `${spacing.md} ${spacing.lg}`,
+    color: colors.text.muted,
+    textAlign: 'start',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderInlineStart: `${borderWidth.thick} solid transparent`,
+    borderRadius: borderRadius.md,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
-    border: 'none',
-    borderRadius: borderRadius.md,
     cursor: 'pointer',
     transition: transitions.fast,
   },
-  main: { flex: 1, overflow: 'auto', backgroundColor: colors.bg.page },
+  sidebarFooter: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    borderTop: `${borderWidth.default} solid ${colors.border.default}`,
+  },
+  closeButton: {
+    padding: `${spacing.sm} ${spacing.md}`,
+    color: colors.text.muted,
+    textAlign: 'start',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: borderRadius.md,
+    fontSize: fontSize.sm,
+    cursor: 'pointer',
+    transition: transitions.fast,
+  },
+  main: {
+    flex: 1,
+    minWidth: 0,
+    height: '100vh',
+    overflow: 'auto',
+    backgroundColor: colors.bg.page,
+    backgroundImage: gradients.surface,
+  },
+  pageFrame: {
+    width: '100%',
+    maxWidth: sizes.pageMaxWidth,
+    minHeight: '100%',
+    margin: '0 auto',
+    padding: padding.page,
+    display: 'flex',
+    flexDirection: 'column',
+  },
 }
 
 export default App

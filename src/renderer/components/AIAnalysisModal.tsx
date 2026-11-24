@@ -60,28 +60,28 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
         text-align: right;
         font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
         line-height: 1.8;
-        color: #1a1a1a;
+        color: var(--pfa-text-primary);
       }
       .ai-analysis-content h1 {
         font-size: 20px;
         font-weight: 700;
-        color: #1a1a1a;
-        border-bottom: 2px solid #4A90D9;
+        color: var(--pfa-text-primary);
+        border-bottom: 2px solid var(--pfa-primary);
         padding-bottom: 8px;
         margin: 24px 0 12px 0;
       }
       .ai-analysis-content h2 {
         font-size: 17px;
         font-weight: 600;
-        color: #333;
+        color: var(--pfa-text-primary);
         margin: 20px 0 10px 0;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--pfa-border-subtle);
         padding-bottom: 6px;
       }
       .ai-analysis-content h3 {
         font-size: 15px;
         font-weight: 600;
-        color: #444;
+        color: var(--pfa-text-secondary);
         margin: 16px 0 8px 0;
       }
       .ai-analysis-content p {
@@ -89,10 +89,10 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
       }
       .ai-analysis-content strong {
         font-weight: 600;
-        color: #1a1a1a;
+        color: var(--pfa-text-primary);
       }
       .ai-analysis-content code {
-        background: #f0f0f0;
+        background: var(--pfa-bg-muted);
         padding: 2px 6px;
         border-radius: 4px;
         font-size: 12px;
@@ -101,13 +101,13 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
         unicode-bidi: embed;
       }
       .ai-analysis-content pre {
-        background: #f5f5f5;
+        background: var(--pfa-bg-subtle);
         padding: 12px;
         border-radius: 6px;
         overflow-x: auto;
         direction: ltr;
         text-align: left;
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--pfa-border);
       }
       .ai-analysis-content pre code {
         background: none;
@@ -122,24 +122,24 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
         font-size: 13px;
       }
       .ai-analysis-content thead th {
-        background: #f0f0f0;
+        background: var(--pfa-bg-muted);
         padding: 8px 10px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--pfa-border);
         font-weight: 600;
         text-align: right;
         white-space: nowrap;
       }
       .ai-analysis-content tbody td {
         padding: 6px 10px;
-        border: 1px solid #eee;
+        border: 1px solid var(--pfa-border-subtle);
         text-align: right;
       }
       .ai-analysis-content tbody tr:hover {
-        background: #f9f9f9;
+        background: var(--pfa-bg-hover);
       }
       .ai-analysis-content hr {
         border: none;
-        border-top: 1px solid #eee;
+        border-top: 1px solid var(--pfa-border-subtle);
         margin: 16px 0;
       }
       .ai-analysis-content ul, .ai-analysis-content ol {
@@ -151,11 +151,11 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
         margin: 4px 0;
       }
       .ai-analysis-content blockquote {
-        border-right: 3px solid #4A90D9;
+        border-right: 3px solid var(--pfa-primary);
         padding-right: 12px;
         margin: 12px 0;
-        color: #555;
-        background: #f8f9fa;
+        color: var(--pfa-text-secondary);
+        background: var(--pfa-bg-subtle);
         padding: 8px 12px;
         border-radius: 0 6px 6px 0;
       }
@@ -259,34 +259,46 @@ function AIAnalysisModal({ open, onClose, reportData, reportType }: AIAnalysisMo
   <title>AI Analysis - ${reportType}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
+    :root {
+      --pfa-text-primary: #1B1624;
+      --pfa-text-secondary: #5D5669;
+      --pfa-border: #E4E1EA;
+      --pfa-border-subtle: #ECE9F0;
+      --pfa-bg-surface: #FFFFFF;
+      --pfa-bg-subtle: #F1EFF6;
+      --pfa-bg-muted: #F7F6FA;
+      --pfa-primary: #7C3AED;
+      --pfa-primary-hover: #6D28D9;
+    }
     body {
       font-family: 'Vazirmatn', 'Segoe UI', Tahoma, Arial, sans-serif;
       padding: 40px;
       line-height: 1.8;
       direction: rtl;
       text-align: right;
-      color: #1a1a1a;
+      color: var(--pfa-text-primary);
+      background: var(--pfa-bg-surface);
       max-width: 800px;
       margin: 0 auto;
     }
-    h1 { font-size: 22px; border-bottom: 2px solid #4A90D9; padding-bottom: 8px; }
-    h2 { font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-top: 24px; }
-    h3 { font-size: 16px; }
+    h1 { font-size: 22px; border-bottom: 2px solid var(--pfa-primary); padding-bottom: 8px; }
+    h2 { font-size: 18px; border-bottom: 1px solid var(--pfa-border-subtle); padding-bottom: 6px; margin-top: 24px; }
+    h3 { font-size: 16px; color: var(--pfa-text-secondary); }
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-    th { background: #f0f0f0; padding: 8px 10px; border: 1px solid #ddd; text-align: right; }
-    td { padding: 6px 10px; border: 1px solid #eee; text-align: right; }
-    pre { background: #f5f5f5; padding: 12px; border-radius: 6px; direction: ltr; text-align: left; border: 1px solid #e0e0e0; overflow-x: auto; }
-    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px; }
+    th { background: var(--pfa-bg-muted); padding: 8px 10px; border: 1px solid var(--pfa-border); text-align: right; }
+    td { padding: 6px 10px; border: 1px solid var(--pfa-border-subtle); text-align: right; }
+    pre { background: var(--pfa-bg-subtle); padding: 12px; border-radius: 6px; direction: ltr; text-align: left; border: 1px solid var(--pfa-border); overflow-x: auto; }
+    code { background: var(--pfa-bg-muted); padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px; }
     pre code { background: none; padding: 0; }
-    hr { border: none; border-top: 1px solid #eee; margin: 16px 0; }
-    blockquote { border-right: 3px solid #4A90D9; padding: 8px 12px; margin: 12px 0; background: #f8f9fa; border-radius: 0 6px 6px 0; }
+    hr { border: none; border-top: 1px solid var(--pfa-border-subtle); margin: 16px 0; }
+    blockquote { border-right: 3px solid var(--pfa-primary); padding: 8px 12px; margin: 12px 0; background: var(--pfa-bg-subtle); border-radius: 0 6px 6px 0; color: var(--pfa-text-secondary); }
     ul, ol { padding-right: 20px; padding-left: 0; }
-    .header { margin-bottom: 20px; color: #555; font-size: 14px; }
+    .header { margin-bottom: 20px; color: var(--pfa-text-secondary); font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="header">
-    <strong>${reportType}</strong> &mdash; ${formatJalaliDateEn(new Date().toISOString().split('T')[0])}
+    <strong>${reportType}</strong> - ${formatJalaliDateEn(new Date().toISOString().split('T')[0])}
   </div>
   ${analysisHtml}
 </body>

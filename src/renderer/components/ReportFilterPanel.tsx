@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Category } from '../../core/models/types'
 import PersianCalendar from './PersianCalendar'
-import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface Props {
   dateFrom: string
@@ -64,7 +65,7 @@ function ReportFilterPanel({
                 style={{
                   ...styles.chip,
                   backgroundColor: isActive ? cat.color : colors.bg.muted,
-                  color: isActive ? '#fff' : colors.text.secondary,
+                  color: isActive ? colors.text.inverse : colors.text.secondary,
                 }}
                 onClick={() => toggleCategory(cat.id)}
               >
@@ -108,13 +109,10 @@ const styles: Record<string, React.CSSProperties> = {
   sep: { color: colors.text.disabled },
   chipRow: { display: 'flex', gap: spacing.xs, flexWrap: 'wrap' },
   chip: {
+    ...uiStyles.chip,
     padding: `${spacing.xs} ${spacing.md}`,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
     border: 'none',
     borderRadius: borderRadius.sm,
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
   }
 }
 

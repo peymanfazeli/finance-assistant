@@ -1,4 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { colors, fontSize, fontWeight, spacing } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface Props {
   children: ReactNode
@@ -46,18 +48,10 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: '48px', textAlign: 'center' },
-  title: { fontSize: '20px', fontWeight: 600, color: '#dc3545' },
-  text: { fontSize: '14px', color: '#666', margin: '8px 0 16px' },
-  button: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
+  container: { padding: spacing.huge, textAlign: 'center' },
+  title: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, color: colors.text.error },
+  text: { fontSize: fontSize.base, color: colors.text.muted, margin: `${spacing.sm} 0 ${spacing.lg}` },
+  button: uiStyles.button,
 }
 
 export default ErrorBoundary

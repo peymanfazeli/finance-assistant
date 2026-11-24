@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Payable, PayableInstallment, Category } from '../../core/models/types'
 import { colors, spacing, borderRadius, borderWidth, fontSize } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 import {
   PayableInstallmentService,
   InstallmentValidationCode
@@ -242,43 +243,11 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.text.muted,
     cursor: 'pointer',
   },
-  label: { display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#555' },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    boxSizing: 'border-box'
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    backgroundColor: '#fff',
-    boxSizing: 'border-box'
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    minHeight: '60px',
-    resize: 'vertical',
-    boxSizing: 'border-box'
-  },
-  primaryButton: {
-    padding: '8px 16px',
-    fontSize: fontSize.md,
-    color: colors.text.inverse,
-    backgroundColor: colors.primary,
-    border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer'
-  }
+  label: uiStyles.label,
+  input: uiStyles.input,
+  select: uiStyles.input,
+  textarea: uiStyles.textarea,
+  primaryButton: uiStyles.button,
 }
 
 export default PayableForm

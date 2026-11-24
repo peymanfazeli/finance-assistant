@@ -32,6 +32,9 @@ const api = {
     load: () => electron.ipcRenderer.invoke("settings:load"),
     save: (content) => electron.ipcRenderer.invoke("settings:save", content)
   },
+  theme: {
+    getInitial: () => electron.ipcRenderer.sendSync("theme:get")
+  },
   file: {
     read: (filePath) => electron.ipcRenderer.invoke("file:read", filePath),
     openDialog: () => electron.ipcRenderer.invoke("dialog:openFile")

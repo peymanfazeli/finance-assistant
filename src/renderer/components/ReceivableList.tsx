@@ -4,7 +4,8 @@ import { Receivable, Transaction, Category } from '../../core/models/types'
 import { ReceivableService } from '../../core/services/ReceivableService'
 import { useAppStore } from '../../core/store/useAppStore'
 import { formatCurrency } from '../../core/utils/format'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 import { addToast } from './ToastContainer'
 import useReducedMotion from '../hooks/useReducedMotion'
 
@@ -69,23 +70,29 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
             const isFullyReceived = remaining <= 0
             const cat = categories.find((c) => c.id === rec.categoryId)
             const remainingPercent = rec.totalAmount > 0 ? (remaining / rec.totalAmount) * 100 : 0
-            let rowBg: string | undefined
-            if (remainingPercent > 70) rowBg = '#FF6B6B'
-            else if (remainingPercent > 50) rowBg = '#EEB04C'
-            else if (remainingPercent > 25) rowBg = '#A1F9B0'
-            else if (remainingPercent > 5) rowBg = '#b8f5e2'
+            const progressPercent = Math.max(0, Math.min(100, 100 - remainingPercent))
 
             return (
               <motion.tr
                 key={rec.id}
-                style={{ ...styles.row, cursor: 'pointer', backgroundColor: rowBg }}
+                style={{ ...styles.row, cursor: 'pointer' }}
                 variants={prefersReduced ? undefined : rowVariants}
                 custom={i}
                 initial="hidden"
                 animate="visible"
                 onClick={() => onClick(rec.id)}
               >
-                <td style={{ ...styles.td, textDecoration: isFullyReceived ? 'line-through' : undefined }}>{rec.title}</td>
+                <td style={styles.td}>
+                  <div style={styles.titleCell}>
+                    <span style={{ textDecoration: isFullyReceived ? 'line-through' : undefined }}>{rec.title}</span>
+                    <span style={isFullyReceived ? styles.badgePaid : styles.badgePending}>
+                      {t(isFullyReceived ? 'installment.statePaid' : 'installment.statePending')}
+                    </span>
+                  </div>
+                  <div style={styles.progressTrack}>
+                    <div style={{ ...styles.progressFill, width: `${progressPercent}%` }} />
+                  </div>
+                </td>
                 <td style={styles.td}>{rec.askDate || t('common.noData')}</td>
                 <td style={styles.td}>
                   {cat ? `${cat.icon} ${cat.name}` : rec.categoryId}
@@ -140,38 +147,53 @@ function ReceivableList({ receivables, transactions, categories, onEdit, onClick
 
 const styles: Record<string, React.CSSProperties> = {
   container: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse' },
-  th: {
-    padding: padding.tableCell,
-    textAlign: 'left',
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.sm,
-    color: colors.text.muted,
-    borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
-    userSelect: 'none',
+  table: uiStyles.table,
+  th: { ...uiStyles.th, userSelect: 'none' },
+  thRight: { ...uiStyles.thRight, userSelect: 'none' },
+  td: uiStyles.td,
+  tdRight: uiStyles.tdRight,
+  row: { transition: 'background-color 0.15s' },
+  titleCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    minWidth: '160px',
   },
-  thRight: {
-    padding: padding.tableCell,
-    textAlign: 'right',
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.sm,
-    color: colors.text.muted,
-    borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
-    userSelect: 'none',
+  progressTrack: {
+    height: '4px',
+    marginTop: spacing.sm,
+    backgroundColor: colors.bg.subtle,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
   },
-  td: { padding: padding.tableCell, fontSize: fontSize.base, borderBottom: `${borderWidth.default} solid ${colors.border.light}` },
-  tdRight: { padding: padding.tableCell, fontSize: fontSize.base, borderBottom: `${borderWidth.default} solid ${colors.border.light}`, textAlign: 'right' },
-  row: { transition: 'background 0.15s' },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    transition: 'width 0.2s ease',
+  },
+  badgePaid: {
+    ...uiStyles.badge,
+    color: colors.text.income,
+    backgroundColor: colors.bg.income,
+  },
+  badgePending: {
+    ...uiStyles.badge,
+    color: colors.text.warning,
+    backgroundColor: colors.bg.warning,
+  },
   actionBtn: {
-    padding: '4px 8px',
-    marginRight: spacing.xs,
+    padding: `${spacing.xs} ${spacing.sm}`,
+    marginInlineEnd: spacing.xs,
     fontSize: fontSize.sm,
-    border: `${borderWidth.default} solid ${colors.border.strong}`,
+    color: colors.text.secondary,
+    border: `${borderWidth.default} solid ${colors.border.default}`,
     borderRadius: borderRadius.sm,
-    backgroundColor: colors.bg.card,
+    backgroundColor: colors.bg.subtle,
     cursor: 'pointer',
   },
-  empty: { padding: spacing.huge, textAlign: 'center', color: colors.text.disabled, fontSize: fontSize.base },
+  empty: { padding: spacing.xxl, textAlign: 'center', color: colors.text.muted, fontSize: fontSize.base },
 }
 
 export default ReceivableList

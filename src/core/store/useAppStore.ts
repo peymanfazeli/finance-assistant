@@ -12,6 +12,7 @@ import {
   SortConfig,
   DashboardCardId,
   Language,
+  Theme,
   TransactionType
 } from '../models/types'
 import { DatasetService } from '../services/DatasetService'
@@ -24,6 +25,7 @@ import { PayableService } from '../services/PayableService'
 import { PayableInstallmentService } from '../services/PayableInstallmentService'
 import { StatsService, DashboardStats } from '../services/StatsService'
 import { DashboardPeriod } from '../utils/dashboardPeriod'
+import { applyTheme } from '../utils/theme'
 
 interface AppState {
   dataset: Dataset | null
@@ -109,11 +111,13 @@ interface AppState {
   setReportDateRange: (from: string, to: string) => void
 
   setLanguage: (language: Language) => void
+  setTheme: (theme: Theme) => void
   updateSettings: (updates: Partial<ApplicationSettings>) => void
 }
 
 const defaultSettings: ApplicationSettings = {
   language: Language.En,
+  theme: Theme.Dark,
   visibleDashboardCards: [
     'totalIncome',
     'totalExpenses',
@@ -515,7 +519,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  setTheme: (theme) => {
+    applyTheme(theme)
+    set((state) => ({
+      settings: { ...state.settings, theme }
+    }))
+    get().saveSettings()
+  },
+
   updateSettings: (updates) => {
+    if (updates.theme) applyTheme(updates.theme)
     set((state) => ({
       settings: { ...state.settings, ...updates }
     }))

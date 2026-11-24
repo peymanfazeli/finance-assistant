@@ -1,3 +1,6 @@
+import { colors, spacing, fontSize, fontWeight, padding } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
+
 interface ImportPreviewProps {
   columns: string[]
   rows: Record<string, string>[]
@@ -37,20 +40,23 @@ function ImportPreview({ columns, rows }: ImportPreviewProps): JSX.Element {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { marginTop: '16px' },
-  title: { fontSize: '14px', fontWeight: 600, margin: '0 0 8px', color: '#333' },
+  container: { marginTop: spacing.lg },
+  title: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, margin: `0 0 ${spacing.sm}`, color: colors.text.primary },
   tableWrap: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  table: { ...uiStyles.table, fontSize: fontSize.md },
   th: {
+    ...uiStyles.th,
     padding: '8px 10px',
-    textAlign: 'left',
-    fontWeight: 600,
-    color: '#555',
-    borderBottom: '2px solid #eee',
-    whiteSpace: 'nowrap'
+    fontSize: fontSize.md,
   },
-  td: { padding: '6px 10px', borderBottom: '1px solid #f0f0f0', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' },
-  more: { fontSize: '12px', color: '#888', marginTop: '8px' }
+  td: {
+    ...uiStyles.td,
+    padding: padding.tableCellSm,
+    maxWidth: '200px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  more: { fontSize: fontSize.sm, color: colors.text.muted, marginTop: spacing.sm },
 }
 
 export default ImportPreview

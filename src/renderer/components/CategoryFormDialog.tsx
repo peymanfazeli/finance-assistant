@@ -55,9 +55,9 @@ function CategoryFormDialog({ open, category, onSave, onClose }: CategoryFormDia
       <div style={styles.field}>
         <label style={styles.label}>{t('categories.color')}</label>
         <div style={styles.colors}>
-          {colors.categoryPicker.map((c) => (
+          {colors.categoryPicker.map((c, index) => (
             <motion.button
-              key={c}
+              key={index}
               style={{
                 ...styles.colorBtn,
                 backgroundColor: c,

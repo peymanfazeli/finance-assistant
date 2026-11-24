@@ -1,9 +1,10 @@
-import { ApplicationSettings, Language } from '../models/types'
+import { ApplicationSettings, Language, Theme } from '../models/types'
 
-const SETTINGS_VERSION = 1
+const SETTINGS_VERSION = 2
 
 const defaultSettings: ApplicationSettings = {
   language: Language.En,
+  theme: Theme.Dark,
   visibleDashboardCards: [
     'totalIncome',
     'totalExpenses',
@@ -13,7 +14,8 @@ const defaultSettings: ApplicationSettings = {
     'avgWeeklySpending'
   ],
   lastOpenedDataset: null,
-  recentDatasets: []
+  recentDatasets: [],
+  lastExportTimestamp: null
 }
 
 export class SettingsService {
@@ -34,9 +36,11 @@ export class SettingsService {
 
     const validated: ApplicationSettings = {
       language: Object.values(Language).includes(data.language) ? data.language : Language.En,
+      theme: Object.values(Theme).includes(data.theme) ? data.theme : Theme.Dark,
       visibleDashboardCards: Array.isArray(data.visibleDashboardCards) ? data.visibleDashboardCards : defaultSettings.visibleDashboardCards,
       lastOpenedDataset: typeof data.lastOpenedDataset === 'string' ? data.lastOpenedDataset : null,
-      recentDatasets: Array.isArray(data.recentDatasets) ? data.recentDatasets : []
+      recentDatasets: Array.isArray(data.recentDatasets) ? data.recentDatasets : [],
+      lastExportTimestamp: typeof data.lastExportTimestamp === 'string' ? data.lastExportTimestamp : null
     }
 
     return validated
@@ -47,9 +51,11 @@ export class SettingsService {
     const s = settings as Record<string, unknown>
     return (
       Object.values(Language).includes(s.language as Language) &&
+      Object.values(Theme).includes(s.theme as Theme) &&
       Array.isArray(s.visibleDashboardCards) &&
       (s.lastOpenedDataset === null || typeof s.lastOpenedDataset === 'string') &&
-      Array.isArray(s.recentDatasets)
+      Array.isArray(s.recentDatasets) &&
+      (s.lastExportTimestamp === null || typeof s.lastExportTimestamp === 'string')
     )
   }
 }

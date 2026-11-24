@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { colors, spacing, fontSize, fontWeight, padding, borderRadius } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface FileSelectorProps {
   onSelect: () => void
@@ -25,23 +27,18 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '16px',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '8px'
+    gap: spacing.md,
+    padding: padding.card,
+    backgroundColor: colors.bg.subtle,
+    borderRadius: borderRadius.md,
   },
   button: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#4A90D9',
+    ...uiStyles.button,
+    padding: padding.buttonLg,
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
   },
-  info: { fontSize: '14px', color: '#333' },
-  formats: { fontSize: '12px', color: '#888' }
+  info: { fontSize: fontSize.base, color: colors.text.primary },
+  formats: { fontSize: fontSize.sm, color: colors.text.muted },
 }
 
 export default FileSelector

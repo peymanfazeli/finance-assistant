@@ -2,6 +2,12 @@
   "app": {
     "title": "Finance Assistant"
   },
+  "theme": {
+    "toggleToLight": "Switch to light mode",
+    "toggleToDark": "Switch to dark mode",
+    "dark": "Dark",
+    "light": "Light"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "transactions": "Transactions",
@@ -296,6 +302,14 @@
   },
   "payable": {
     "title": "Payables",
+    "description": "Track what you owe, upcoming due dates, and payment progress in one place.",
+    "overviewTitle": "Financial Overview",
+    "totalAmount": "Total Payables",
+    "overdueAmount": "Overdue Amount",
+    "activeCount": "Active Payables",
+    "pendingInstallments": "Pending Installments",
+    "upcomingTitle": "Upcoming Payments",
+    "upcomingEmpty": "No upcoming payments in this view.",
     "add": "Add Payable",
     "edit": "Edit Payable",
     "delete": "Delete Payable",
@@ -386,6 +400,7 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "theme": "Theme",
     "wallets": "Wallets",
     "walletsDescription": "Manage your bank accounts and cash wallets, or transfer money between them.",
     "english": "English",

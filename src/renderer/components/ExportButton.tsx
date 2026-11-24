@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ExportService } from '../../core/services/ExportService'
-import { colors, spacing, fontSize, fontWeight, borderRadius, shadow, borderWidth, zIndex } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, shadow, borderWidth, zIndex, transitions } from '../../core/utils/styles'
 import html2canvas from 'html2canvas'
+
+const resolveTokenColor = (token: string): string =>
+  getComputedStyle(document.documentElement).getPropertyValue(token.slice(4, -1)).trim()
 
 interface ExportButtonProps {
   data: unknown[]
@@ -60,7 +63,7 @@ function ExportButton({ data, filename = 'report', reportTitle, chartRef, curren
               const canvas = await html2canvas(chartRef.current, {
                 useCORS: true,
                 scale: 2,
-                backgroundColor: '#ffffff'
+                backgroundColor: resolveTokenColor(colors.text.inverse)
               })
               chartImage = canvas.toDataURL('image/png')
             }
@@ -139,7 +142,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
+    transition: transitions.fast,
   },
 }
 

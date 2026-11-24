@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { colors, fontSize, fontWeight, padding, spacing } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface EmptyTransactionListProps {
   onAddTransaction: () => void
@@ -27,35 +29,30 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '64px 24px',
-    textAlign: 'center'
+    padding: `${spacing.massive} ${spacing.xxl}`,
+    textAlign: 'center',
   },
   icon: {
-    fontSize: '48px',
-    marginBottom: '16px'
+    fontSize: fontSize.icon,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#1a1a1a',
-    margin: '0 0 8px'
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    color: colors.text.primary,
+    margin: `0 0 ${spacing.sm}`,
   },
   subtitle: {
-    fontSize: '14px',
-    color: '#888',
-    margin: '0 0 24px',
-    maxWidth: '320px'
+    fontSize: fontSize.base,
+    color: colors.text.muted,
+    margin: `0 0 ${spacing.xxl}`,
+    maxWidth: '320px',
   },
   button: {
-    padding: '12px 28px',
+    ...uiStyles.button,
+    padding: padding.buttonXl,
     fontSize: '15px',
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer'
-  }
+  },
 }
 
 export default EmptyTransactionList

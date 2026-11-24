@@ -304,9 +304,15 @@ var Language = /* @__PURE__ */ ((Language2) => {
   Language2["Fa"] = "fa";
   return Language2;
 })(Language || {});
-const SETTINGS_VERSION = 1;
+var Theme = /* @__PURE__ */ ((Theme2) => {
+  Theme2["Dark"] = "dark";
+  Theme2["Light"] = "light";
+  return Theme2;
+})(Theme || {});
+const SETTINGS_VERSION = 2;
 const defaultSettings = {
   language: Language.En,
+  theme: Theme.Dark,
   visibleDashboardCards: [
     "totalIncome",
     "totalExpenses",
@@ -316,7 +322,8 @@ const defaultSettings = {
     "avgWeeklySpending"
   ],
   lastOpenedDataset: null,
-  recentDatasets: []
+  recentDatasets: [],
+  lastExportTimestamp: null
 };
 class SettingsService {
   static createDefault() {
@@ -332,20 +339,32 @@ class SettingsService {
     }
     const validated = {
       language: Object.values(Language).includes(data.language) ? data.language : Language.En,
+      theme: Object.values(Theme).includes(data.theme) ? data.theme : Theme.Dark,
       visibleDashboardCards: Array.isArray(data.visibleDashboardCards) ? data.visibleDashboardCards : defaultSettings.visibleDashboardCards,
       lastOpenedDataset: typeof data.lastOpenedDataset === "string" ? data.lastOpenedDataset : null,
-      recentDatasets: Array.isArray(data.recentDatasets) ? data.recentDatasets : []
+      recentDatasets: Array.isArray(data.recentDatasets) ? data.recentDatasets : [],
+      lastExportTimestamp: typeof data.lastExportTimestamp === "string" ? data.lastExportTimestamp : null
     };
     return validated;
   }
   static validate(settings) {
     if (!settings || typeof settings !== "object") return false;
     const s = settings;
-    return Object.values(Language).includes(s.language) && Array.isArray(s.visibleDashboardCards) && (s.lastOpenedDataset === null || typeof s.lastOpenedDataset === "string") && Array.isArray(s.recentDatasets);
+    return Object.values(Language).includes(s.language) && Object.values(Theme).includes(s.theme) && Array.isArray(s.visibleDashboardCards) && (s.lastOpenedDataset === null || typeof s.lastOpenedDataset === "string") && Array.isArray(s.recentDatasets) && (s.lastExportTimestamp === null || typeof s.lastExportTimestamp === "string");
   }
 }
 function getSettingsPath$1() {
   return `${electron.app.getPath("userData")}/settings.json`;
+}
+function getInitialTheme() {
+  try {
+    const settingsPath = getSettingsPath$1();
+    if (!fs.existsSync(settingsPath)) return Theme.Dark;
+    const settings = SettingsService.deserialize(fs.readFileSync(settingsPath, "utf-8"));
+    return settings.theme;
+  } catch {
+    return Theme.Dark;
+  }
 }
 function writeAtomic(filePath, content) {
   const dir = path.dirname(filePath);
@@ -357,6 +376,9 @@ function writeAtomic(filePath, content) {
   fs.renameSync(tmpPath, filePath);
 }
 function registerSettingsHandlers() {
+  electron.ipcMain.on("theme:get", (event) => {
+    event.returnValue = getInitialTheme();
+  });
   electron.ipcMain.handle("settings:load", async () => {
     try {
       const settingsPath = getSettingsPath$1();

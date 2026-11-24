@@ -1,10 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Finance Assistant</title>
-    <script type="module" crossorigin src="./assets/index-D746EYRd.js"></script>
+    <script>
+      try {
+        var theme = window.api && window.api.theme && window.api.theme.getInitial && window.api.theme.getInitial()
+        if (theme === 'light' || theme === 'dark') {
+          document.documentElement.dataset.theme = theme
+        }
+      } catch (error) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-BmjBmVTg.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CtzN3v1L.css">
   </head>
   <body>
     <div id="root"></div>

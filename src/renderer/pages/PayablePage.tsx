@@ -1,20 +1,41 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { useAppStore } from '../../core/store/useAppStore'
 import { Payable, PayableInstallment } from '../../core/models/types'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
-import { addToast } from '../components/ToastContainer'
+import { useAppStore } from '../../core/store/useAppStore'
+import {
+  formatJalaliDate,
+  gregorianDateToJalali,
+  getTodayJalali,
+  jalaliToGregorianDateStrFromParts,
+  toPersianDigits,
+} from '../../core/utils/jalali'
+import { formatCurrency } from '../../core/utils/format'
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  spacing,
+  borderWidth,
+  borderRadius,
+  transitions,
+} from '../../core/utils/styles'
+import { PayableService } from '../../core/services/PayableService'
+import { PayableInstallmentService } from '../../core/services/PayableInstallmentService'
+import PageHeader from '../components/PageHeader'
+import BentoCard from '../components/BentoCard'
+import MetricTile from '../components/MetricTile'
 import PayableList from '../components/PayableList'
 import PayableForm, { PAYABLE_FORM_ID } from '../components/PayableForm'
 import PayableDetailModal from '../components/PayableDetailModal'
 import InstallmentSummary from '../components/InstallmentSummary'
 import PersianCalendar from '../components/PersianCalendar'
-import { PayableService } from '../../core/services/PayableService'
 import Modal from '../components/Modal'
+import { addToast } from '../components/ToastContainer'
+import { uiStyles } from '../uiStyles'
 
 function PayablePage(): JSX.Element {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const {
     dataset,
     addPayable,
@@ -31,15 +52,14 @@ function PayablePage(): JSX.Element {
   const payables: Payable[] = dataset?.payables ?? []
   const transactions = dataset?.transactions ?? []
   const categories = dataset?.categories ?? []
-
+  const currency = dataset?.currency ?? 'USD'
+  const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
+  const usePersianDigits = i18n.language === 'fa'
   const hasDateFilter = dateFrom !== '' || dateTo !== ''
 
   const filteredPayables = useMemo(() => {
     if (!hasDateFilter) {
-      return payables.filter((p) => {
-        const remaining = PayableService.getRemainingAmount(p, transactions)
-        return remaining > 0
-      })
+      return payables.filter((p) => PayableService.getRemainingAmount(p, transactions) > 0)
     }
     return payables.filter((p) => {
       const dateStr = p.dueDate || p.createdAt.slice(0, 10)
@@ -48,6 +68,52 @@ function PayablePage(): JSX.Element {
       return true
     })
   }, [payables, transactions, hasDateFilter, dateFrom, dateTo])
+
+  const metrics = useMemo(() => {
+    const todayJalali = getTodayJalali()
+    const todayStr = jalaliToGregorianDateStrFromParts(todayJalali.jy, todayJalali.jm, todayJalali.jd)
+    let total = 0
+    let paid = 0
+    let dueThisMonth = 0
+    let overdue = 0
+    let activeCount = 0
+
+    for (const payable of payables) {
+      const remaining = PayableService.getRemainingAmount(payable, transactions)
+      total += payable.totalAmount
+      paid += PayableService.getPaidAmount(payable, transactions)
+
+      if (remaining > 0) {
+        activeCount += 1
+        if (payable.dueDate) {
+          try {
+            const due = gregorianDateToJalali(payable.dueDate)
+            if (due.jy === todayJalali.jy && due.jm === todayJalali.jm) {
+              dueThisMonth += remaining
+            }
+          } catch {
+            dueThisMonth += 0
+          }
+          if (payable.dueDate < todayStr) overdue += remaining
+        }
+      }
+    }
+
+    const installmentRows = PayableInstallmentService.getRows(payables)
+    return {
+      total,
+      paid,
+      remaining: total - paid,
+      dueThisMonth,
+      overdue,
+      activeCount,
+      pendingInstallments: installmentRows.filter((row) => row.state !== 'paid').length,
+      upcoming: installmentRows.filter((row) => row.state === 'pending').slice(0, 4),
+    }
+  }, [payables, transactions])
+
+  const countText = (value: number): string => usePersianDigits ? toPersianDigits(value) : String(value)
+  const money = (value: number): string => formatCurrency(value, currency, locale)
 
   const handleSave = useCallback(
     (data: {
@@ -95,13 +161,8 @@ function PayablePage(): JSX.Element {
     addToast('success', t(paid ? 'installment.markedPaid' : 'installment.reverted'))
   }, [setInstallmentPaid, t])
 
-  const editingPayable = editId
-    ? payables.find((p) => p.id === editId)
-    : undefined
-
-  const detailPayable = detailId
-    ? payables.find((p) => p.id === detailId) ?? null
-    : null
+  const editingPayable = editId ? payables.find((p) => p.id === editId) : undefined
+  const detailPayable = detailId ? payables.find((p) => p.id === detailId) ?? null : null
 
   const closeForm = useCallback(() => {
     setShowForm(false)
@@ -109,58 +170,105 @@ function PayablePage(): JSX.Element {
   }, [])
 
   return (
-    <motion.div style={styles.container}>
-      <div style={styles.header}>
-        <div>
-          <h2 style={styles.title}>{t('payable.title')}</h2>
-          <p style={styles.subtitle}>
-            {hasDateFilter
-              ? `${filteredPayables.length} ${t('payable.title').toLowerCase()}`
-              : `${filteredPayables.length} ${t('common.active')}`}
-          </p>
-        </div>
-        <div style={styles.headerRight}>
-          <div style={styles.dateFilter}>
-            <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder={t('common.from')} compact />
-            <span style={styles.dateSep}>-</span>
-            <PersianCalendar value={dateTo} onChange={setDateTo} placeholder={t('common.to')} compact />
-            {hasDateFilter && (
-              <button
-                style={styles.clearBtn}
-                onClick={() => { setDateFrom(''); setDateTo('') }}
-              >
-                ✕
-              </button>
+    <div style={styles.container}>
+      <PageHeader
+        title={t('payable.title')}
+        description={t('payable.description')}
+        actions={
+          <>
+            <div style={styles.dateFilter}>
+              <PersianCalendar value={dateFrom} onChange={setDateFrom} placeholder={t('common.from')} compact />
+              <span style={styles.dateSep}>{t('common.to')}</span>
+              <PersianCalendar value={dateTo} onChange={setDateTo} placeholder={t('common.to')} compact />
+              {hasDateFilter && (
+                <button
+                  type="button"
+                  style={uiStyles.iconButton}
+                  onClick={() => { setDateFrom(''); setDateTo('') }}
+                  aria-label={t('common.clear')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <motion.button
+              type="button"
+              style={uiStyles.button}
+              whileHover={{ opacity: 0.9 }}
+              whileTap={{ opacity: 0.8 }}
+              onClick={() => { setShowForm(true); setEditId(null) }}
+            >
+              {t('payable.add')}
+            </motion.button>
+          </>
+        }
+      />
+
+      <div className="pfa-bento-grid" style={styles.metricsGrid}>
+        <BentoCard span={3} compact>
+          <MetricTile label={t('payable.totalAmount')} value={money(metrics.total)} hint={money(metrics.paid) + ' ' + t('payable.paid')} />
+        </BentoCard>
+        <BentoCard span={3} compact tone="accent">
+          <MetricTile label={t('payable.remaining')} value={money(metrics.remaining)} tone="primary" />
+        </BentoCard>
+        <BentoCard span={3} compact>
+          <MetricTile label={t('payable.activeCount')} value={countText(metrics.activeCount)} />
+        </BentoCard>
+        <BentoCard span={3} compact tone="accent">
+          <MetricTile label={t('payable.pendingInstallments')} value={countText(metrics.pendingInstallments)} tone="primary" />
+        </BentoCard>
+      </div>
+
+      <div className="pfa-bento-grid">
+        <BentoCard
+          span={8}
+          title={t('payable.title')}
+          description={hasDateFilter
+            ? `${countText(filteredPayables.length)} ${t('payable.title').toLowerCase()}`
+            : `${countText(filteredPayables.length)} ${t('common.active')}`}
+        >
+          <div style={styles.listScroll}>
+            <PayableList
+              payables={filteredPayables}
+              transactions={transactions}
+              categories={categories}
+              onEdit={handleEdit}
+              onClick={handleClick}
+            />
+          </div>
+        </BentoCard>
+
+        <BentoCard span={4} title={t('installment.summaryTitle')} compact>
+          <InstallmentSummary
+            payables={payables}
+            currency={currency}
+            onUpdateInstallment={handleUpdateInstallment}
+            onSetInstallmentPaid={handleSetInstallmentPaid}
+            onViewPayable={handleClick}
+          />
+          <div style={styles.upcoming}>
+            <h4 style={styles.upcomingTitle}>{t('payable.upcomingTitle')}</h4>
+            {metrics.upcoming.length === 0 ? (
+              <p style={styles.emptyText}>{t('payable.upcomingEmpty')}</p>
+            ) : (
+              <div style={styles.upcomingRows}>
+                {metrics.upcoming.map((row) => (
+                  <button
+                    key={row.installment.id}
+                    type="button"
+                    style={styles.upcomingRow}
+                    onClick={() => handleClick(row.payableId)}
+                  >
+                    <span style={styles.upcomingName}>{row.payableTitle}</span>
+                    <span style={styles.upcomingDate}>{formatJalaliDate(row.installment.dueDate, usePersianDigits)}</span>
+                    <span style={styles.upcomingAmount}>{money(row.installment.amount)}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
-          <motion.button
-            style={styles.addBtn}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => { setShowForm(true); setEditId(null) }}
-          >
-            {t('payable.add')}
-          </motion.button>
-        </div>
+        </BentoCard>
       </div>
-
-      <div style={{ overflowY: 'scroll', maxHeight: 'calc(100vh - 200px)' }}>
-        <PayableList
-          payables={filteredPayables}
-          transactions={transactions}
-          categories={categories}
-          onEdit={handleEdit}
-          onClick={handleClick}
-        />
-      </div>
-
-      <InstallmentSummary
-        payables={payables}
-        currency={dataset?.currency ?? 'USD'}
-        onUpdateInstallment={handleUpdateInstallment}
-        onSetInstallmentPaid={handleSetInstallmentPaid}
-        onViewPayable={handleClick}
-      />
 
       <Modal
         open={showForm}
@@ -168,10 +276,10 @@ function PayablePage(): JSX.Element {
         title={editId ? t('payable.edit') : t('payable.add')}
         footer={
           <>
-            <button type="button" style={styles.footerCancelBtn} onClick={closeForm}>
+            <button type="button" style={uiStyles.buttonSecondary} onClick={closeForm}>
               {t('common.cancel')}
             </button>
-            <button type="submit" form={PAYABLE_FORM_ID} style={styles.footerSaveBtn}>
+            <button type="submit" form={PAYABLE_FORM_ID} style={uiStyles.button}>
               {t('common.save')}
             </button>
           </>
@@ -180,7 +288,7 @@ function PayablePage(): JSX.Element {
         <PayableForm
           payable={editingPayable}
           categories={categories}
-          currency={dataset?.currency ?? 'USD'}
+          currency={currency}
           onSave={handleSave}
         />
       </Modal>
@@ -190,69 +298,94 @@ function PayablePage(): JSX.Element {
         open={detailId !== null}
         onClose={() => setDetailId(null)}
       />
-    </motion.div>
+    </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { padding: padding.page },
-  header: {
+  container: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    flexDirection: 'column',
+    gap: spacing.xxl,
+    minWidth: 0,
   },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, margin: 0, color: colors.text.primary },
-  subtitle: { fontSize: fontSize.sm, color: colors.text.disabled, margin: `${spacing.xs} 0 0` },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing.md,
+  metricsGrid: {
+    marginBottom: 0,
   },
   dateFilter: {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.xs,
+    flexWrap: 'wrap',
   },
-  dateSep: { color: colors.text.disabled },
-  clearBtn: {
-    padding: `${spacing.xs} ${spacing.sm}`,
-    fontSize: fontSize.sm,
+  dateSep: {
     color: colors.text.muted,
-    backgroundColor: colors.bg.muted,
-    border: `${borderWidth.default} solid ${colors.border.light}`,
-    borderRadius: borderRadius.sm,
-    cursor: 'pointer',
+    fontSize: fontSize.sm,
   },
-  addBtn: {
-    padding: padding.button,
-    fontSize: fontSize.base,
+  listScroll: {
+    overflowX: 'auto',
+    overflowY: 'auto',
+    maxHeight: '420px',
+    overscrollBehavior: 'contain',
+    border: `${borderWidth.default} solid ${colors.border.subtle}`,
+    borderRadius: borderRadius.lg,
+  },
+  upcoming: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    borderTop: `${borderWidth.default} solid ${colors.border.default}`,
+  },
+  upcomingTitle: {
+    margin: 0,
+    color: colors.text.secondary,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: colors.text.inverse,
-    backgroundColor: colors.primary,
-    border: 'none',
+  },
+  upcomingRows: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.xs,
+  },
+  upcomingRow: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+    gap: spacing.sm,
+    alignItems: 'center',
+    width: '100%',
+    padding: `${spacing.sm} ${spacing.md}`,
+    textAlign: 'start',
+    backgroundColor: colors.bg.subtle,
+    border: `${borderWidth.default} solid ${colors.border.subtle}`,
     borderRadius: borderRadius.md,
     cursor: 'pointer',
+    transition: transitions.fast,
+  },
+  upcomingName: {
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+  },
+  upcomingDate: {
+    color: colors.text.muted,
+    fontSize: fontSize.xs,
     whiteSpace: 'nowrap',
   },
-  footerCancelBtn: {
-    padding: padding.button,
-    fontSize: fontSize.md,
-    color: colors.text.muted,
-    backgroundColor: colors.bg.hover,
-    border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer',
+  upcomingAmount: {
+    color: colors.text.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap',
   },
-  footerSaveBtn: {
-    padding: padding.button,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text.inverse,
-    backgroundColor: colors.primary,
-    border: 'none',
-    borderRadius: borderRadius.md,
-    cursor: 'pointer',
+  emptyText: {
+    margin: 0,
+    color: colors.text.muted,
+    fontSize: fontSize.sm,
   },
 }
 

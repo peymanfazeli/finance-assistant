@@ -2,10 +2,17 @@
   "app": {
     "title": "دستیار مالی"
   },
+  "theme": {
+    "toggleToLight": "تغییر به حالت روشن",
+    "toggleToDark": "تغییر به حالت تیره",
+    "dark": "تیره",
+    "light": "روشن"
+  },
   "nav": {
     "dashboard": "داشبورد",
     "transactions": "تراکنش‌ها",
     "receivables": "دریافتی‌ها",
+    "payables": "پرداختنی‌ها",
     "wallets": "کیف پول‌ها",
     "import": "ورود داده",
     "categories": "دسته‌بندی‌ها",
@@ -295,6 +302,14 @@
   },
   "payable": {
     "title": "پرداختنی‌ها",
+    "description": "پرداخت‌های مورد انتظار، تاریخ‌های سررسید و پیشرفت پرداخت را در یکجا پیگیری کنید.",
+    "overviewTitle": "نمای کلی مالی",
+    "totalAmount": "مجموع پرداختنی‌ها",
+    "overdueAmount": "مبلغ معوقه",
+    "activeCount": "پرداختنی‌های فعال",
+    "pendingInstallments": "اقساط در انتظار",
+    "upcomingTitle": "پرداخت‌های پیش رو",
+    "upcomingEmpty": "پرداخت پیش رویی در این نمای کلی وجود ندارد.",
     "add": "افزودن پرداختنی",
     "edit": "ویرایش پرداختنی",
     "delete": "حذف پرداختنی",
@@ -385,6 +400,7 @@
   "settings": {
     "title": "تنظیمات",
     "language": "زبان",
+    "theme": "طرح",
     "wallets": "کیف پول‌ها",
     "walletsDescription": "حساب‌های بانکی و کیف پول‌های خود را مدیریت کنید یا بین آن‌ها پول منتقل کنید.",
     "english": "English",

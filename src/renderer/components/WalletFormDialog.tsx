@@ -64,9 +64,9 @@ function WalletFormDialog({ open, wallet, onSave, onClose }: WalletFormDialogPro
       <div style={styles.field}>
         <label style={styles.label}>{t('wallet.color')}</label>
         <div style={styles.colors}>
-          {colors.categoryPicker.map((c) => (
+          {colors.categoryPicker.map((c, index) => (
             <motion.button
-              key={c}
+              key={index}
               type="button"
               style={{
                 ...styles.colorBtn,

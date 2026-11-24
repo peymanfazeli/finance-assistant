@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { DashboardCardId } from '../../core/models/types'
 import { DashboardPeriod, DashboardPeriodKey, DASHBOARD_PERIOD_KEYS, isValidCustomRange } from '../../core/utils/dashboardPeriod'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth, shadow } from '../../core/utils/styles'
 import Modal from './Modal'
 import PersianCalendar from './PersianCalendar'
+import { uiStyles } from '../uiStyles'
 
 interface DashboardCustomizationDialogProps {
   open: boolean
@@ -144,13 +145,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
   },
   chip: {
+    ...uiStyles.chip,
     padding: `${spacing.xs} ${spacing.md}`,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    border: `${borderWidth.default} solid`,
-    borderRadius: borderRadius.full,
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
   },
   customRow: {
     display: 'flex',
@@ -220,7 +216,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bg.card,
     borderRadius: borderRadius.full,
     transition: 'transform 0.15s ease',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+    boxShadow: shadow.card,
   },
   toggleThumbOn: {
     transform: 'translateX(16px)',

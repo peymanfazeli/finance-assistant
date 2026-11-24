@@ -61,7 +61,7 @@ const styles: Record<string, React.CSSProperties> = {
   container: {
     position: 'fixed',
     bottom: spacing.xxl,
-    right: spacing.xxl,
+    insetInlineEnd: spacing.xxl,
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.sm,

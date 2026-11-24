@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { colors, borderRadius, shadow, zIndex, spacing, padding, borderWidth, sizes } from '../../core/utils/styles'
+import { colors, gradients, borderRadius, fontSize, fontWeight, shadow, zIndex, spacing, padding, borderWidth, sizes } from '../../core/utils/styles'
 
 interface ModalProps {
   open: boolean
@@ -93,8 +93,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bg.overlay,
+    backdropFilter: 'blur(4px)',
     zIndex: zIndex.modal,
-    padding: spacing.xxl,
+    padding: spacing.xl,
   },
   dialog: {
     width: '100%',
@@ -102,7 +103,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
-    backgroundColor: colors.bg.card,
+    backgroundColor: colors.bg.elevated,
+    backgroundImage: gradients.surface,
+    border: `${borderWidth.default} solid ${colors.border.strong}`,
     borderRadius: borderRadius.xxl,
     boxShadow: shadow.modal,
     overflow: 'hidden',
@@ -112,23 +115,25 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     flexShrink: 0,
-    padding: `${spacing.xl} ${spacing.xxl}`,
-    borderBottom: `${borderWidth.default} solid ${colors.border.light}`,
+    padding: `${spacing.lg} ${spacing.xl}`,
+    backgroundColor: colors.bg.surface,
+    borderBottom: `${borderWidth.default} solid ${colors.border.default}`,
   },
   title: {
     margin: 0,
-    fontSize: '18px',
-    fontWeight: 600,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
     color: colors.text.primary,
   },
   closeBtn: {
     background: 'none',
     border: 'none',
-    fontSize: '18px',
+    fontSize: fontSize.lg,
     cursor: 'pointer',
-    color: colors.text.disabled,
+    color: colors.text.muted,
     padding: spacing.xs,
     lineHeight: 1,
+    borderRadius: borderRadius.sm,
   },
   body: {
     flex: 1,
@@ -144,7 +149,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     gap: spacing.sm,
     flexShrink: 0,
-    padding: `${spacing.md} ${spacing.xxl}`,
-    borderTop: `${borderWidth.default} solid ${colors.border.light}`,
+    padding: `${spacing.md} ${spacing.xl}`,
+    backgroundColor: colors.bg.surface,
+    borderTop: `${borderWidth.default} solid ${colors.border.default}`,
   },
 }

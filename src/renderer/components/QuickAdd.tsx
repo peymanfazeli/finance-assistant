@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Category } from '../../core/models/types'
+import { sizes, spacing } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface QuickAddProps {
   categories: Category[]
@@ -48,31 +50,10 @@ function QuickAdd({ categories, onAdd }: QuickAddProps): JSX.Element {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', gap: '8px', alignItems: 'center' },
-  input: {
-    width: '120px',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px'
-  },
-  select: {
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    backgroundColor: '#fff'
-  },
-  button: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
+  container: { display: 'flex', gap: spacing.sm, alignItems: 'center' },
+  input: { ...uiStyles.input, width: sizes.quickAddWidth },
+  select: { ...uiStyles.input, width: 'auto' },
+  button: uiStyles.button,
 }
 
 export default QuickAdd

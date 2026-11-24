@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { TransactionType, Transaction, Category, Wallet } from '../../core/models/types'
 import Modal from './Modal'
 import PersianCalendar from './PersianCalendar'
+import { colors } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface TransactionFormProps {
   transaction?: Transaction
@@ -282,15 +284,7 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
           <button
             onClick={() => setShowValidationModal(false)}
-            style={{
-              padding: '8px 16px',
-              fontSize: '13px',
-              color: '#fff',
-              backgroundColor: '#4A90D9',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
+            style={styles.okBtn}
           >
             {t('common.ok')}
           </button>
@@ -301,57 +295,18 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  form: { padding: 0},
-  field: { marginBottom: '12px' },
-  label: { display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#555' },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    boxSizing: 'border-box'
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    backgroundColor: '#fff',
-    boxSizing: 'border-box'
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px 10px',
-    fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    minHeight: '60px',
-    resize: 'vertical',
-    boxSizing: 'border-box'
-  },
+  form: { padding: 0 },
+  field: uiStyles.field,
+  label: uiStyles.label,
+  input: uiStyles.input,
+  select: uiStyles.input,
+  textarea: uiStyles.textarea,
   buttons: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' },
   rightGroup: { display: 'flex', alignItems: 'center', gap: '12px' },
-  checkboxLabel: { fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#555' },
-  cancelBtn: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    color: '#666',
-    backgroundColor: '#f0f0f0',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-  saveBtn: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  }
+  checkboxLabel: { fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', whiteSpace: 'nowrap', color: colors.text.secondary },
+  cancelBtn: uiStyles.buttonSecondary,
+  saveBtn: uiStyles.button,
+  okBtn: uiStyles.button,
 }
 
 export default TransactionForm

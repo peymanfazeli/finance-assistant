@@ -110,12 +110,24 @@ function renderSummary(onUpdate = vi.fn(), onSetPaid = vi.fn(), onView = vi.fn()
 }
 
 describe('InstallmentSummary', () => {
-  it('renders pending-only summary cards', () => {
+  it('renders only non-redundant summary cards in the required order', () => {
     renderSummary()
-    expect(screen.getByText('Due This Month (Pending)')).toBeDefined()
-    expect(screen.getByText('Total Scheduled (Pending)')).toBeDefined()
+    const heading = screen.getByRole('heading', { name: 'Installment Overview' })
+    const dueLabel = screen.getByText('Due This Month (Pending)')
+    const dueCard = dueLabel.parentElement as HTMLElement
+    const cards = dueCard.parentElement as HTMLElement
+    const allFilter = screen.getByRole('button', { name: 'All' })
+    const filters = allFilter.parentElement as HTMLElement
+    const table = screen.getByRole('table')
+
+    expect(cards.children).toHaveLength(2)
+    expect(cards.textContent).toContain('Overdue')
+    expect(screen.queryByText('Total Scheduled (Pending)')).toBeNull()
     expect(screen.getAllByText('$20.00').length).toBeGreaterThan(0)
-    expect(screen.getByText('$70.00')).toBeDefined()
+    expect(screen.getAllByText('$50.00').length).toBeGreaterThan(0)
+    expect(heading.compareDocumentPosition(dueCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(cards.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(filters.nextElementSibling?.querySelector('table')).toBe(table)
   })
 
   it('filters rows by status', () => {

@@ -39,6 +39,9 @@ const api = {
     save: (content: string): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('settings:save', content)
   },
+  theme: {
+    getInitial: (): string => ipcRenderer.sendSync('theme:get')
+  },
   file: {
     read: (filePath: string): Promise<{ success: boolean; data?: string; ext?: string; error?: string }> =>
       ipcRenderer.invoke('file:read', filePath),

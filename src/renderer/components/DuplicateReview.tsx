@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { ImportedRow } from '../../core/services/ImportService'
 import { formatCurrency } from '../../core/utils/format'
 import { formatJalaliDate } from '../../core/utils/jalali'
+import { colors, spacing, fontSize, fontWeight, padding, borderWidth, borderRadius } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface DuplicateReviewProps {
   imported: ImportedRow[]
@@ -42,20 +44,19 @@ function DuplicateReview({ imported, duplicates, onToggle, currency = 'toman', l
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { marginTop: '16px', padding: '12px', backgroundColor: '#fff3cd', borderRadius: '8px' },
-  warning: { fontSize: '14px', fontWeight: 600, color: '#856404', margin: '0 0 8px' },
-  list: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' },
-  info: { fontSize: '13px', color: '#856404' },
+  container: { marginTop: spacing.lg, padding: spacing.md, backgroundColor: colors.bg.warning, borderRadius: borderRadius.md },
+  warning: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, color: colors.text.warning, margin: `0 0 ${spacing.sm}` },
+  list: { display: 'flex', flexDirection: 'column', gap: spacing.xs },
+  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: `${spacing.xs} 0` },
+  info: { fontSize: fontSize.md, color: colors.text.warning },
   toggleBtn: {
-    padding: '2px 8px',
-    fontSize: '12px',
-    color: '#856404',
-    backgroundColor: '#fff',
-    border: '1px solid #856404',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  }
+    ...uiStyles.buttonSecondary,
+    padding: padding.badge,
+    fontSize: fontSize.sm,
+    color: colors.text.warning,
+    backgroundColor: colors.bg.card,
+    border: `${borderWidth.default} solid ${colors.warning}`,
+  },
 }
 
 export default DuplicateReview

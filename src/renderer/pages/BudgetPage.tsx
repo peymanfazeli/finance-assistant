@@ -146,7 +146,7 @@ function BudgetPage(): JSX.Element {
                   step={1}
                   value={percentOf(category.id)}
                   onChange={(e) => handleChange(category.id, Number(e.target.value))}
-                  aria-label={`${category.name} — ${t('budget.percent')}`}
+                  aria-label={`${category.name} - ${t('budget.percent')}`}
                   style={{ ...styles.slider, accentColor: category.color }}
                 />
                 <span style={styles.sliderValue}>

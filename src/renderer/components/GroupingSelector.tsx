@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Grouping, Aggregation } from '../../core/services/ReportService'
-import { colors, spacing, fontSize, fontWeight, borderRadius, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, shadow } from '../../core/utils/styles'
 
 interface Props {
   grouping: Grouping
@@ -92,7 +92,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: colors.bg.card,
     color: colors.primary,
     fontWeight: fontWeight.semibold,
-    boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+    boxShadow: shadow.card,
   },
 }
 

@@ -17,7 +17,8 @@ import {
   fontWeight,
   borderRadius,
   borderWidth,
-  shadow
+  sizes,
+  zIndex
 } from '../../core/utils/styles'
 import PersianCalendar from './PersianCalendar'
 import Modal from './Modal'
@@ -53,6 +54,9 @@ function InstallmentSummary({
 
   const summary = useMemo(() => PayableInstallmentService.getSummary(payables), [payables])
   const rows = useMemo(() => PayableInstallmentService.filterRows(summary.rows, filter), [summary.rows, filter])
+  const overdueAmount = summary.rows
+    .filter((row) => row.state === 'overdue')
+    .reduce((sum, row) => sum + row.installment.amount, 0)
 
   const openEditor = (row: InstallmentRow): void => {
     setEditing(row)
@@ -81,21 +85,7 @@ function InstallmentSummary({
 
   return (
     <section style={styles.section}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>{t('installment.summaryTitle')}</h3>
-        <div style={styles.filters}>
-          {FILTERS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              style={filter === item ? styles.filterActive : styles.filterButton}
-              onClick={() => setFilter(item)}
-            >
-              {t(`installment.filter${item.charAt(0).toUpperCase()}${item.slice(1)}`)}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h3 style={styles.title}>{t('installment.summaryTitle')}</h3>
 
       <div style={styles.cards}>
         <motion.div style={styles.card} whileHover={{ y: -2 }}>
@@ -105,9 +95,24 @@ function InstallmentSummary({
           </span>
         </motion.div>
         <motion.div style={styles.card} whileHover={{ y: -2 }}>
-          <span style={styles.cardLabel}>{t('installment.totalScheduled')}</span>
-          <span style={styles.cardValue}>{formatCurrency(summary.totalScheduled, currency, locale)}</span>
+          <span style={styles.cardLabel}>{t('installment.stateOverdue')}</span>
+          <span style={{ ...styles.cardValue, color: colors.text.expense }}>
+            {formatCurrency(overdueAmount, currency, locale)}
+          </span>
         </motion.div>
+      </div>
+
+      <div style={styles.filters}>
+        {FILTERS.map((item) => (
+          <button
+            key={item}
+            type="button"
+            style={filter === item ? styles.filterActive : styles.filterButton}
+            onClick={() => setFilter(item)}
+          >
+            {t(`installment.filter${item.charAt(0).toUpperCase()}${item.slice(1)}`)}
+          </button>
+        ))}
       </div>
 
       {rows.length === 0 ? (
@@ -203,20 +208,10 @@ function InstallmentSummary({
 
 const styles: Record<string, React.CSSProperties> = {
   section: {
-    marginTop: spacing.xxl,
-    padding: padding.card,
-    backgroundColor: colors.bg.card,
-    border: `${borderWidth.default} solid ${colors.border.light}`,
-    borderRadius: borderRadius.lg,
-    boxShadow: shadow.card
-  },
-  header: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
     gap: spacing.md,
-    flexWrap: 'wrap',
-    marginBottom: spacing.lg
+    minWidth: 0,
   },
   title: {
     margin: 0,
@@ -243,7 +238,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.full,
     cursor: 'pointer'
   },
-  cards: { display: 'flex', gap: spacing.md, flexWrap: 'wrap', marginBottom: spacing.lg },
+  cards: { display: 'flex', gap: spacing.md, flexWrap: 'wrap' },
   card: {
     flex: '1 1 220px',
     display: 'flex',
@@ -256,7 +251,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardLabel: { fontSize: fontSize.sm, color: colors.text.muted },
   cardValue: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, color: colors.text.primary },
-  tableWrapper: { overflowX: 'auto', maxHeight: '360px', overflowY: 'auto' },
+  tableWrapper: {
+    overflowX: 'auto',
+    overflowY: 'auto',
+    maxHeight: sizes.installmentListHeight,
+    overscrollBehavior: 'contain',
+    border: `${borderWidth.default} solid ${colors.border.subtle}`,
+    borderRadius: borderRadius.lg,
+  },
   table: { width: '100%', borderCollapse: 'collapse' },
   th: {
     padding: padding.tableCell,
@@ -267,6 +269,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
     position: 'sticky' as const,
     top: 0,
+    zIndex: zIndex.sticky,
     backgroundColor: colors.bg.card
   },
   thRight: {
@@ -278,6 +281,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: `${borderWidth.thick} solid ${colors.border.divider}`,
     position: 'sticky' as const,
     top: 0,
+    zIndex: zIndex.sticky,
     backgroundColor: colors.bg.card
   },
   td: {

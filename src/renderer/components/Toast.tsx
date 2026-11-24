@@ -18,17 +18,17 @@ const typeStyles: Record<ToastType, React.CSSProperties> = {
   success: {
     backgroundColor: colors.bg.income,
     color: colors.text.income,
-    borderLeft: `4px solid ${colors.success}`,
+    borderInlineStart: `4px solid ${colors.success}`,
   },
   error: {
     backgroundColor: colors.bg.expense,
     color: colors.text.expense,
-    borderLeft: `4px solid ${colors.danger}`,
+    borderInlineStart: `4px solid ${colors.danger}`,
   },
   info: {
     backgroundColor: colors.bg.active,
     color: colors.primary,
-    borderLeft: `4px solid ${colors.primary}`,
+    borderInlineStart: `4px solid ${colors.primary}`,
   },
 }
 

@@ -20,6 +20,9 @@ declare global {
         load: () => Promise<{ success: boolean; data?: ApplicationSettings | null; error?: string }>
         save: (content: string) => Promise<{ success: boolean; error?: string }>
       }
+      theme: {
+        getInitial: () => string
+      }
       file: {
         read: (filePath: string) => Promise<{ success: boolean; data?: string; ext?: string; error?: string }>
         openDialog: () => Promise<Electron.OpenDialogReturnValue>
@@ -31,6 +34,10 @@ declare global {
         saveFile: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>
         saveFileBinary: (filePath: string, base64: string) => Promise<{ success: boolean; error?: string }>
         showSaveDialog: (defaultName: string, filters: Electron.FileFilter[]) => Promise<Electron.SaveDialogReturnValue>
+        getLastExportTimestamp: () => Promise<{ timestamp: string | null }>
+        saveLastExportTimestamp: (timestamp: string) => Promise<{ success: boolean }>
+        confirmClose: () => Promise<{ success: boolean }>
+        cancelClose: () => Promise<{ success: boolean }>
       }
       config: {
         createDatasetConfigs: (datasetName: string) => Promise<{ success: boolean; catPath?: string; recievPath?: string; error?: string }>

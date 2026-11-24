@@ -11,6 +11,11 @@ export enum Language {
   Fa = 'fa'
 }
 
+export enum Theme {
+  Dark = 'dark',
+  Light = 'light'
+}
+
 export interface Category {
   id: string
   name: string
@@ -99,6 +104,7 @@ export interface Dataset {
 
 export interface ApplicationSettings {
   language: Language
+  theme: Theme
   visibleDashboardCards: string[]
   lastOpenedDataset: string | null
   recentDatasets: string[]

@@ -1,69 +1,106 @@
+const token = (name: string): string => `var(--pfa-${name})`
+
 export const colors = {
-  primary: '#4A90D9',
-  success: '#28a745',
-  danger: '#dc3545',
+  primary: token('primary'),
+  primaryHover: token('primary-hover'),
+  primaryStrong: token('primary-strong'),
+  primarySoft: token('primary-soft'),
+  success: token('success'),
+  danger: token('danger'),
+  warning: token('warning'),
+  info: token('info'),
 
   bg: {
-    page: '#f5f5f5',
-    card: '#fff',
-    input: '#fff',
-    muted: '#f9f9f9',
-    hover: '#f0f0f0',
-    active: '#e8f0fe',
-    overlay: 'rgba(0,0,0,0.4)',
-    income: '#d4edda',
-    expense: '#f8d7da',
-    refund: '#fff3cd',
-    investment: '#e8e0f4',
-    warning: '#fff3cd',
+    page: token('bg-page'),
+    surface: token('bg-surface'),
+    card: token('bg-card'),
+    elevated: token('bg-elevated'),
+    subtle: token('bg-subtle'),
+    input: token('bg-input'),
+    muted: token('bg-muted'),
+    hover: token('bg-hover'),
+    active: token('bg-active'),
+    overlay: token('bg-overlay'),
+    income: token('bg-income'),
+    expense: token('bg-expense'),
+    refund: token('bg-refund'),
+    investment: token('bg-investment'),
+    warning: token('bg-warning'),
   },
 
   text: {
-    primary: '#1a1a1a',
-    secondary: '#333',
-    muted: '#555',
-    subtle: '#666',
-    disabled: '#888',
-    placeholder: '#aaa',
-    inverse: '#fff',
-    error: '#d32f2f',
-    income: '#155724',
-    expense: '#721c24',
-    refund: '#856404',
-    investment: '#6c5ce7',
-    warning: '#856404',
+    primary: token('text-primary'),
+    secondary: token('text-secondary'),
+    muted: token('text-muted'),
+    subtle: token('text-subtle'),
+    disabled: token('text-disabled'),
+    placeholder: token('text-placeholder'),
+    inverse: token('text-inverse'),
+    error: token('text-error'),
+    income: token('text-income'),
+    expense: token('text-expense'),
+    refund: token('text-refund'),
+    investment: token('text-investment'),
+    warning: token('text-warning'),
   },
 
   border: {
-    default: '#e0e0e0',
-    light: '#f0f0f0',
-    input: '#ccc',
-    divider: '#eee',
-    strong: '#ddd',
+    default: token('border'),
+    subtle: token('border-subtle'),
+    light: token('border-subtle'),
+    input: token('border-input'),
+    divider: token('border-divider'),
+    strong: token('border-strong'),
   },
 
   chart: [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-    '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-    '#E67E22', '#2ECC71',
+    token('chart-1'),
+    token('chart-2'),
+    token('chart-3'),
+    token('chart-4'),
+    token('chart-5'),
+    token('chart-6'),
+    token('chart-7'),
+    token('chart-8'),
+    token('chart-9'),
+    token('chart-10'),
   ],
 
   categoryPicker: [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-    '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
-    '#BDC3C7', '#E67E22', '#2ECC71', '#3498DB',
+    token('chart-1'),
+    token('chart-2'),
+    token('chart-3'),
+    token('chart-4'),
+    token('chart-5'),
+    token('chart-6'),
+    token('chart-7'),
+    token('chart-8'),
+    token('chart-9'),
+    token('chart-10'),
+    token('chart-6'),
+    token('chart-2'),
   ],
 
   summaryCards: {
-    totalIncome: '#155724',
-    totalExpenses: '#721c24',
-    netBalance: '#856404',
-    transactionCount: '#4A90D9',
-    avgSpending: '#6c757d',
+    totalIncome: token('text-income'),
+    totalExpenses: token('text-expense'),
+    netBalance: token('text-investment'),
+    transactionCount: token('primary'),
+    avgSpending: token('text-secondary'),
   },
 }
 
+export const gradients = {
+  accent: token('gradient-accent'),
+  surface: token('gradient-surface'),
+}
+
+export const glow = {
+  focus: token('glow'),
+}
+
 export const spacing = {
+  xxs: '2px',
   xs: '4px',
   sm: '8px',
   md: '12px',
@@ -77,7 +114,9 @@ export const spacing = {
 
 export const padding = {
   page: '24px',
+  pageCompact: '16px',
   card: '20px',
+  cardCompact: '16px',
   dialog: '24px',
   dialogLg: '32px',
   input: '8px 10px',
@@ -93,12 +132,12 @@ export const padding = {
 }
 
 export const borderRadius = {
-  sm: '4px',
-  md: '6px',
-  lg: '8px',
-  xl: '10px',
-  xxl: '12px',
-  full: '50%',
+  sm: '8px',
+  md: '10px',
+  lg: '14px',
+  xl: '18px',
+  xxl: '22px',
+  full: '999px',
 }
 
 export const fontSize = {
@@ -111,23 +150,25 @@ export const fontSize = {
   xxl: '20px',
   xxxl: '22px',
   display: '28px',
+  metric: '24px',
   hero: '36px',
   icon: '48px',
 }
 
 export const fontWeight = {
-  bold: 700,
-  semibold: 600,
+  regular: 400,
   medium: 500,
+  semibold: 600,
+  bold: 700,
 }
 
 export const shadow = {
-  card: '0 1px 4px rgba(0,0,0,0.05)',
-  elevated: '0 1px 6px rgba(0,0,0,0.08)',
-  dropdown: '0 4px 12px rgba(0,0,0,0.1)',
-  modal: '0 4px 24px rgba(0,0,0,0.15)',
-  welcome: '0 2px 12px rgba(0,0,0,0.1)',
-  hero: '0 4px 20px rgba(0,0,0,0.06)',
+  card: token('shadow-card'),
+  elevated: token('shadow-elevated'),
+  dropdown: token('shadow-dropdown'),
+  modal: token('shadow-modal'),
+  welcome: token('shadow-welcome'),
+  hero: token('shadow-hero'),
 }
 
 export const borderWidth = {
@@ -137,20 +178,26 @@ export const borderWidth = {
 
 export const zIndex = {
   dropdown: 10,
+  sticky: 20,
   modal: 1000,
 }
 
 export const sizes = {
   navHeight: '56px',
+  sidebarWidth: '232px',
+  sidebarCompactWidth: '72px',
+  pageMaxWidth: '1440px',
   searchWidth: '220px',
   quickAddWidth: '120px',
   dropdownMinWidth: '160px',
-  dialogWidth: '320px',
-  dialogMd: '360px',
-  dialogLg: '400px',
+  dialogWidth: '400px',
+  dialogMd: '480px',
+  dialogLg: '640px',
+  dialogWide: '860px',
   formMaxWidth: '480px',
-  settingsMaxWidth: '600px',
-  chartHeight: '350px',
+  settingsMaxWidth: '760px',
+  chartHeight: '320px',
+  installmentListHeight: '260px',
 }
 
 export const transitions = {

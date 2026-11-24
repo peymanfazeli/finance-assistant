@@ -8,7 +8,8 @@ import AIAnalysisModal from '../components/AIAnalysisModal'
 import { formatCurrency } from '../../core/utils/format'
 import { formatJalaliDateEn, getTodayJalali, jalaliToGregorianDateStr, jalaliToGregorianDateStrFromParts } from '../../core/utils/jalali'
 import PersianCalendar from '../components/PersianCalendar'
-import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
+import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth, transitions } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -473,10 +474,10 @@ function ReportsPage(): JSX.Element {
                         </span>
                       </td>
                       <td style={styles.tdRight}>{formatCurrency(row.openingBalance, currency, locale)}</td>
-                      <td style={{ ...styles.tdRight, color: row.income > 0 ? '#228B22' : styles.tdRight.color }}>
+                      <td style={{ ...styles.tdRight, color: row.income > 0 ? colors.text.income : styles.tdRight.color }}>
                         {formatCurrency(row.income, currency, locale)}
                       </td>
-                      <td style={{ ...styles.tdRight, color: row.expense > 0 ? '#FF8C00' : styles.tdRight.color }}>
+                      <td style={{ ...styles.tdRight, color: row.expense > 0 ? colors.text.expense : styles.tdRight.color }}>
                         {formatCurrency(row.expense, currency, locale)}
                       </td>
                       <td style={styles.tdRight}>{formatCurrency(row.transfersIn, currency, locale)}</td>
@@ -484,7 +485,7 @@ function ReportsPage(): JSX.Element {
                       <td style={{
                         ...styles.tdRight,
                         fontWeight: fontWeight.semibold,
-                        color: row.netChange >= 0 ? '#228B22' : '#FF8C00'
+                        color: row.netChange >= 0 ? colors.text.income : colors.text.expense
                       }}>
                         {formatCurrency(row.netChange, currency, locale)}
                       </td>
@@ -552,15 +553,15 @@ function ReportsPage(): JSX.Element {
                           {tableHasDate && <td style={styles.td}>{'name' in row ? row.name : ''}</td>}
                           {tableHasIncomeExpenseSplit && (
                             <>
-                              <td style={{ ...styles.tdRight, color: ((row as any).income ?? 0) > 0 ? '#228B22' : styles.tdRight.color }}>{formatCurrency(((row as any).income ?? 0), currency, locale)}</td>
-                              <td style={{ ...styles.tdRight, color: ((row as any).expense ?? 0) > 0 ? '#FF8C00' : styles.tdRight.color }}>{formatCurrency(((row as any).expense ?? 0), currency, locale)}</td>
+                              <td style={{ ...styles.tdRight, color: ((row as any).income ?? 0) > 0 ? colors.text.income : styles.tdRight.color }}>{formatCurrency(((row as any).income ?? 0), currency, locale)}</td>
+                              <td style={{ ...styles.tdRight, color: ((row as any).expense ?? 0) > 0 ? colors.text.expense : styles.tdRight.color }}>{formatCurrency(((row as any).expense ?? 0), currency, locale)}</td>
                             </>
                           )}
                           {!tableHasIncomeExpenseSplit && tableHasIncome && (
-                            <td style={{ ...styles.tdRight, color: (row as TimeSeriesPoint).income > 0 ? '#228B22' : styles.tdRight.color }}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>
+                            <td style={{ ...styles.tdRight, color: (row as TimeSeriesPoint).income > 0 ? colors.text.income : styles.tdRight.color }}>{formatCurrency((row as TimeSeriesPoint).income, currency, locale)}</td>
                           )}
                           {!tableHasIncomeExpenseSplit && (
-                            <td style={{ ...styles.tdRight, color: (rowHasDate ? (row as TimeSeriesPoint).expense > 0 : ((row as any).expense ?? (row as ReportDataPoint).value) > 0) ? '#FF8C00' : styles.tdRight.color }}>
+                            <td style={{ ...styles.tdRight, color: (rowHasDate ? (row as TimeSeriesPoint).expense > 0 : ((row as any).expense ?? (row as ReportDataPoint).value) > 0) ? colors.text.expense : styles.tdRight.color }}>
                               {formatCurrency(
                                 'value' in row && !(row as any).income && !(row as any).expense ? (row as ReportDataPoint).value : (rowHasDate ? (row as TimeSeriesPoint).expense : ((row as any).expense ?? (row as ReportDataPoint).value)),
                                 currency, locale
@@ -672,7 +673,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.md,
     cursor: 'pointer',
     textAlign: 'left',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   categoryBtnActive: {
     backgroundColor: colors.bg.active,
@@ -720,7 +721,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.sm,
     cursor: 'pointer',
     textAlign: 'left',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
     flexShrink: 0,
   },
   reportItemActive: {
@@ -752,6 +753,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   aiBtn: {
+    ...uiStyles.button,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -760,7 +762,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.text.inverse,
-    backgroundColor: '#6C5CE7',
+    backgroundColor: colors.primary,
     border: 'none',
     borderRadius: borderRadius.md,
     cursor: 'pointer',
@@ -812,7 +814,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: borderRadius.sm,
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    transition: transitions.fast,
   },
   chartTypeBtnActive: {
     backgroundColor: colors.bg.card,
@@ -844,6 +846,8 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
   },
   generateBtn: {
+    ...uiStyles.button,
+    display: 'inline-block',
     padding: `${spacing.sm} ${spacing.lg}`,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,

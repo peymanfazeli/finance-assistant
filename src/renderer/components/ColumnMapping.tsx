@@ -1,4 +1,6 @@
 import { ColumnMapping as ColumnMappingType } from '../../core/services/ImportService'
+import { colors, spacing, fontSize, fontWeight } from '../../core/utils/styles'
+import { uiStyles } from '../uiStyles'
 
 interface ColumnMappingProps {
   mapping: ColumnMappingType[]
@@ -45,18 +47,18 @@ function ColumnMapping({ mapping, onChange }: ColumnMappingProps): JSX.Element {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { marginTop: '16px' },
-  title: { fontSize: '14px', fontWeight: 600, margin: '0 0 8px', color: '#333' },
-  row: { display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' },
-  source: { minWidth: '120px', fontSize: '13px', color: '#555' },
-  arrow: { color: '#888' },
+  container: { marginTop: spacing.lg },
+  title: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, margin: `0 0 ${spacing.sm}`, color: colors.text.primary },
+  row: { display: 'flex', alignItems: 'center', gap: spacing.sm, padding: `${spacing.xs} 0` },
+  source: { minWidth: '120px', fontSize: fontSize.md, color: colors.text.secondary },
+  arrow: { color: colors.text.muted },
   select: {
-    padding: '4px 8px',
-    fontSize: '13px',
-    border: '1px solid #ccc',
+    ...uiStyles.input,
+    width: 'auto',
+    padding: `${spacing.xxs} ${spacing.sm}`,
+    fontSize: fontSize.md,
     borderRadius: '4px',
-    backgroundColor: '#fff'
-  }
+  },
 }
 
 export default ColumnMapping
