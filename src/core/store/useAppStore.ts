@@ -5,6 +5,7 @@ import {
   Category,
   Receivable,
   Payable,
+  PayableInstallment,
   Wallet,
   ApplicationSettings,
   TransactionFilter,
@@ -20,6 +21,7 @@ import { TransactionService } from '../services/TransactionService'
 import { WalletService } from '../services/WalletService'
 import { ReceivableService } from '../services/ReceivableService'
 import { PayableService } from '../services/PayableService'
+import { PayableInstallmentService } from '../services/PayableInstallmentService'
 import { StatsService, DashboardStats } from '../services/StatsService'
 import { DashboardPeriod } from '../utils/dashboardPeriod'
 
@@ -86,8 +88,11 @@ interface AppState {
     to: string
     notes?: string
     dueDate?: string
+    installments?: PayableInstallment[]
   }) => void
-  updatePayable: (id: string, updates: Partial<Pick<Payable, 'title' | 'categoryId' | 'totalAmount' | 'to' | 'notes' | 'dueDate'>>) => void
+  updatePayable: (id: string, updates: Partial<Pick<Payable, 'title' | 'categoryId' | 'totalAmount' | 'to' | 'notes' | 'dueDate' | 'installments'>>) => void
+  updateInstallment: (payableId: string, installmentId: string, updates: Partial<Pick<PayableInstallment, 'amount' | 'dueDate'>>) => void
+  setInstallmentPaid: (payableId: string, installmentId: string, paid: boolean) => void
   deletePayable: (id: string) => void
   syncPayablesConfig: () => void
 
@@ -412,6 +417,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     const payables = (dataset as any).payables || []
     const updated = PayableService.update(payables, id, updates)
     set({ dataset: { ...dataset, payables: updated } as Dataset })
+    get().saveDatasetQueued()
+  },
+
+  updateInstallment: (payableId, installmentId, updates) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const payables = dataset.payables ?? []
+    const updated = PayableInstallmentService.updateInstallment(payables, payableId, installmentId, updates)
+    set({ dataset: { ...dataset, payables: updated } })
+    get().saveDatasetQueued()
+  },
+
+  setInstallmentPaid: (payableId, installmentId, paid) => {
+    const { dataset } = get()
+    if (!dataset) return
+    const payables = dataset.payables ?? []
+    const updated = PayableInstallmentService.setInstallmentPaid(payables, payableId, installmentId, paid)
+    set({ dataset: { ...dataset, payables: updated } })
     get().saveDatasetQueued()
   },
 

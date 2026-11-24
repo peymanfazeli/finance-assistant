@@ -8,6 +8,7 @@ interface ModalProps {
   title?: string
   children: React.ReactNode
   width?: string
+  footer?: React.ReactNode
 }
 
 const overlayVariants = {
@@ -26,7 +27,7 @@ const modalVariants = {
   exit: { opacity: 0, y: 20, scale: 0.97, transition: { duration: 0.15 } },
 }
 
-export default function Modal({ open, onClose, title, children, width = sizes.dialogLg }: ModalProps) {
+export default function Modal({ open, onClose, title, children, width = sizes.dialogLg, footer }: ModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -68,14 +69,15 @@ export default function Modal({ open, onClose, title, children, width = sizes.di
             aria-label={title}
           >
             {title && (
-              <div style={styles.header}>
+              <div data-modal-header style={styles.header}>
                 <h2 style={styles.title}>{title}</h2>
-                <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+                <button type="button" style={styles.closeBtn} onClick={onClose} aria-label="Close">
                   ✕
                 </button>
               </div>
             )}
-            <div style={styles.body}>{children}</div>
+            <div data-modal-body style={styles.body}>{children}</div>
+            {footer && <div data-modal-footer style={styles.footer}>{footer}</div>}
           </motion.div>
         </motion.div>
       )}
@@ -96,6 +98,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   dialog: {
     width: '100%',
+    maxHeight: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
     backgroundColor: colors.bg.card,
     borderRadius: borderRadius.xxl,
     boxShadow: shadow.modal,
@@ -105,6 +111,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexShrink: 0,
     padding: `${spacing.xl} ${spacing.xxl}`,
     borderBottom: `${borderWidth.default} solid ${colors.border.light}`,
   },
@@ -124,6 +131,20 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1,
   },
   body: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    overscrollBehavior: 'contain',
     padding: padding.dialog,
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    flexShrink: 0,
+    padding: `${spacing.md} ${spacing.xxl}`,
+    borderTop: `${borderWidth.default} solid ${colors.border.light}`,
   },
 }

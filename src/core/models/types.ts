@@ -54,6 +54,21 @@ export interface Receivable {
   updatedAt: string
 }
 
+export enum InstallmentStatus {
+  Pending = 'pending',
+  Paid = 'paid'
+}
+
+export interface PayableInstallment {
+  id: string
+  amount: number
+  dueDate: string
+  status: InstallmentStatus
+  paidAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Payable {
   id: string
   title: string
@@ -62,6 +77,7 @@ export interface Payable {
   to: string
   notes: string
   dueDate?: string
+  installments?: PayableInstallment[]
   createdAt: string
   updatedAt: string
 }

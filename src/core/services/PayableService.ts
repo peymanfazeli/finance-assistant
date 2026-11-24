@@ -1,4 +1,4 @@
-import { Payable, Transaction, TransactionType } from '../models/types'
+import { Payable, PayableInstallment, Transaction, TransactionType } from '../models/types'
 import { generateId } from '../utils/id'
 import { gregorianDateToJalali } from '../utils/jalali'
 
@@ -30,6 +30,7 @@ export class PayableService {
       to: string
       notes?: string
       dueDate?: string
+      installments?: PayableInstallment[]
     }
   ): Payable[] {
     const now = new Date().toISOString()
@@ -41,6 +42,7 @@ export class PayableService {
       to: data.to,
       notes: data.notes ?? '',
       dueDate: data.dueDate || undefined,
+      installments: data.installments,
       createdAt: now,
       updatedAt: now
     }
@@ -50,7 +52,7 @@ export class PayableService {
   static update(
     payables: Payable[],
     id: string,
-    updates: Partial<Pick<Payable, 'title' | 'categoryId' | 'totalAmount' | 'to' | 'notes' | 'dueDate'>>
+    updates: Partial<Pick<Payable, 'title' | 'categoryId' | 'totalAmount' | 'to' | 'notes' | 'dueDate' | 'installments'>>
   ): Payable[] {
     const now = new Date().toISOString()
     return payables.map((p) =>

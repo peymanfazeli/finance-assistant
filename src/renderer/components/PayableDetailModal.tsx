@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Payable, Transaction, Category, TransactionType } from '../../core/models/types'
+import { Payable, Transaction, Category, TransactionType, InstallmentStatus } from '../../core/models/types'
 import { PayableService } from '../../core/services/PayableService'
+import { PayableInstallmentService } from '../../core/services/PayableInstallmentService'
 import { useAppStore } from '../../core/store/useAppStore'
 import { formatCurrency } from '../../core/utils/format'
 import { formatJalaliDate, formatJalaliDateEn } from '../../core/utils/jalali'
@@ -55,6 +56,7 @@ function PayableDetailModal({ payable, open, onClose }: PayableDetailModalProps)
 
   const category = payable ? categories.find((c) => c.id === payable.categoryId) : null
   const progressPercent = payable ? Math.min((paidAmount / payable.totalAmount) * 100, 100) : 0
+  const installments = PayableInstallmentService.getInstallments(payable)
 
   return (
     <Modal open={open} onClose={onClose} title={payable?.title ?? ''} width="700px">
@@ -103,6 +105,40 @@ function PayableDetailModal({ payable, open, onClose }: PayableDetailModalProps)
           {(payable as any).notes && (
             <div style={styles.notes}>
               <span style={styles.notesLabel}>{t('payable.notes')}:</span> {(payable as any).notes}
+            </div>
+          )}
+
+          {installments.length > 0 && (
+            <div style={styles.tableSection}>
+              <h3 style={styles.sectionTitle}>{t('installment.details')}</h3>
+              <div style={styles.tableWrapper}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>{t('installment.number')}</th>
+                      <th style={styles.th}>{t('installment.dueDate')}</th>
+                      <th style={styles.thRight}>{t('installment.amount')}</th>
+                      <th style={styles.th}>{t('installment.status')}</th>
+                      <th style={styles.th}>{t('installment.paidAt')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {installments.map((installment, index) => (
+                      <tr key={installment.id}>
+                        <td style={styles.td}>{index + 1}</td>
+                        <td style={styles.td}>{formatJalaliDate(installment.dueDate, usePersianDigits)}</td>
+                        <td style={styles.tdRight}>{formatCurrency(installment.amount, currency, locale)}</td>
+                        <td style={styles.td}>
+                          {t(installment.status === InstallmentStatus.Paid ? 'installment.statePaid' : 'installment.statePending')}
+                        </td>
+                        <td style={styles.td}>
+                          {installment.paidAt ? formatJalaliDate(installment.paidAt.slice(0, 10), usePersianDigits) : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

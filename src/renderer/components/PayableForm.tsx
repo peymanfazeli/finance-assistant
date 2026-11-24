@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Payable, Category } from '../../core/models/types'
+import { Payable, PayableInstallment, Category } from '../../core/models/types'
+import { colors, spacing, borderRadius, borderWidth, fontSize } from '../../core/utils/styles'
+import {
+  PayableInstallmentService,
+  InstallmentValidationCode
+} from '../../core/services/PayableInstallmentService'
 import Modal from './Modal'
 import PersianCalendar from './PersianCalendar'
+import InstallmentScheduleEditor from './InstallmentScheduleEditor'
+
+export const PAYABLE_FORM_ID = 'payable-form'
 
 interface PayableFormProps {
   payable?: Payable
   categories: Category[]
+  currency: string
   onSave: (data: {
     title: string
     categoryId: string
@@ -14,11 +23,11 @@ interface PayableFormProps {
     to: string
     notes: string
     dueDate?: string
+    installments?: PayableInstallment[]
   }) => void
-  onCancel: () => void
 }
 
-function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps): JSX.Element {
+function PayableForm({ payable, categories, currency, onSave }: PayableFormProps): JSX.Element {
   const { t } = useTranslation()
   const [title, setTitle] = useState(payable?.title ?? '')
   const [categoryId, setCategoryId] = useState(payable?.categoryId ?? categories[0]?.id ?? '')
@@ -26,8 +35,34 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
   const [to, setTo] = useState(payable?.to ?? '')
   const [notes, setNotes] = useState(payable?.notes ?? '')
   const [dueDate, setDueDate] = useState((payable as any)?.dueDate ?? '')
+  const [useInstallments, setUseInstallments] = useState(
+    Array.isArray(payable?.installments) && payable.installments.length > 0
+  )
+  const [installments, setInstallments] = useState<PayableInstallment[]>(
+    payable?.installments ? [...payable.installments] : []
+  )
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
+
+  const handleTotalChange = (raw: string): void => {
+    setTotalAmount(raw)
+    const parsed = Number(raw)
+    if (useInstallments && Number.isFinite(parsed) && parsed > 0) {
+      setInstallments((previous) => PayableInstallmentService.rebalanceAfterTotalChange(previous, parsed))
+    }
+  }
+
+  const handleToggleInstallments = (enabled: boolean): void => {
+    setUseInstallments(enabled)
+    if (!enabled) {
+      setInstallments([])
+      return
+    }
+    const parsed = Number(totalAmount)
+    if (installments.length === 0 && Number.isFinite(parsed) && parsed > 0) {
+      setInstallments(PayableInstallmentService.createInstallments(parsed, 1, dueDate || undefined))
+    }
+  }
 
   const handleSubmit = (): void => {
     const parsedAmount = parseFloat(totalAmount)
@@ -36,23 +71,57 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
     if (!categoryId) fields.push(t('payable.category'))
     if (!totalAmount || isNaN(parsedAmount) || parsedAmount <= 0) fields.push(t('payable.totalAmount'))
     if (!to.trim()) fields.push(t('payable.to'))
+
+    if (useInstallments) {
+      const validation = PayableInstallmentService.validateSchedule(parsedAmount, installments)
+      if (!validation.valid) {
+        const errorKeys: Record<InstallmentValidationCode, string> = {
+          total: 'installment.errorTotal',
+          count: 'installment.errorCount',
+          date: 'installment.errorDate',
+          amount: 'installment.errorAmount',
+          balance: 'installment.errorBalance'
+        }
+        for (const code of validation.codes) {
+          if (code === 'total' && (!Number.isFinite(parsedAmount) || parsedAmount <= 0)) continue
+          fields.push(t(errorKeys[code]))
+        }
+      }
+    }
+
     if (fields.length > 0) {
-      setMissingFields(fields)
+      setMissingFields(Array.from(new Set(fields)))
       setShowValidationModal(true)
       return
     }
     try {
-      onSave({ title: title.trim(), categoryId, totalAmount: parsedAmount, to: to.trim(), notes, dueDate: dueDate || undefined })
+      onSave({
+        title: title.trim(),
+        categoryId,
+        totalAmount: parsedAmount,
+        to: to.trim(),
+        notes,
+        dueDate: dueDate || undefined,
+        installments: useInstallments ? installments : undefined
+      })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
     }
   }
 
   return (
-    <div style={styles.form}>
+    <form
+      id={PAYABLE_FORM_ID}
+      style={styles.form}
+      onSubmit={(event) => {
+        event.preventDefault()
+        handleSubmit()
+      }}
+    >
       <div style={styles.field}>
         <label style={styles.label}>{t('payable.titleLabel')}</label>
         <input
+          aria-label={t('payable.titleLabel')}
           style={styles.input}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -70,6 +139,7 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
       <div style={styles.field}>
         <label style={styles.label}>{t('payable.to')}</label>
         <input
+          aria-label={t('payable.to')}
           style={styles.input}
           value={to}
           onChange={(e) => setTo(e.target.value)}
@@ -79,18 +149,46 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
       <div style={styles.field}>
         <label style={styles.label}>{t('payable.totalAmount')}</label>
         <input
+          aria-label={t('payable.totalAmount')}
           style={styles.input}
           type="number"
           step="0.01"
           min="0"
           value={totalAmount}
-          onChange={(e) => setTotalAmount(e.target.value)}
+          onChange={(e) => handleTotalChange(e.target.value)}
         />
       </div>
       <div style={styles.field}>
         <label style={styles.label}>{t('payable.dueDate')}</label>
         <PersianCalendar value={dueDate} onChange={setDueDate} compact />
       </div>
+      <div
+        style={{
+          ...styles.toggleField,
+          borderColor: useInstallments ? colors.primary : colors.border.default,
+          backgroundColor: useInstallments ? colors.bg.active : colors.bg.muted,
+        }}
+      >
+        <label style={styles.toggleLabel}>
+          <input
+            type="checkbox"
+            checked={useInstallments}
+            onChange={(event) => handleToggleInstallments(event.target.checked)}
+          />
+          {t('installment.enable')}
+        </label>
+      </div>
+      {useInstallments && (
+        <div style={styles.field}>
+          <InstallmentScheduleEditor
+            totalAmount={Number(totalAmount) || 0}
+            installments={installments}
+            firstDueDate={dueDate || undefined}
+            currency={currency}
+            onChange={setInstallments}
+          />
+        </div>
+      )}
       <div style={styles.field}>
         <label style={styles.label}>{t('payable.notes')}</label>
         <textarea
@@ -99,10 +197,6 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
           onChange={(e) => setNotes(e.target.value)}
           placeholder={t('payable.notesPlaceholder')}
         />
-      </div>
-      <div style={styles.buttons}>
-        <button style={styles.cancelBtn} onClick={onCancel}>{t('common.cancel')}</button>
-        <button style={styles.saveBtn} onClick={handleSubmit}>{t('common.save')}</button>
       </div>
       <Modal
         open={showValidationModal}
@@ -115,30 +209,39 @@ function PayableForm({ payable, categories, onSave, onCancel }: PayableFormProps
             <li key={field}>{field}</li>
           ))}
         </ul>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.lg }}>
           <button
+            type="button"
             onClick={() => setShowValidationModal(false)}
-            style={{
-              padding: '8px 16px',
-              fontSize: '13px',
-              color: '#fff',
-              backgroundColor: '#4A90D9',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
+            style={styles.primaryButton}
           >
             {t('common.ok')}
           </button>
         </div>
       </Modal>
-    </div>
+    </form>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
   form: { padding: 0 },
-  field: { marginBottom: '12px' },
+  field: { marginBottom: spacing.md },
+  toggleField: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: `${spacing.sm} ${spacing.md}`,
+    border: `${borderWidth.default} solid ${colors.border.default}`,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
+  toggleLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.sm,
+    fontSize: fontSize.md,
+    color: colors.text.muted,
+    cursor: 'pointer',
+  },
   label: { display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px', color: '#555' },
   input: {
     width: '100%',
@@ -167,23 +270,13 @@ const styles: Record<string, React.CSSProperties> = {
     resize: 'vertical',
     boxSizing: 'border-box'
   },
-  buttons: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' },
-  cancelBtn: {
+  primaryButton: {
     padding: '8px 16px',
-    fontSize: '13px',
-    color: '#666',
-    backgroundColor: '#f0f0f0',
+    fontSize: fontSize.md,
+    color: colors.text.inverse,
+    backgroundColor: colors.primary,
     border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer'
-  },
-  saveBtn: {
-    padding: '8px 16px',
-    fontSize: '13px',
-    color: '#fff',
-    backgroundColor: '#4A90D9',
-    border: 'none',
-    borderRadius: '6px',
+    borderRadius: borderRadius.md,
     cursor: 'pointer'
   }
 }
