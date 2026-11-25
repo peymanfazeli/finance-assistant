@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Payable, PayableInstallment, Category } from '../../core/models/types'
+import { Payable, PayableInstallment, Category, Transaction } from '../../core/models/types'
 import { colors, spacing, borderRadius, borderWidth, fontSize } from '../../core/utils/styles'
 import { uiStyles } from '../uiStyles'
 import {
@@ -17,6 +17,7 @@ interface PayableFormProps {
   payable?: Payable
   categories: Category[]
   currency: string
+  transactions?: Transaction[]
   onSave: (data: {
     title: string
     categoryId: string
@@ -28,7 +29,7 @@ interface PayableFormProps {
   }) => void
 }
 
-function PayableForm({ payable, categories, currency, onSave }: PayableFormProps): JSX.Element {
+function PayableForm({ payable, categories, currency, transactions = [], onSave }: PayableFormProps): JSX.Element {
   const { t } = useTranslation()
   const [title, setTitle] = useState(payable?.title ?? '')
   const [categoryId, setCategoryId] = useState(payable?.categoryId ?? categories[0]?.id ?? '')
@@ -74,14 +75,19 @@ function PayableForm({ payable, categories, currency, onSave }: PayableFormProps
     if (!to.trim()) fields.push(t('payable.to'))
 
     if (useInstallments) {
-      const validation = PayableInstallmentService.validateSchedule(parsedAmount, installments)
+      const validation = payable
+        ? PayableInstallmentService.validateScheduleEdit(payable, installments, transactions, parsedAmount)
+        : PayableInstallmentService.validateSchedule(parsedAmount, installments)
       if (!validation.valid) {
         const errorKeys: Record<InstallmentValidationCode, string> = {
           total: 'installment.errorTotal',
           count: 'installment.errorCount',
           date: 'installment.errorDate',
           amount: 'installment.errorAmount',
-          balance: 'installment.errorBalance'
+          balance: 'installment.errorBalance',
+          history: 'installment.errorHistory',
+          paidAmount: 'installment.errorPaidAmount',
+          duplicate: 'installment.errorDuplicate'
         }
         for (const code of validation.codes) {
           if (code === 'total' && (!Number.isFinite(parsedAmount) || parsedAmount <= 0)) continue
@@ -103,7 +109,7 @@ function PayableForm({ payable, categories, currency, onSave }: PayableFormProps
         to: to.trim(),
         notes,
         dueDate: dueDate || undefined,
-        installments: useInstallments ? installments : undefined
+        installments: useInstallments ? installments : payable ? [] : undefined
       })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Save failed')
@@ -186,6 +192,8 @@ function PayableForm({ payable, categories, currency, onSave }: PayableFormProps
             installments={installments}
             firstDueDate={dueDate || undefined}
             currency={currency}
+            payableId={payable?.id}
+            transactions={transactions}
             onChange={setInstallments}
           />
         </div>

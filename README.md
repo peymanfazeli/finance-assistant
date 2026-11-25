@@ -33,7 +33,7 @@ Every dashboard figure — cards, net balance, and the category chart — is com
 - Filtering by date range, category (multi-select), transaction type, and min/max amount
 - Sorting by date, title, category, type, or amount, ascending or descending
 - Date range defaults to the current Jalali month on first load
-- Transaction export to CSV and Excel
+- Transaction export to CSV and Excel. These files contain transaction rows only, not full dataset backups
 
 ### Budget Planning
 
@@ -90,7 +90,7 @@ Track money you are expecting to receive.
 
 ### Import
 
-- **CSV and Excel (.xlsx)** import — drop a file anywhere on the Transactions page, or pick one, to open the import wizard
+- **CSV and Excel (.xlsx)** transaction import. Drop a file anywhere on the Transactions page, or pick one, to open the import wizard. Payables and installments are not restored from these files
 - **Automatic column mapping** with real Persian **and** English header support (`تاریخ`/`date`, `مبلغ`/`amount`, `دسته`/`category`, ...); every mapping is editable before import
 - **Duplicate detection** against existing transactions, with a review step listing each potential duplicate and a per-row skip toggle
 - Amounts are cleaned of stray symbols; Persian type keywords (`درآمد`, `بازگشت`, `سرمایهگذاری`) are recognized
@@ -99,8 +99,8 @@ Track money you are expecting to receive.
 
 - **Reports** export to **CSV**, **Excel (.xlsx)**, and **PDF**
 - Report PDFs embed a rendered image of the chart, plus a title, Jalali generation timestamp, formatted values, and a totals row
-- **Transactions** export to CSV and Excel with both Gregorian and Jalali date columns
-- **Export-on-close prompt** — if transactions have changed since your last export, closing the app offers to export first
+- **Transactions** export to CSV and Excel with both Gregorian and Jalali date columns. These exports do not include payables, installments, categories, wallets, or receivable records
+- **Export-on-close prompt** if transactions have changed since your last export, closing the app offers to export first
 
 ### Internationalization & Calendar
 
@@ -115,8 +115,10 @@ Track money you are expecting to receive.
 - Offline-first: all data lives in local `.fina` dataset files
 - **Atomic writes** (write to `.tmp`, then rename) to prevent corruption on crash
 - Leftover `.tmp` files are cleaned up on startup
-- Every mutation triggers a debounced auto-save through a queued writer, so rapid edits cannot interleave
-- Datasets are plain JSON — inspect, diff, or back them up with any text editor
+- Every mutation triggers a queued auto-save, and closing or switching datasets waits for pending saves first
+- Datasets are plain JSON. Inspect, diff, or back them up with any text editor
+- Use the Settings **Data Backup** card for complete backups in `.fina`, `.xlsx`, and versioned `.csv`. These preserve all collections, IDs, metadata, budgets, and relationship links
+- CSV files from the Transactions page remain transaction interchange only and do not restore payables, installments, categories, wallets, or receivables
 
 ## Tech Stack
 
@@ -348,7 +350,8 @@ Documented honestly so they are not mistaken for features:
 - **Search Report** matches categories; the Transactions page search does not (titles and notes only).
 - **Custom Report Builder PDFs omit the chart image** — only the Reports page passes a chart reference to the exporter.
 - **`papaparse` is installed but unused**; the import CSV parser is hand-rolled.
-- **ESLint is not currently runnable** — `npm run lint` fails because the repo has no `eslint.config.js` for ESLint 9.
+- **CSV is not a dataset backup.** It contains transaction rows only. Use the `.fina` file to restore payables and installments.
+- **ESLint is not currently runnable** because the repo has no `eslint.config.js` for ESLint 9.
 - **No E2E tests** are present despite the script.
 
 ## License

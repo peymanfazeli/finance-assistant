@@ -64,9 +64,9 @@ function PayableList({ payables, transactions, categories, onEdit, onClick }: Pa
         </thead>
         <tbody>
           {payables.map((pay, i) => {
-            const paid = PayableService.getPaidAmount(pay, transactions)
-            const remaining = PayableService.getRemainingAmount(pay, transactions)
-            const paidDate = PayableService.getPaidDate(pay, transactions)
+            const paid = PayableService.getPaidAmount(pay, transactions, payables)
+            const remaining = PayableService.getRemainingAmount(pay, transactions, payables)
+            const paidDate = PayableService.getPaidDate(pay, transactions, payables)
             const isFullyPaid = remaining <= 0
             const cat = categories.find((c) => c.id === pay.categoryId)
             const remainingPercent = pay.totalAmount > 0 ? (remaining / pay.totalAmount) * 100 : 0
@@ -128,8 +128,12 @@ function PayableList({ payables, transactions, categories, onEdit, onClick }: Pa
                     onClick={(e) => {
                       e.stopPropagation()
                       if (confirm(t('payable.confirmDelete'))) {
-                        deletePayable(pay.id)
-                        addToast('success', t('payable.deleted'))
+                        try {
+                          deletePayable(pay.id)
+                          addToast('success', t('payable.deleted'))
+                        } catch {
+                          addToast('error', t('payable.deleteHasPayments'))
+                        }
                       }
                     }}
                   >

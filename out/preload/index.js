@@ -26,7 +26,8 @@ const api = {
     createDefault: () => electron.ipcRenderer.invoke("dataset:createDefault"),
     createNamed: (name, currency, categories, receivables, transactions) => electron.ipcRenderer.invoke("dataset:createNamed", name, currency, categories, receivables, transactions),
     showSaveDialog: () => electron.ipcRenderer.invoke("dialog:save"),
-    showOpenDialog: () => electron.ipcRenderer.invoke("dialog:open")
+    showOpenDialog: () => electron.ipcRenderer.invoke("dialog:open"),
+    showBackupOpenDialog: () => electron.ipcRenderer.invoke("dialog:openDatasetBackup")
   },
   settings: {
     load: () => electron.ipcRenderer.invoke("settings:load"),

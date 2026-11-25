@@ -13,6 +13,8 @@ export class TransactionService {
       notes?: string
       walletId?: string
       toWalletId?: string
+      payableId?: string
+      installmentId?: string
     }
   ): Transaction[] {
     const now = new Date().toISOString()
@@ -26,6 +28,8 @@ export class TransactionService {
       notes: data.notes ?? '',
       walletId: data.walletId,
       toWalletId: data.toWalletId,
+      payableId: data.payableId,
+      installmentId: data.installmentId,
       createdAt: now,
       updatedAt: now
     }
@@ -35,7 +39,7 @@ export class TransactionService {
   static update(
     transactions: Transaction[],
     id: string,
-    updates: Partial<Pick<Transaction, 'date' | 'title' | 'categoryId' | 'type' | 'amount' | 'notes' | 'walletId' | 'toWalletId'>>
+    updates: Partial<Pick<Transaction, 'date' | 'title' | 'categoryId' | 'type' | 'amount' | 'notes' | 'walletId' | 'toWalletId' | 'payableId' | 'installmentId'>>
   ): Transaction[] {
     const now = new Date().toISOString()
     return transactions.map((t) =>
@@ -56,6 +60,8 @@ export class TransactionService {
       ...source,
       id: generateId(),
       title: source.title + ' (copy)',
+      payableId: undefined,
+      installmentId: undefined,
       createdAt: now,
       updatedAt: now
     }

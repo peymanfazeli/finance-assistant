@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import InstallmentScheduleEditor from '../../src/renderer/components/InstallmentScheduleEditor'
 import { PayableInstallmentService } from '../../src/core/services/PayableInstallmentService'
+import { TransactionType } from '../../src/core/models/types'
 import { jalaliToGregorianDateStrFromParts } from '../../src/core/utils/jalali'
 
 vi.mock('react-i18next', () => ({
@@ -24,7 +25,9 @@ vi.mock('react-i18next', () => ({
         'installment.overAllocated': 'Over allocated by',
         'installment.balanced': 'Schedule is balanced',
         'installment.statePaid': 'Paid',
-        'installment.statePending': 'Pending'
+        'installment.statePending': 'Pending',
+        'installment.statePartial': 'Partially Paid',
+        'installment.errorHistory': 'Installments with payment history cannot be removed'
       }
       return map[key] ?? key
     }
@@ -32,6 +35,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 const FIRST_DUE = jalaliToGregorianDateStrFromParts(1404, 11, 10)
+const NOW = '2026-02-01T10:00:00.000Z'
 
 describe('InstallmentScheduleEditor', () => {
   it('generates rows dynamically when the count changes', () => {
@@ -105,6 +109,59 @@ describe('InstallmentScheduleEditor', () => {
 
     expect(screen.getByText(/Remaining to allocate/)).toBeDefined()
     expect(screen.getByText(/10\.00/)).toBeDefined()
+  })
+
+  it('preserves existing installment ids when regenerating the schedule', () => {
+    const installments = PayableInstallmentService.createInstallments(100, 2, FIRST_DUE)
+    const onChange = vi.fn()
+    render(
+      <InstallmentScheduleEditor
+        totalAmount={100}
+        installments={installments}
+        currency="USD"
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Number of installments'), { target: { value: '3' } })
+
+    const generated = onChange.mock.calls[0][0]
+    expect(generated.slice(0, 2).map((item: { id: string }) => item.id)).toEqual(
+      installments.map((item) => item.id)
+    )
+    expect(generated).toHaveLength(3)
+  })
+
+  it('blocks removing installments that have payment history', () => {
+    const installments = PayableInstallmentService.createInstallments(100, 2, FIRST_DUE)
+    const onChange = vi.fn()
+    render(
+      <InstallmentScheduleEditor
+        totalAmount={100}
+        installments={installments}
+        payableId="p1"
+        transactions={[{
+          id: 't1',
+          date: FIRST_DUE,
+          title: 'Installment 1',
+          categoryId: 'cat-1',
+          type: TransactionType.Expense,
+          amount: 50,
+          notes: '',
+          payableId: 'p1',
+          installmentId: installments[1].id,
+          createdAt: NOW,
+          updatedAt: NOW
+        }]}
+        currency="USD"
+        onChange={onChange}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Number of installments'), { target: { value: '1' } })
+
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByText('Installments with payment history cannot be removed')).toBeDefined()
   })
 
   it('scrolls a long schedule inside the rows container', () => {

@@ -26,6 +26,7 @@ import { applyTheme } from '../core/utils/theme'
 import { applyLanguage } from './i18n/runtime'
 import ThemeToggle from './components/ThemeToggle'
 import useReducedMotion from './hooks/useReducedMotion'
+import { chooseCompleteDatasetBackup, replaceDatasetWithBackup } from './utils/datasetBackup'
 
 type Page = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'categories' | 'budget' | 'reports' | 'customReports' | 'settings'
 
@@ -74,7 +75,7 @@ function App(): JSX.Element {
           if (lastPath) {
             const datasetResult = await window.api.dataset.load(lastPath)
             if (datasetResult.success && datasetResult.data) {
-              setDataset(datasetResult.data, lastPath)
+              await setDataset(datasetResult.data, lastPath)
             } else {
               setShowLoadError(true)
               await window.api.invoke('log:error', 'startup', `Failed to load dataset: ${datasetResult.error}`)
@@ -87,7 +88,7 @@ function App(): JSX.Element {
           if (defaultResult.success && defaultResult.path) {
             const datasetResult = await window.api.dataset.load(defaultResult.path)
             if (datasetResult.success && datasetResult.data) {
-              setDataset(datasetResult.data, defaultResult.path)
+              await setDataset(datasetResult.data, defaultResult.path)
             }
           }
         }
@@ -104,7 +105,7 @@ function App(): JSX.Element {
     if (defaultResult.success && defaultResult.path) {
       const datasetResult = await window.api.dataset.load(defaultResult.path)
       if (datasetResult.success && datasetResult.data) {
-        setDataset(datasetResult.data, defaultResult.path)
+        await setDataset(datasetResult.data, defaultResult.path)
         setShowLoadError(false)
       }
     }
@@ -118,8 +119,8 @@ function App(): JSX.Element {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
       const state = useAppStore.getState()
-      if (state.currentFilePath) {
-        state.saveDataset()
+      if (state.datasetPath) {
+        void state.saveDataset()
       }
     }
   }, [])
@@ -160,10 +161,21 @@ function App(): JSX.Element {
     setShowCloseWarning(false)
   }, [dataset])
 
+  const waitForPendingSave = useCallback(async (): Promise<boolean> => {
+    try {
+      await useAppStore.getState().flushDatasetSave()
+      return true
+    } catch (error) {
+      alert(t('errors.generic') + ': ' + String(error))
+      return false
+    }
+  }, [t])
+
   const handleCloseAnyway = useCallback(async (): Promise<void> => {
+    if (!(await waitForPendingSave())) return
     setShowCloseWarning(false)
     await window.api.export.confirmClose()
-  }, [])
+  }, [waitForPendingSave])
 
   const handleCancelClose = useCallback((): void => {
     setShowCloseWarning(false)
@@ -171,15 +183,15 @@ function App(): JSX.Element {
 
   useEffect(() => {
     if (!window.api?.receive) return
-    const remove = window.api.receive('app:will-close', () => {
+    const remove = window.api.receive('app:will-close', async () => {
       if (shouldWarn()) {
         setShowCloseWarning(true)
-      } else {
-        window.api.export.confirmClose()
+      } else if (await waitForPendingSave()) {
+        await window.api.export.confirmClose()
       }
     })
     return () => { remove() }
-  }, [shouldWarn])
+  }, [shouldWarn, waitForPendingSave])
 
   const handleCreateDataset = async (name: string, currency: string): Promise<void> => {
     const categories = ConfigService.getCategories()
@@ -201,7 +213,7 @@ function App(): JSX.Element {
     } else if (!ds.payables) {
       ds.payables = []
     }
-    setDataset(ds, result.path)
+    await setDataset(ds, result.path)
     setConfigBaseName(name)
     await window.api.config.createDatasetConfigs(name)
     setShowCreateDialog(false)
@@ -247,19 +259,10 @@ function App(): JSX.Element {
 
   const handleImportFromWelcome = async (): Promise<void> => {
     try {
-      const defaultResult = await window.api.dataset.createDefault()
-      if (!defaultResult.success) {
-        alert(t('errors.generic') + ': ' + (defaultResult.error || t('import.importError')))
-        return
-      }
-      if (!defaultResult.path) return
-      const datasetResult = await window.api.dataset.load(defaultResult.path)
-      if (!datasetResult.success) {
-        alert(t('errors.generic') + ': ' + (datasetResult.error || t('import.importError')))
-        return
-      }
-      if (!datasetResult.data) return
-      setDataset(datasetResult.data, defaultResult.path)
+      const backup = await chooseCompleteDatasetBackup()
+      if (!backup) return
+      await replaceDatasetWithBackup(backup)
+      setShowLoadError(false)
       setCurrentPage('transactions')
     } catch (err) {
       alert(t('errors.generic') + ': ' + String(err))
@@ -335,7 +338,7 @@ function App(): JSX.Element {
         </div>
         <div className="pfa-sidebar-footer" style={styles.sidebarFooter}>
           <ThemeToggle compact />
-          <button type="button" className="pfa-nav-label" style={styles.closeButton} onClick={() => clearDataset()}>
+          <button type="button" className="pfa-nav-label" style={styles.closeButton} onClick={() => { void clearDataset().catch((error) => alert(t('errors.generic') + ': ' + String(error))) }}>
             {t('nav.close')}
           </button>
         </div>

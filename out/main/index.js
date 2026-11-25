@@ -3,6 +3,8 @@ Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const electron = require("electron");
 const path = require("path");
 const fs = require("fs");
+require("papaparse");
+require("xlsx");
 const is = {
   dev: !electron.app.isPackaged
 };
@@ -96,7 +98,340 @@ const optimizer = {
     });
   }
 };
-const SCHEMA_VERSION = 4;
+var TransactionType = /* @__PURE__ */ ((TransactionType2) => {
+  TransactionType2["Income"] = "income";
+  TransactionType2["Expense"] = "expense";
+  TransactionType2["Refund"] = "refund";
+  TransactionType2["Investment"] = "investment";
+  TransactionType2["Transfer"] = "transfer";
+  return TransactionType2;
+})(TransactionType || {});
+var Language = /* @__PURE__ */ ((Language2) => {
+  Language2["En"] = "en";
+  Language2["Fa"] = "fa";
+  return Language2;
+})(Language || {});
+var Theme = /* @__PURE__ */ ((Theme2) => {
+  Theme2["Dark"] = "dark";
+  Theme2["Light"] = "light";
+  return Theme2;
+})(Theme || {});
+var InstallmentStatus = /* @__PURE__ */ ((InstallmentStatus2) => {
+  InstallmentStatus2["Pending"] = "pending";
+  InstallmentStatus2["Paid"] = "paid";
+  return InstallmentStatus2;
+})(InstallmentStatus || {});
+function generateId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : r & 3 | 8;
+    return v.toString(16);
+  });
+}
+const BREAKS = [-61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178];
+function div(a, b) {
+  return ~~(a / b);
+}
+function mod(a, b) {
+  return a - ~~(a / b) * b;
+}
+function jalCalCore(jy) {
+  const gy = jy + 621;
+  let leapJ = -14;
+  let jp = BREAKS[0];
+  let jm = 0;
+  let jump = 0;
+  for (let i = 1; i < BREAKS.length; i += 1) {
+    jm = BREAKS[i];
+    jump = jm - jp;
+    if (jy < jm) break;
+    leapJ = leapJ + div(jump, 33) * 8 + div(mod(jump, 33), 4);
+    jp = jm;
+  }
+  const n = jy - jp;
+  leapJ = leapJ + div(n, 33) * 8 + div(mod(n, 33) + 3, 4);
+  if (mod(jump, 33) === 4 && jump - n === 4) leapJ += 1;
+  const leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150;
+  const march = 20 + leapJ - leapG;
+  return { gy, march, jump, n };
+}
+function leapFromCycle(jump, n) {
+  let adjusted = n;
+  if (jump - n < 6) {
+    adjusted = n - jump + div(jump + 4, 33) * 33;
+  }
+  let leap = mod(mod(adjusted + 1, 33) - 1, 4);
+  if (leap === -1) leap = 4;
+  return leap;
+}
+function jalCal(jy) {
+  const { gy, march, jump, n } = jalCalCore(jy);
+  return { leap: leapFromCycle(jump, n), gy, march };
+}
+function g2d(gy, gm, gd) {
+  let d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4) + div(153 * mod(gm + 9, 12) + 2, 5) + gd - 34840408;
+  d = d - div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4) + 752;
+  return d;
+}
+function d2g(jdn) {
+  let j = 4 * jdn + 139361631;
+  j = j + div(div(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
+  const i = div(mod(j, 1461), 4) * 5 + 308;
+  const gd = div(mod(i, 153), 5) + 1;
+  const gm = mod(div(i, 153), 12) + 1;
+  const gy = div(j, 1461) - 100100 + div(8 - gm, 6);
+  return { gy, gm, gd };
+}
+function d2j(jdn) {
+  const gy = d2g(jdn).gy;
+  let jy = gy - 621;
+  const r = jalCal(jy);
+  const jdn1f = g2d(gy, 3, r.march);
+  let k = jdn - jdn1f;
+  if (k >= 0) {
+    if (k <= 185) {
+      return { jy, jm: 1 + div(k, 31), jd: mod(k, 31) + 1 };
+    }
+    k -= 186;
+  } else {
+    jy -= 1;
+    k += 179;
+    if (r.leap === 1) k += 1;
+  }
+  return { jy, jm: 7 + div(k, 30), jd: mod(k, 30) + 1 };
+}
+function gregorianToJalali(gy, gm, gd) {
+  if (gm < 1 || gm > 12) throw new Error(`Invalid Gregorian month: ${gm}`);
+  const daysInMonth = [31, gy % 4 === 0 && (gy % 100 !== 0 || gy % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (gd < 1 || gd > daysInMonth[gm - 1]) throw new Error(`Invalid Gregorian day: ${gd} for month ${gm}`);
+  return d2j(g2d(gy, gm, gd));
+}
+function gregorianDateToJalali(dateStr) {
+  const parts = dateStr.split("-");
+  if (parts.length === 2) {
+    const gy2 = parseInt(parts[0], 10);
+    const gm2 = parseInt(parts[1], 10);
+    return gregorianToJalali(gy2, gm2, 1);
+  }
+  if (parts.length !== 3) throw new Error(`Invalid date format: ${dateStr}`);
+  const gy = parseInt(parts[0], 10);
+  const gm = parseInt(parts[1], 10);
+  const gd = parseInt(parts[2], 10);
+  return gregorianToJalali(gy, gm, gd);
+}
+const AMOUNT_FACTOR = 100;
+function roundAmount(value) {
+  return Math.round(value * AMOUNT_FACTOR) / AMOUNT_FACTOR;
+}
+function getPayableMonth(dateStr) {
+  try {
+    const j = gregorianDateToJalali(dateStr);
+    return { jy: j.jy, jm: j.jm };
+  } catch {
+    return null;
+  }
+}
+function isInSameMonth(dateStr, target) {
+  try {
+    const j = gregorianDateToJalali(dateStr);
+    return j.jy === target.jy && j.jm === target.jm;
+  } catch {
+    return false;
+  }
+}
+function isPaymentType(transaction) {
+  return transaction.type === TransactionType.Expense || transaction.type === TransactionType.Refund;
+}
+function signedAmount(transaction) {
+  if (transaction.type === TransactionType.Expense) return transaction.amount;
+  if (transaction.type === TransactionType.Refund) return -transaction.amount;
+  return 0;
+}
+function sumSigned(transactions) {
+  return roundAmount(transactions.reduce((sum, transaction) => sum + signedAmount(transaction), 0));
+}
+class PayableService {
+  static create(payables, data) {
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const payable = {
+      id: generateId(),
+      title: data.title,
+      categoryId: data.categoryId,
+      totalAmount: data.totalAmount,
+      to: data.to,
+      notes: data.notes ?? "",
+      dueDate: data.dueDate || void 0,
+      installments: data.installments,
+      createdAt: now,
+      updatedAt: now
+    };
+    return [...payables, payable];
+  }
+  static update(payables, id, updates) {
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    return payables.map(
+      (p) => p.id === id ? { ...p, ...updates, updatedAt: now } : p
+    );
+  }
+  static delete(payables, id) {
+    return payables.filter((p) => p.id !== id);
+  }
+  static matchesLegacy(payable, transaction) {
+    if (!isPaymentType(transaction)) return false;
+    if (transaction.categoryId !== payable.categoryId) return false;
+    const payee = (payable.to || "").toLowerCase().trim();
+    if (!payee) return false;
+    if (!`${transaction.title} ${transaction.notes}`.toLowerCase().includes(payee)) return false;
+    const month = getPayableMonth(payable.dueDate || payable.createdAt.slice(0, 10));
+    if (!month) return true;
+    return isInSameMonth(transaction.date, month);
+  }
+  static getLegacyTransactions(payable, transactions, payables = []) {
+    const candidates = payables.length > 0 ? payables : [payable];
+    return transactions.filter((transaction) => {
+      if (!PayableService.matchesLegacy(payable, transaction)) return false;
+      const matches = candidates.filter((candidate) => PayableService.matchesLegacy(candidate, transaction));
+      return matches.length === 1 && matches[0].id === payable.id;
+    });
+  }
+  static getExplicitTransactions(payable, transactions) {
+    const installmentIds = new Set((payable.installments ?? []).map((item) => item.id));
+    return transactions.filter((t) => {
+      if (t.payableId !== payable.id || !isPaymentType(t)) return false;
+      if (!t.installmentId) return true;
+      return installmentIds.has(t.installmentId);
+    });
+  }
+  static getPaymentSource(payable, transactions, payables = []) {
+    if (PayableService.getExplicitTransactions(payable, transactions).length > 0) return "explicit";
+    if (PayableService.getLegacyTransactions(payable, transactions, payables).length > 0) return "legacy";
+    return "none";
+  }
+  static getPaymentTransactions(payable, transactions, payables = []) {
+    const source = PayableService.getPaymentSource(payable, transactions, payables);
+    if (source === "explicit") return PayableService.getExplicitTransactions(payable, transactions);
+    if (source === "legacy") return PayableService.getLegacyTransactions(payable, transactions, payables);
+    return [];
+  }
+  static getPaidAmount(payable, transactions, payables = []) {
+    const net = sumSigned(PayableService.getPaymentTransactions(payable, transactions, payables));
+    const bounded = Math.max(0, net);
+    const total = Number.isFinite(payable.totalAmount) ? payable.totalAmount : bounded;
+    return roundAmount(Math.min(bounded, total));
+  }
+  static getRemainingAmount(payable, transactions, payables = []) {
+    return roundAmount(Math.max(0, payable.totalAmount - PayableService.getPaidAmount(payable, transactions, payables)));
+  }
+  static getPaidDate(payable, transactions, payables = []) {
+    if (PayableService.getRemainingAmount(payable, transactions, payables) > 0) return null;
+    const payments = PayableService.getPaymentTransactions(payable, transactions, payables).filter((t) => t.type === TransactionType.Expense);
+    if (payments.length === 0) return null;
+    return payments.reduce((latest, t) => t.date > latest ? t.date : latest, payments[0].date);
+  }
+  static getInstallmentNetPaid(payable, installment, transactions, payables = []) {
+    const explicit = PayableService.getExplicitTransactions(payable, transactions);
+    if (explicit.length > 0) {
+      const net = sumSigned(explicit.filter((t) => t.installmentId === installment.id));
+      return roundAmount(Math.min(Math.max(0, net), Math.max(0, installment.amount)));
+    }
+    const legacyNet = sumSigned(PayableService.getLegacyTransactions(payable, transactions, payables));
+    if (legacyNet <= 0) return 0;
+    let remaining = legacyNet;
+    const ordered = [...payable.installments ?? []].sort(
+      (a, b) => a.dueDate.localeCompare(b.dueDate) || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
+    );
+    for (const item of ordered) {
+      const allocation = Math.min(Math.max(0, item.amount), remaining);
+      if (item.id === installment.id) return roundAmount(allocation);
+      remaining -= allocation;
+      if (remaining <= 0) break;
+    }
+    return 0;
+  }
+  static getInstallmentPaidDate(payable, installment, transactions) {
+    const payments = PayableService.getExplicitTransactions(payable, transactions).filter(
+      (t) => t.installmentId === installment.id && t.type === TransactionType.Expense
+    );
+    if (payments.length === 0) return null;
+    return payments.reduce((latest, t) => t.date > latest ? t.date : latest, payments[0].date);
+  }
+  static hasPaymentHistory(payable, transactions) {
+    return PayableService.getExplicitTransactions(payable, transactions).some(
+      (t) => !!t.installmentId
+    );
+  }
+  static canDelete(payable, transactions) {
+    return PayableService.getExplicitTransactions(payable, transactions).length === 0;
+  }
+  static validatePayment(data, payables, transactions, excludeTransactionId) {
+    const codes = [];
+    if (!data.payableId) {
+      return { valid: !data.installmentId, codes: data.installmentId ? ["payable"] : [] };
+    }
+    const payable = payables.find((p) => p.id === data.payableId);
+    if (!payable) codes.push("payable");
+    if (data.type !== TransactionType.Expense && data.type !== TransactionType.Refund) codes.push("type");
+    if (!Number.isFinite(data.amount) || data.amount <= 0) codes.push("amount");
+    if (data.categoryId !== payable?.categoryId) codes.push("category");
+    let installment;
+    if (data.installmentId) {
+      installment = payable?.installments?.find((item) => item.id === data.installmentId);
+      if (!installment) codes.push("installment");
+    }
+    if (payable && installment && Number.isFinite(data.amount) && data.amount > 0) {
+      const others = PayableService.getExplicitTransactions(payable, transactions).filter(
+        (t) => t.id !== excludeTransactionId && t.installmentId === installment?.id
+      );
+      const existing = sumSigned(others);
+      const signed = signedAmount({ type: data.type, amount: data.amount });
+      const target = Math.max(0, installment.amount);
+      const next = roundAmount(existing + signed);
+      if (data.type === TransactionType.Expense && next > target) codes.push("overpayment");
+      if (data.type === TransactionType.Refund && next < 0) codes.push("refund");
+    } else if (payable && !data.installmentId && Number.isFinite(data.amount) && data.amount > 0) {
+      const installments = payable.installments ?? [];
+      if (installments.length === 0) {
+        const others = PayableService.getExplicitTransactions(payable, transactions).filter(
+          (t) => t.id !== excludeTransactionId && !t.installmentId
+        );
+        const existing = sumSigned(others);
+        const signed = signedAmount({ type: data.type, amount: data.amount });
+        const next = roundAmount(existing + signed);
+        if (data.type === TransactionType.Expense && next > Math.max(0, payable.totalAmount)) codes.push("overpayment");
+        if (data.type === TransactionType.Refund && next < 0) codes.push("refund");
+      } else {
+        codes.push("installment");
+      }
+    }
+    return { valid: codes.length === 0, codes: Array.from(new Set(codes)) };
+  }
+}
+const SCHEMA_VERSION = 5;
+function migrateToV5(data) {
+  const fallbackTime = data.updatedAt || data.createdAt || (/* @__PURE__ */ new Date(0)).toISOString();
+  const payables = (data.payables ?? []).map((payable, payableIndex) => ({
+    ...payable,
+    installments: (payable.installments ?? []).map((installment, installmentIndex) => ({
+      ...installment,
+      id: installment.id || `${payable.id}-installment-${installmentIndex + 1}`,
+      createdAt: installment.createdAt || payable.createdAt || fallbackTime,
+      updatedAt: installment.updatedAt || installment.createdAt || payable.updatedAt || fallbackTime
+    }))
+  }));
+  data.payables = payables;
+  const isPaymentType2 = (type) => type === TransactionType.Expense || type === TransactionType.Refund;
+  data.transactions = (data.transactions ?? []).map((transaction) => {
+    if (transaction.payableId || !isPaymentType2(transaction.type)) return transaction;
+    const matches = payables.filter(
+      (payable) => PayableService.getLegacyTransactions(payable, [transaction], payables).length > 0
+    );
+    if (matches.length !== 1 || (matches[0].installments ?? []).length > 0) return transaction;
+    return { ...transaction, payableId: matches[0].id };
+  });
+}
 class DatasetService {
   static create(name, currency, categories, receivables = [], transactions = [], payables = [], wallets = []) {
     const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -114,8 +449,7 @@ class DatasetService {
     };
   }
   static serialize(dataset) {
-    dataset.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    return JSON.stringify(dataset, null, 2);
+    return JSON.stringify({ ...dataset, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }, null, 2);
   }
   static deserialize(content) {
     const data = JSON.parse(content);
@@ -135,19 +469,327 @@ class DatasetService {
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {};
     }
-    data.version = SCHEMA_VERSION;
+    if (!data.budgetPercentages) {
+      data.budgetPercentages = {};
+    }
+    if (data.version < SCHEMA_VERSION) {
+      migrateToV5(data);
+      data.version = SCHEMA_VERSION;
+    }
     return data;
   }
 }
-function generateId() {
-  if (typeof globalThis.crypto?.randomUUID === "function") {
-    return globalThis.crypto.randomUUID();
+class DatasetImportError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "DatasetImportError";
   }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === "x" ? r : r & 3 | 8;
-    return v.toString(16);
-  });
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function stringField(value, label, issues) {
+  if (typeof value !== "string") {
+    issues.push(`${label} must be a string`);
+    return "";
+  }
+  return value;
+}
+function idField(value, label, issues) {
+  if (typeof value !== "string" || value.length === 0) {
+    issues.push(`${label} must be a non-empty string`);
+    return "";
+  }
+  return value;
+}
+function optionalStringField(value, label, issues) {
+  if (value === void 0 || value === null || value === "") return void 0;
+  if (typeof value !== "string") {
+    issues.push(`${label} must be a string`);
+    return void 0;
+  }
+  return value;
+}
+function numberField(value, label, issues) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    issues.push(`${label} must be a finite number`);
+    return Number.NaN;
+  }
+  return value;
+}
+function booleanField(value, label, issues) {
+  if (typeof value !== "boolean") {
+    issues.push(`${label} must be a boolean`);
+    return false;
+  }
+  return value;
+}
+function arrayField(value, label, issues) {
+  if (!Array.isArray(value)) {
+    issues.push(`${label} must be an array`);
+    return [];
+  }
+  return value;
+}
+function optionalObjectField(value, label, issues) {
+  if (value === void 0 || value === null) return {};
+  if (!isRecord(value)) {
+    issues.push(`${label} must be an object`);
+    return {};
+  }
+  return value;
+}
+function transactionTypeField(value, label, issues) {
+  if (!Object.values(TransactionType).includes(value)) {
+    issues.push(`${label} has an invalid transaction type`);
+    return TransactionType.Expense;
+  }
+  return value;
+}
+function installmentStatusField(value, label, issues) {
+  if (!Object.values(InstallmentStatus).includes(value)) {
+    issues.push(`${label} has an invalid installment status`);
+    return InstallmentStatus.Pending;
+  }
+  return value;
+}
+function uniqueId(id, label, seen, issues) {
+  if (seen.has(id)) {
+    issues.push(`${label} has a duplicate id: ${id}`);
+    return;
+  }
+  seen.add(id);
+}
+function validateDataset(input) {
+  const issues = [];
+  if (!isRecord(input)) {
+    throw new DatasetImportError("Dataset must be an object");
+  }
+  if (typeof input.version !== "number" || !Number.isFinite(input.version) || input.version <= 0) {
+    issues.push("Dataset version must be a positive number");
+  }
+  stringField(input.name, "Dataset name", issues);
+  stringField(input.currency, "Dataset currency", issues);
+  stringField(input.createdAt, "Dataset createdAt", issues);
+  stringField(input.updatedAt, "Dataset updatedAt", issues);
+  const categoryValues = arrayField(input.categories, "Dataset categories", issues);
+  const walletValues = arrayField(input.wallets, "Dataset wallets", issues);
+  const receivableValues = arrayField(input.receivables, "Dataset receivables", issues);
+  const payableValues = arrayField(input.payables, "Dataset payables", issues);
+  const transactionValues = arrayField(input.transactions, "Dataset transactions", issues);
+  const categoryTypeMap = optionalObjectField(input.categoryTypeMap, "Dataset categoryTypeMap", issues);
+  const budgetPercentages = optionalObjectField(input.budgetPercentages, "Dataset budgetPercentages", issues);
+  const categoryIds = /* @__PURE__ */ new Set();
+  const categories = categoryValues.map((value, index) => {
+    if (!isRecord(value)) {
+      issues.push(`Category ${index + 1} must be an object`);
+      return null;
+    }
+    const label = `Category ${index + 1}`;
+    const id = idField(value.id, `${label} id`, issues);
+    if (id) uniqueId(id, label, categoryIds, issues);
+    const category = {
+      id,
+      name: stringField(value.name, `${label} name`, issues),
+      color: stringField(value.color, `${label} color`, issues),
+      icon: stringField(value.icon, `${label} icon`, issues),
+      isDefault: booleanField(value.isDefault, `${label} isDefault`, issues),
+      createdAt: stringField(value.createdAt, `${label} createdAt`, issues)
+    };
+    return category;
+  }).filter((item) => item !== null);
+  const walletIds = /* @__PURE__ */ new Set();
+  const wallets = walletValues.map((value, index) => {
+    if (!isRecord(value)) {
+      issues.push(`Wallet ${index + 1} must be an object`);
+      return null;
+    }
+    const label = `Wallet ${index + 1}`;
+    const id = idField(value.id, `${label} id`, issues);
+    if (id) uniqueId(id, label, walletIds, issues);
+    const wallet = {
+      id,
+      name: stringField(value.name, `${label} name`, issues),
+      initialBalance: numberField(value.initialBalance, `${label} initialBalance`, issues),
+      color: stringField(value.color, `${label} color`, issues),
+      createdAt: stringField(value.createdAt, `${label} createdAt`, issues)
+    };
+    return wallet;
+  }).filter((item) => item !== null);
+  const receivableIds = /* @__PURE__ */ new Set();
+  const receivables = receivableValues.map((value, index) => {
+    if (!isRecord(value)) {
+      issues.push(`Receivable ${index + 1} must be an object`);
+      return null;
+    }
+    const label = `Receivable ${index + 1}`;
+    const id = idField(value.id, `${label} id`, issues);
+    if (id) uniqueId(id, label, receivableIds, issues);
+    const categoryId = stringField(value.categoryId, `${label} categoryId`, issues);
+    if (categoryId && !categoryIds.has(categoryId)) {
+      issues.push(`${label} references an unknown category: ${categoryId}`);
+    }
+    const receivable = {
+      id,
+      title: stringField(value.title, `${label} title`, issues),
+      categoryId,
+      totalAmount: numberField(value.totalAmount, `${label} totalAmount`, issues),
+      from: stringField(value.from, `${label} from`, issues),
+      notes: stringField(value.notes, `${label} notes`, issues),
+      askDate: optionalStringField(value.askDate, `${label} askDate`, issues),
+      createdAt: stringField(value.createdAt, `${label} createdAt`, issues),
+      updatedAt: stringField(value.updatedAt, `${label} updatedAt`, issues)
+    };
+    return receivable;
+  }).filter((item) => item !== null);
+  const installmentIds = /* @__PURE__ */ new Set();
+  const payableIds = /* @__PURE__ */ new Set();
+  const payables = payableValues.map((value, index) => {
+    if (!isRecord(value)) {
+      issues.push(`Payable ${index + 1} must be an object`);
+      return null;
+    }
+    const label = `Payable ${index + 1}`;
+    const id = idField(value.id, `${label} id`, issues);
+    if (id) uniqueId(id, label, payableIds, issues);
+    const categoryId = stringField(value.categoryId, `${label} categoryId`, issues);
+    if (categoryId && !categoryIds.has(categoryId)) {
+      issues.push(`${label} references an unknown category: ${categoryId}`);
+    }
+    const rawInstallments = arrayField(value.installments ?? [], `${label} installments`, issues);
+    const installments = rawInstallments.map((installmentValue, installmentIndex) => {
+      if (!isRecord(installmentValue)) {
+        issues.push(`${label} installment ${installmentIndex + 1} must be an object`);
+        return null;
+      }
+      const installmentLabel = `${label} installment ${installmentIndex + 1}`;
+      const installmentId = idField(installmentValue.id, `${installmentLabel} id`, issues);
+      if (installmentId) uniqueId(installmentId, "Installment", installmentIds, issues);
+      const installment = {
+        id: installmentId,
+        amount: numberField(installmentValue.amount, `${installmentLabel} amount`, issues),
+        dueDate: stringField(installmentValue.dueDate, `${installmentLabel} dueDate`, issues),
+        status: installmentStatusField(installmentValue.status, `${installmentLabel} status`, issues),
+        paidAt: optionalStringField(installmentValue.paidAt, `${installmentLabel} paidAt`, issues),
+        createdAt: stringField(installmentValue.createdAt, `${installmentLabel} createdAt`, issues),
+        updatedAt: stringField(installmentValue.updatedAt, `${installmentLabel} updatedAt`, issues)
+      };
+      return installment;
+    }).filter((item) => item !== null);
+    const payable = {
+      id,
+      title: stringField(value.title, `${label} title`, issues),
+      categoryId,
+      totalAmount: numberField(value.totalAmount, `${label} totalAmount`, issues),
+      to: stringField(value.to, `${label} to`, issues),
+      notes: stringField(value.notes, `${label} notes`, issues),
+      dueDate: optionalStringField(value.dueDate, `${label} dueDate`, issues),
+      installments,
+      createdAt: stringField(value.createdAt, `${label} createdAt`, issues),
+      updatedAt: stringField(value.updatedAt, `${label} updatedAt`, issues)
+    };
+    return payable;
+  }).filter((item) => item !== null);
+  const installmentsByPayable = /* @__PURE__ */ new Map();
+  for (const payable of payables) {
+    installmentsByPayable.set(payable.id, new Set((payable.installments ?? []).map((item) => item.id)));
+  }
+  const transactionIds = /* @__PURE__ */ new Set();
+  const transactions = transactionValues.map((value, index) => {
+    if (!isRecord(value)) {
+      issues.push(`Transaction ${index + 1} must be an object`);
+      return null;
+    }
+    const label = `Transaction ${index + 1}`;
+    const id = idField(value.id, `${label} id`, issues);
+    if (id) uniqueId(id, label, transactionIds, issues);
+    const categoryId = stringField(value.categoryId, `${label} categoryId`, issues);
+    if (categoryId && !categoryIds.has(categoryId)) {
+      issues.push(`${label} references an unknown category: ${categoryId}`);
+    }
+    const walletId = optionalStringField(value.walletId, `${label} walletId`, issues);
+    const toWalletId = optionalStringField(value.toWalletId, `${label} toWalletId`, issues);
+    const payableId = optionalStringField(value.payableId, `${label} payableId`, issues);
+    const installmentId = optionalStringField(value.installmentId, `${label} installmentId`, issues);
+    if (walletId && !walletIds.has(walletId)) {
+      issues.push(`${label} references an unknown wallet: ${walletId}`);
+    }
+    if (toWalletId && !walletIds.has(toWalletId)) {
+      issues.push(`${label} references an unknown toWallet: ${toWalletId}`);
+    }
+    if (payableId && !payableIds.has(payableId)) {
+      issues.push(`${label} references an unknown payable: ${payableId}`);
+    }
+    if (installmentId && !payableId) {
+      issues.push(`${label} has an installmentId without a payableId`);
+    }
+    if (installmentId && payableId && !installmentsByPayable.get(payableId)?.has(installmentId)) {
+      issues.push(`${label} references installment ${installmentId} outside payable ${payableId}`);
+    }
+    const transaction = {
+      id,
+      date: stringField(value.date, `${label} date`, issues),
+      title: stringField(value.title, `${label} title`, issues),
+      categoryId,
+      type: transactionTypeField(value.type, `${label} type`, issues),
+      amount: numberField(value.amount, `${label} amount`, issues),
+      notes: stringField(value.notes, `${label} notes`, issues),
+      walletId,
+      toWalletId,
+      payableId,
+      installmentId,
+      createdAt: stringField(value.createdAt, `${label} createdAt`, issues),
+      updatedAt: stringField(value.updatedAt, `${label} updatedAt`, issues)
+    };
+    return transaction;
+  }).filter((item) => item !== null);
+  for (const [key, value] of Object.entries(categoryTypeMap)) {
+    transactionTypeField(value, `categoryTypeMap.${key}`, issues);
+  }
+  for (const [key, value] of Object.entries(budgetPercentages)) {
+    numberField(value, `budgetPercentages.${key}`, issues);
+  }
+  if (issues.length > 0) {
+    throw new DatasetImportError(issues.join("\n"));
+  }
+  return {
+    version: input.version,
+    name: input.name,
+    currency: input.currency,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt,
+    transactions,
+    categories,
+    receivables,
+    wallets,
+    payables,
+    categoryTypeMap,
+    budgetPercentages
+  };
+}
+function normalizeImportedDataset(input) {
+  if (!isRecord(input)) {
+    throw new DatasetImportError("Dataset must be an object");
+  }
+  if (typeof input.version !== "number" || !Number.isFinite(input.version) || input.version <= 0) {
+    throw new DatasetImportError("Dataset version must be a positive number");
+  }
+  try {
+    const normalized = DatasetService.deserialize(JSON.stringify(input));
+    return validateDataset(normalized);
+  } catch (error) {
+    if (error instanceof DatasetImportError) throw error;
+    throw new DatasetImportError(`Invalid dataset: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+function importFinaDataset(content) {
+  let parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    throw new DatasetImportError(`Invalid dataset file: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return normalizeImportedDataset(parsed);
 }
 const DEFAULT_CATEGORIES = [
   { name: "Food & Drinks", color: "#FF6B6B", icon: "🍵🥪", isDefault: true },
@@ -242,7 +884,7 @@ function registerDatasetHandlers() {
   electron.ipcMain.handle("dataset:load", async (_event, filePath) => {
     try {
       const content = fs.readFileSync(filePath, "utf-8");
-      const dataset = DatasetService.deserialize(content);
+      const dataset = importFinaDataset(content);
       return { success: true, data: dataset };
     } catch (err) {
       return { success: false, error: String(err) };
@@ -298,17 +940,19 @@ function registerDatasetHandlers() {
     });
     return result;
   });
+  electron.ipcMain.handle("dialog:openDatasetBackup", async () => {
+    const result = await electron.dialog.showOpenDialog({
+      filters: [
+        { name: "All Dataset Backups", extensions: ["fina", "json", "xlsx", "csv"] },
+        { name: "Finance Dataset", extensions: ["fina", "json"] },
+        { name: "Excel Workbook", extensions: ["xlsx"] },
+        { name: "CSV Backup", extensions: ["csv"] }
+      ],
+      properties: ["openFile"]
+    });
+    return result;
+  });
 }
-var Language = /* @__PURE__ */ ((Language2) => {
-  Language2["En"] = "en";
-  Language2["Fa"] = "fa";
-  return Language2;
-})(Language || {});
-var Theme = /* @__PURE__ */ ((Theme2) => {
-  Theme2["Dark"] = "dark";
-  Theme2["Light"] = "light";
-  return Theme2;
-})(Theme || {});
 const SETTINGS_VERSION = 2;
 const defaultSettings = {
   language: Language.En,

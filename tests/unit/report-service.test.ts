@@ -50,9 +50,9 @@ describe('ReportService', () => {
     expect(food?.value).toBe(150)
     expect(income?.value).toBe(5000)
     expect(stocks?.value).toBe(3000)
-    expect(food?.color).toBe('#e17055')
-    expect(income?.color).toBe('#00b894')
-    expect(stocks?.color).toBe('#6c5ce7')
+    expect(food?.color).toBe('#f00')
+    expect(income?.color).toBe('#0f0')
+    expect(stocks?.color).toBe('#00f')
   })
 
   it('generates invest by category report', () => {

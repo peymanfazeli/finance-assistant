@@ -15,6 +15,7 @@ declare global {
         createNamed: (name: string, currency: string, categories?: { id: string; name: string; color: string; icon: string; isDefault: boolean; createdAt: string }[], receivables?: { id: string; title: string; categoryId: string; totalAmount: number; from: string; notes: string; createdAt: string; updatedAt: string }[], transactions?: { id: string; date: string; title: string; categoryId: string; type: string; amount: number; notes: string; createdAt: string; updatedAt: string }[]) => Promise<{ success: boolean; path?: string; error?: string }>
         showSaveDialog: () => Promise<Electron.OpenDialogReturnValue>
         showOpenDialog: () => Promise<Electron.OpenDialogReturnValue>
+        showBackupOpenDialog: () => Promise<Electron.OpenDialogReturnValue>
       }
       settings: {
         load: () => Promise<{ success: boolean; data?: ApplicationSettings | null; error?: string }>

@@ -42,12 +42,13 @@ interface AppState {
   reportDateFrom: string
   reportDateTo: string
 
-  setDataset: (dataset: Dataset, path: string) => void
+  setDataset: (dataset: Dataset, path: string) => Promise<void>
   setConfigBaseName: (name: string) => void
   setSettings: (settings: ApplicationSettings) => void
-  clearDataset: () => void
+  clearDataset: () => Promise<void>
   saveDataset: () => Promise<void>
   saveDatasetQueued: () => Promise<void>
+  flushDatasetSave: () => Promise<void>
   saveSettings: () => Promise<void>
 
   addTransaction: (data: {
@@ -59,6 +60,8 @@ interface AppState {
     notes?: string
     walletId?: string
     toWalletId?: string
+    payableId?: string
+    installmentId?: string
   }) => void
   updateTransaction: (id: string, updates: Partial<Transaction>) => void
   deleteTransaction: (id: string) => void
@@ -132,11 +135,55 @@ const defaultSettings: ApplicationSettings = {
   lastExportTimestamp: null,
 }
 
-let savePromise: Promise<void> = Promise.resolve()
+interface DatasetSaveSnapshot {
+  datasetPath: string
+  content: string
+}
 
-function queuedSave(saveFn: () => Promise<void>): Promise<void> {
-  savePromise = savePromise.then(saveFn, saveFn)
+let savePromise: Promise<void> = Promise.resolve()
+let saveErrors: Error[] = []
+
+function recordSaveError(error: unknown): void {
+  saveErrors.push(error instanceof Error ? error : new Error(String(error)))
+}
+
+async function persistDatasetContent(snapshot: DatasetSaveSnapshot): Promise<void> {
+  let started = false
+  try {
+    await window.api.invoke('app:saveStarted')
+    started = true
+    const result = await window.api.dataset.save(snapshot.datasetPath, snapshot.content)
+    if (!result.success) {
+      throw new Error(result.error || 'Unknown error')
+    }
+  } catch (error) {
+    recordSaveError(error)
+    try {
+      await window.api.invoke('log:error', 'dataset:save', String(error))
+    } catch {
+      console.error('Failed to log dataset save error:', error)
+    }
+    console.error('Failed to save dataset:', error)
+  } finally {
+    if (started) {
+      await window.api.invoke('app:saveCompleted')
+    }
+  }
+}
+
+function queuedSave(snapshot: DatasetSaveSnapshot): Promise<void> {
+  const persist = (): Promise<void> => persistDatasetContent(snapshot)
+  savePromise = savePromise.then(persist, persist)
   return savePromise
+}
+
+async function flushDatasetSave(): Promise<void> {
+  await savePromise
+  if (saveErrors.length > 0) {
+    const errors = saveErrors
+    saveErrors = []
+    throw errors[0]
+  }
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -161,7 +208,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   reportDateFrom: '',
   reportDateTo: '',
 
-  setDataset: (dataset, path) => {
+  setDataset: async (dataset, path) => {
+    await flushDatasetSave()
     const normalized: Dataset = { ...dataset, wallets: dataset.wallets ?? [] }
     set({
       dataset: normalized,
@@ -180,7 +228,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ settings })
   },
 
-  clearDataset: () => {
+  clearDataset: async () => {
+    await flushDatasetSave()
     set({
       dataset: null,
       datasetPath: null,
@@ -199,21 +248,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   saveDataset: async () => {
+    await flushDatasetSave()
     const { dataset, datasetPath } = get()
     if (dataset && datasetPath) {
-      await window.api.invoke('app:saveStarted')
       const content = DatasetService.serialize(dataset)
-      const result = await window.api.dataset.save(datasetPath, content)
-      await window.api.invoke('app:saveCompleted')
-      if (!result.success) {
-        const errorMsg = result.error || 'Unknown error'
-        await window.api.invoke('log:error', 'dataset:save', errorMsg)
-        console.error('Failed to save dataset:', errorMsg)
-      }
+      await persistDatasetContent({ datasetPath, content })
     }
   },
 
-  saveDatasetQueued: () => queuedSave(() => get().saveDataset()),
+  saveDatasetQueued: () => {
+    const { dataset, datasetPath } = get()
+    if (!dataset || !datasetPath) return Promise.resolve()
+    const content = DatasetService.serialize(dataset)
+    return queuedSave({ datasetPath, content })
+  },
+
+  flushDatasetSave,
 
   saveSettings: async () => {
     const { settings } = get()
@@ -228,6 +278,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   addTransaction: (data) => {
     const { dataset } = get()
     if (!dataset) return
+    const validation = PayableService.validatePayment(data, dataset.payables ?? [], dataset.transactions)
+    if (!validation.valid) throw new Error(`payment:${validation.codes[0]}`)
     const updated = TransactionService.create(dataset.transactions, data)
     const newDataset = { ...dataset, transactions: updated }
     set({
@@ -240,6 +292,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateTransaction: (id, updates) => {
     const { dataset } = get()
     if (!dataset) return
+    const existing = dataset.transactions.find((t) => t.id === id)
+    if (existing) {
+      const next = { ...existing, ...updates }
+      const validation = PayableService.validatePayment(next, dataset.payables ?? [], dataset.transactions, id)
+      if (!validation.valid) throw new Error(`payment:${validation.codes[0]}`)
+    }
     const updated = TransactionService.update(dataset.transactions, id, updates)
     const newDataset = { ...dataset, transactions: updated }
     set({
@@ -409,7 +467,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   addPayable: (data) => {
     const { dataset } = get()
     if (!dataset) return
-    const payables = (dataset as any).payables || []
+    const payables = dataset.payables ?? []
+    if (data.installments) {
+      const validation = PayableInstallmentService.validateSchedule(data.totalAmount, data.installments)
+      if (!validation.valid) throw new Error(`schedule:${validation.codes[0]}`)
+    }
     const updated = PayableService.create(payables, data)
     set({ dataset: { ...dataset, payables: updated } as Dataset })
     get().saveDatasetQueued()
@@ -418,7 +480,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   updatePayable: (id, updates) => {
     const { dataset } = get()
     if (!dataset) return
-    const payables = (dataset as any).payables || []
+    const payables = dataset.payables ?? []
+    const existing = payables.find((p) => p.id === id)
+    if (existing && (updates.installments !== undefined || updates.totalAmount !== undefined)) {
+      const nextInstallments = updates.installments ?? existing.installments ?? []
+      const nextTotal = updates.totalAmount ?? existing.totalAmount
+      const validation = PayableInstallmentService.validateScheduleEdit(
+        existing,
+        nextInstallments,
+        dataset.transactions,
+        nextTotal
+      )
+      if (!validation.valid) throw new Error(`schedule:${validation.codes[0]}`)
+    }
     const updated = PayableService.update(payables, id, updates)
     set({ dataset: { ...dataset, payables: updated } as Dataset })
     get().saveDatasetQueued()
@@ -428,6 +502,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { dataset } = get()
     if (!dataset) return
     const payables = dataset.payables ?? []
+    const payable = payables.find((p) => p.id === payableId)
+    if (payable && updates.amount !== undefined) {
+      const existing = (payable.installments ?? []).find((item) => item.id === installmentId)
+      if (existing) {
+        const paid = PayableService.getInstallmentNetPaid(payable, existing, dataset.transactions, [payable])
+        if (updates.amount < paid - 0.005) throw new Error('schedule:paidAmount')
+      }
+    }
     const updated = PayableInstallmentService.updateInstallment(payables, payableId, installmentId, updates)
     set({ dataset: { ...dataset, payables: updated } })
     get().saveDatasetQueued()
@@ -445,7 +527,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   deletePayable: (id) => {
     const { dataset } = get()
     if (!dataset) return
-    const payables = (dataset as any).payables || []
+    const payables = dataset.payables ?? []
+    const payable = payables.find((p) => p.id === id)
+    if (payable && !PayableService.canDelete(payable, dataset.transactions)) {
+      throw new Error('payable.deleteHasPayments')
+    }
     const updated = PayableService.delete(payables, id)
     set({ dataset: { ...dataset, payables: updated } as Dataset })
     get().saveDatasetQueued()

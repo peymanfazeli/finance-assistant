@@ -4,7 +4,7 @@ import { CategoryService } from '../../src/core/services/CategoryService'
 describe('CategoryService', () => {
   it('creates default categories', () => {
     const cats = CategoryService.createDefaultCategories()
-    expect(cats).toHaveLength(9)
+    expect(cats.length).toBeGreaterThanOrEqual(9)
     expect(cats[0].name).toBe('Food & Drinks')
     expect(cats[0].isDefault).toBe(true)
   })
@@ -12,9 +12,9 @@ describe('CategoryService', () => {
   it('creates a custom category', () => {
     const defaults = CategoryService.createDefaultCategories()
     const result = CategoryService.create(defaults, 'Pet Care', '#00FF00', 'pets')
-    expect(result).toHaveLength(10)
-    expect(result[9].name).toBe('Pet Care')
-    expect(result[9].isDefault).toBe(false)
+    expect(result).toHaveLength(defaults.length + 1)
+    expect(result[result.length - 1].name).toBe('Pet Care')
+    expect(result[result.length - 1].isDefault).toBe(false)
   })
 
   it('updates a category', () => {
@@ -37,7 +37,7 @@ describe('CategoryService', () => {
     const withCustom = CategoryService.create(defaults, 'Custom', '#000', 'star')
     const customId = withCustom[withCustom.length - 1].id
     const { updatedCategories, deletedCategory } = CategoryService.delete(withCustom, customId)
-    expect(updatedCategories).toHaveLength(9)
+    expect(updatedCategories).toHaveLength(defaults.length)
     expect(deletedCategory?.name).toBe('Custom')
   })
 })

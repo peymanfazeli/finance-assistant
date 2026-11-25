@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { InstallmentStatus, PayableInstallment } from '../../core/models/types'
+import { Payable, PayableInstallment, Transaction } from '../../core/models/types'
+import { PayableService } from '../../core/services/PayableService'
 import { PayableInstallmentService, MAX_INSTALLMENTS } from '../../core/services/PayableInstallmentService'
 import { formatCurrency } from '../../core/utils/format'
 import {
@@ -13,6 +14,7 @@ import {
   borderWidth,
   shadow
 } from '../../core/utils/styles'
+import { getTodayJalali, jalaliToGregorianDateStrFromParts } from '../../core/utils/jalali'
 import PersianCalendar from './PersianCalendar'
 
 interface InstallmentScheduleEditorProps {
@@ -20,6 +22,8 @@ interface InstallmentScheduleEditorProps {
   installments: PayableInstallment[]
   firstDueDate?: string
   currency: string
+  payableId?: string
+  transactions?: Transaction[]
   onChange: (installments: PayableInstallment[]) => void
 }
 
@@ -28,13 +32,39 @@ function InstallmentScheduleEditor({
   installments,
   firstDueDate,
   currency,
+  payableId = '',
+  transactions = [],
   onChange
 }: InstallmentScheduleEditorProps): JSX.Element {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US'
   const [countInput, setCountInput] = useState(installments.length > 0 ? String(installments.length) : '')
+  const [historyError, setHistoryError] = useState(false)
   const validation = PayableInstallmentService.validateSchedule(totalAmount, installments)
   const allocated = PayableInstallmentService.getScheduledTotal(installments)
+  const todayJalali = getTodayJalali()
+  const todayStr = jalaliToGregorianDateStrFromParts(todayJalali.jy, todayJalali.jm, todayJalali.jd)
+  const payableLike = {
+    id: payableId,
+    title: '',
+    categoryId: '',
+    totalAmount,
+    to: '',
+    notes: '',
+    installments,
+    createdAt: '',
+    updatedAt: ''
+  } as Payable
+
+  const applySchedule = (next: PayableInstallment[]): void => {
+    const removedWithPayments = installments.some((item) =>
+      !next.some((candidate) => candidate.id === item.id) &&
+      PayableService.getInstallmentNetPaid(payableLike, item, transactions) > 0
+    )
+    setHistoryError(removedWithPayments)
+    if (removedWithPayments) return
+    onChange(next)
+  }
 
   const handleCountChange = (raw: string): void => {
     setCountInput(raw)
@@ -46,20 +76,20 @@ function InstallmentScheduleEditor({
       Number.isFinite(totalAmount) &&
       totalAmount > 0
     ) {
-      onChange(PayableInstallmentService.createInstallments(totalAmount, count, firstDueDate))
+      applySchedule(PayableInstallmentService.createSchedulePreservingIds(installments, totalAmount, count, firstDueDate))
     }
   }
 
   const handleGenerate = (): void => {
     const count = Number(countInput)
     if (Number.isInteger(count) && count >= 1 && count <= MAX_INSTALLMENTS && totalAmount > 0) {
-      onChange(PayableInstallmentService.createInstallments(totalAmount, count, firstDueDate))
+      applySchedule(PayableInstallmentService.createSchedulePreservingIds(installments, totalAmount, count, firstDueDate))
     }
   }
 
   const handleRedistribute = (): void => {
     if (installments.length > 0 && totalAmount > 0) {
-      onChange(PayableInstallmentService.redistributeEvenly(installments, totalAmount))
+      applySchedule(PayableInstallmentService.redistributeEvenly(installments, totalAmount))
     }
   }
 
@@ -136,6 +166,7 @@ function InstallmentScheduleEditor({
       </div>
       {hasDateError && <div style={styles.errorText}>{t('installment.errorDate')}</div>}
       {hasAmountError && <div style={styles.errorText}>{t('installment.errorAmount')}</div>}
+      {historyError && <div style={styles.errorText}>{t('installment.errorHistory')}</div>}
 
       <div style={styles.tableHeader}>
         <span style={styles.numberCell}>{t('installment.number')}</span>
@@ -169,9 +200,15 @@ function InstallmentScheduleEditor({
                 onChange={(date) => handleDateChange(installment.id, date)}
                 compact
               />
-              <span style={styles.statusCell}>
-                {installment.status === InstallmentStatus.Paid ? t('installment.statePaid') : t('installment.statePending')}
-              </span>
+               <span style={styles.statusCell}>
+                 {(() => {
+                   const paid = PayableService.getInstallmentNetPaid(payableLike, installment, transactions)
+                   if (paid >= installment.amount - 0.005 && installment.amount > 0) return t('installment.statePaid')
+                   if (paid > 0) return t('installment.statePartial')
+                   if (installment.dueDate < todayStr) return t('installment.stateOverdue')
+                   return t('installment.statePending')
+                 })()}
+               </span>
             </div>
           ))}
         </div>

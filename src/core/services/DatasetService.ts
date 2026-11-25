@@ -1,16 +1,43 @@
-import { Dataset, Category, Receivable, Transaction, Wallet } from '../models/types'
+import { Dataset, Payable, TransactionType } from '../models/types'
+import { PayableService } from './PayableService'
 
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
+
+function migrateToV5(data: Dataset): void {
+  const fallbackTime = data.updatedAt || data.createdAt || new Date(0).toISOString()
+  const payables: Payable[] = (data.payables ?? []).map((payable, payableIndex) => ({
+    ...payable,
+    installments: (payable.installments ?? []).map((installment, installmentIndex) => ({
+      ...installment,
+      id: installment.id || `${payable.id}-installment-${installmentIndex + 1}`,
+      createdAt: installment.createdAt || payable.createdAt || fallbackTime,
+      updatedAt: installment.updatedAt || installment.createdAt || payable.updatedAt || fallbackTime
+    }))
+  }))
+  data.payables = payables
+
+  const isPaymentType = (type: string): boolean =>
+    type === TransactionType.Expense || type === TransactionType.Refund
+
+  data.transactions = (data.transactions ?? []).map((transaction) => {
+    if (transaction.payableId || !isPaymentType(transaction.type)) return transaction
+    const matches = payables.filter(
+      (payable) => PayableService.getLegacyTransactions(payable, [transaction], payables).length > 0
+    )
+    if (matches.length !== 1 || (matches[0].installments ?? []).length > 0) return transaction
+    return { ...transaction, payableId: matches[0].id }
+  })
+}
 
 export class DatasetService {
   static create(
     name: string,
     currency: string,
-    categories: Category[],
-    receivables: Receivable[] = [],
-    transactions: Transaction[] = [],
-    payables: any[] = [],
-    wallets: Wallet[] = []
+    categories: Dataset['categories'],
+    receivables: Dataset['receivables'] = [],
+    transactions: Dataset['transactions'] = [],
+    payables: Payable[] = [],
+    wallets: Dataset['wallets'] = []
   ): Dataset {
     const now = new Date().toISOString()
     return {
@@ -24,12 +51,11 @@ export class DatasetService {
       receivables,
       wallets,
       payables
-    } as Dataset
+    }
   }
 
   static serialize(dataset: Dataset): string {
-    dataset.updatedAt = new Date().toISOString()
-    return JSON.stringify(dataset, null, 2)
+    return JSON.stringify({ ...dataset, updatedAt: new Date().toISOString() }, null, 2)
   }
 
   static deserialize(content: string): Dataset {
@@ -41,8 +67,8 @@ export class DatasetService {
     if (!data.receivables) {
       data.receivables = []
     }
-    if (!(data as any).payables) {
-      (data as any).payables = []
+    if (!data.payables) {
+      data.payables = []
     }
     if (!data.wallets) {
       data.wallets = []
@@ -50,7 +76,13 @@ export class DatasetService {
     if (!data.categoryTypeMap) {
       data.categoryTypeMap = {}
     }
-    data.version = SCHEMA_VERSION
+    if (!data.budgetPercentages) {
+      data.budgetPercentages = {}
+    }
+    if (data.version < SCHEMA_VERSION) {
+      migrateToV5(data)
+      data.version = SCHEMA_VERSION
+    }
     return data
   }
 }

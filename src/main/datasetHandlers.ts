@@ -2,6 +2,7 @@ import { ipcMain, dialog, app } from 'electron'
 import { writeFileSync, renameSync, readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs'
 import { dirname, resolve, join } from 'path'
 import { DatasetService } from '../core/services/DatasetService'
+import { importFinaDataset } from '../core/services/DatasetBackupService'
 import { CategoryService } from '../core/services/CategoryService'
 import { Category, Receivable, Transaction } from '../core/models/types'
 
@@ -42,7 +43,7 @@ export function registerDatasetHandlers(): void {
   ipcMain.handle('dataset:load', async (_event, filePath: string) => {
     try {
       const content = readFileSync(filePath, 'utf-8')
-      const dataset = DatasetService.deserialize(content)
+      const dataset = importFinaDataset(content)
       return { success: true, data: dataset }
     } catch (err) {
       return { success: false, error: String(err) }
@@ -98,6 +99,19 @@ export function registerDatasetHandlers(): void {
   ipcMain.handle('dialog:open', async () => {
     const result = await dialog.showOpenDialog({
       filters: [{ name: 'Finance Dataset', extensions: ['fina', 'json'] }],
+      properties: ['openFile']
+    })
+    return result
+  })
+
+  ipcMain.handle('dialog:openDatasetBackup', async () => {
+    const result = await dialog.showOpenDialog({
+      filters: [
+        { name: 'All Dataset Backups', extensions: ['fina', 'json', 'xlsx', 'csv'] },
+        { name: 'Finance Dataset', extensions: ['fina', 'json'] },
+        { name: 'Excel Workbook', extensions: ['xlsx'] },
+        { name: 'CSV Backup', extensions: ['csv'] }
+      ],
       properties: ['openFile']
     })
     return result

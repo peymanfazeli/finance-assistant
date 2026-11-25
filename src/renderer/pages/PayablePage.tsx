@@ -41,7 +41,6 @@ function PayablePage(): JSX.Element {
     addPayable,
     updatePayable,
     updateInstallment,
-    setInstallmentPaid,
   } = useAppStore()
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -59,7 +58,7 @@ function PayablePage(): JSX.Element {
 
   const filteredPayables = useMemo(() => {
     if (!hasDateFilter) {
-      return payables.filter((p) => PayableService.getRemainingAmount(p, transactions) > 0)
+      return payables.filter((p) => PayableService.getRemainingAmount(p, transactions, payables) > 0)
     }
     return payables.filter((p) => {
       const dateStr = p.dueDate || p.createdAt.slice(0, 10)
@@ -79,9 +78,9 @@ function PayablePage(): JSX.Element {
     let activeCount = 0
 
     for (const payable of payables) {
-      const remaining = PayableService.getRemainingAmount(payable, transactions)
+      const remaining = PayableService.getRemainingAmount(payable, transactions, payables)
       total += payable.totalAmount
-      paid += PayableService.getPaidAmount(payable, transactions)
+      paid += PayableService.getPaidAmount(payable, transactions, payables)
 
       if (remaining > 0) {
         activeCount += 1
@@ -99,7 +98,7 @@ function PayablePage(): JSX.Element {
       }
     }
 
-    const installmentRows = PayableInstallmentService.getRows(payables)
+    const installmentRows = PayableInstallmentService.getRows(payables, transactions)
     return {
       total,
       paid,
@@ -125,15 +124,19 @@ function PayablePage(): JSX.Element {
       dueDate?: string
       installments?: PayableInstallment[]
     }) => {
-      if (editId) {
-        updatePayable(editId, data)
-        addToast('success', t('payable.updated'))
-        setEditId(null)
-      } else {
-        addPayable(data)
-        addToast('success', t('payable.created'))
+      try {
+        if (editId) {
+          updatePayable(editId, data)
+          addToast('success', t('payable.updated'))
+          setEditId(null)
+        } else {
+          addPayable(data)
+          addToast('success', t('payable.created'))
+        }
+        setShowForm(false)
+      } catch {
+        addToast('error', t('installment.errorHistory'))
       }
-      setShowForm(false)
     },
     [editId, updatePayable, addPayable, t]
   )
@@ -155,11 +158,6 @@ function PayablePage(): JSX.Element {
     updateInstallment(payableId, installmentId, updates)
     addToast('success', t('installment.created'))
   }, [updateInstallment, t])
-
-  const handleSetInstallmentPaid = useCallback((payableId: string, installmentId: string, paid: boolean) => {
-    setInstallmentPaid(payableId, installmentId, paid)
-    addToast('success', t(paid ? 'installment.markedPaid' : 'installment.reverted'))
-  }, [setInstallmentPaid, t])
 
   const editingPayable = editId ? payables.find((p) => p.id === editId) : undefined
   const detailPayable = detailId ? payables.find((p) => p.id === detailId) ?? null : null
@@ -241,9 +239,9 @@ function PayablePage(): JSX.Element {
         <BentoCard span={4} title={t('installment.summaryTitle')} compact>
           <InstallmentSummary
             payables={payables}
+            transactions={transactions}
             currency={currency}
             onUpdateInstallment={handleUpdateInstallment}
-            onSetInstallmentPaid={handleSetInstallmentPaid}
             onViewPayable={handleClick}
           />
           <div style={styles.upcoming}>
@@ -286,10 +284,11 @@ function PayablePage(): JSX.Element {
         }
       >
         <PayableForm
-          payable={editingPayable}
-          categories={categories}
-          currency={currency}
-          onSave={handleSave}
+            payable={editingPayable}
+            categories={categories}
+            currency={currency}
+            transactions={transactions}
+            onSave={handleSave}
         />
       </Modal>
 

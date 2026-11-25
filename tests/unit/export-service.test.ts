@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ExportService } from '../../src/core/services/ExportService'
 import { ReportDataPoint, TimeSeriesPoint } from '../../src/core/services/ReportService'
+import { Transaction, TransactionType } from '../../src/core/models/types'
 
 const points: ReportDataPoint[] = [
   { name: 'Food', value: 150 },
@@ -41,6 +42,31 @@ describe('ExportService', () => {
 
     it('returns empty string for empty data', () => {
       expect(ExportService.toCSV([])).toBe('')
+    })
+  })
+
+  describe('toTransactionCSV', () => {
+    it('exports transaction columns only, not payable or installment data', () => {
+      const transaction: Transaction = {
+        id: 'tx-1',
+        date: '2026-01-15',
+        title: 'Laptop payment',
+        categoryId: 'cat-1',
+        type: TransactionType.Expense,
+        amount: 100,
+        notes: 'Bank transfer',
+        payableId: 'payable-1',
+        installmentId: 'inst-1',
+        createdAt: '',
+        updatedAt: ''
+      }
+
+      const csv = ExportService.toTransactionCSV([transaction], [])
+
+      expect(csv.startsWith('Date,Jalali Date,Title,Category,Wallet,To Wallet,Type,Amount,Notes')).toBe(true)
+      expect(csv).toContain('Laptop payment')
+      expect(csv).not.toContain('payable-1')
+      expect(csv).not.toContain('inst-1')
     })
   })
 

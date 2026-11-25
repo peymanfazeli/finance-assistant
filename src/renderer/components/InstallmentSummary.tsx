@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { InstallmentStatus, Payable } from '../../core/models/types'
+import { Payable, Transaction } from '../../core/models/types'
 import {
   InstallmentFilter,
   InstallmentRow,
@@ -25,23 +25,23 @@ import Modal from './Modal'
 
 interface InstallmentSummaryProps {
   payables: Payable[]
+  transactions: Transaction[]
   currency: string
   onUpdateInstallment: (
     payableId: string,
     installmentId: string,
     updates: { amount?: number; dueDate?: string }
   ) => void
-  onSetInstallmentPaid: (payableId: string, installmentId: string, paid: boolean) => void
   onViewPayable: (payableId: string) => void
 }
 
-const FILTERS: InstallmentFilter[] = ['all', 'pending', 'paid', 'overdue']
+const FILTERS: InstallmentFilter[] = ['all', 'pending', 'partial', 'paid', 'overdue']
 
 function InstallmentSummary({
   payables,
+  transactions,
   currency,
   onUpdateInstallment,
-  onSetInstallmentPaid,
   onViewPayable
 }: InstallmentSummaryProps): JSX.Element {
   const { t, i18n } = useTranslation()
@@ -51,36 +51,50 @@ function InstallmentSummary({
   const [editing, setEditing] = useState<InstallmentRow | null>(null)
   const [editAmount, setEditAmount] = useState('')
   const [editDate, setEditDate] = useState('')
+  const [editError, setEditError] = useState('')
 
-  const summary = useMemo(() => PayableInstallmentService.getSummary(payables), [payables])
+  const summary = useMemo(
+    () => PayableInstallmentService.getSummary(payables, transactions),
+    [payables, transactions]
+  )
   const rows = useMemo(() => PayableInstallmentService.filterRows(summary.rows, filter), [summary.rows, filter])
-  const overdueAmount = summary.rows
-    .filter((row) => row.state === 'overdue')
-    .reduce((sum, row) => sum + row.installment.amount, 0)
 
   const openEditor = (row: InstallmentRow): void => {
     setEditing(row)
     setEditAmount(String(row.installment.amount))
     setEditDate(row.installment.dueDate)
+    setEditError('')
   }
 
   const saveEditor = (): void => {
     if (!editing) return
     const amount = Number(editAmount)
-    if (!Number.isFinite(amount) || amount <= 0 || !editDate) return
-    onUpdateInstallment(editing.payableId, editing.installment.id, { amount, dueDate: editDate })
-    setEditing(null)
+    if (!Number.isFinite(amount) || amount <= 0 || !editDate) {
+      setEditError(t('installment.errorAmount'))
+      return
+    }
+    try {
+      onUpdateInstallment(editing.payableId, editing.installment.id, { amount, dueDate: editDate })
+      setEditing(null)
+    } catch (err) {
+      const code = err instanceof Error && err.message.startsWith('schedule:') ? err.message.slice(9) : ''
+      setEditError(code ? t(`installment.error${code.charAt(0).toUpperCase()}${code.slice(1)}`) : t('installment.errorAmount'))
+    }
   }
 
   const stateLabel = (state: InstallmentRow['state']): string =>
-    t(state === 'paid' ? 'installment.statePaid' : state === 'overdue' ? 'installment.stateOverdue' : 'installment.statePending')
+    t(`installment.state${state.charAt(0).toUpperCase()}${state.slice(1)}`)
 
   const stateStyle = (state: InstallmentRow['state']): React.CSSProperties => ({
     ...styles.badge,
     backgroundColor:
-      state === 'paid' ? colors.bg.income : state === 'overdue' ? colors.bg.expense : colors.bg.warning,
+      state === 'paid' ? colors.bg.income
+        : state === 'overdue' ? colors.bg.expense
+          : state === 'partial' ? colors.bg.active : colors.bg.warning,
     color:
-      state === 'paid' ? colors.text.income : state === 'overdue' ? colors.text.expense : colors.text.warning
+      state === 'paid' ? colors.text.income
+        : state === 'overdue' ? colors.text.expense
+          : state === 'partial' ? colors.text.primary : colors.text.warning
   })
 
   return (
@@ -97,7 +111,7 @@ function InstallmentSummary({
         <motion.div style={styles.card} whileHover={{ y: -2 }}>
           <span style={styles.cardLabel}>{t('installment.stateOverdue')}</span>
           <span style={{ ...styles.cardValue, color: colors.text.expense }}>
-            {formatCurrency(overdueAmount, currency, locale)}
+            {formatCurrency(summary.overdueBalance, currency, locale)}
           </span>
         </motion.div>
       </div>
@@ -126,6 +140,8 @@ function InstallmentSummary({
                 <th style={styles.th}>{t('installment.number')}</th>
                 <th style={styles.th}>{t('installment.dueDate')}</th>
                 <th style={styles.thRight}>{t('installment.amount')}</th>
+                <th style={styles.thRight}>{t('installment.paidAmount')}</th>
+                <th style={styles.thRight}>{t('installment.remainingBalance')}</th>
                 <th style={styles.th}>{t('installment.status')}</th>
                 <th style={styles.th}>{t('installment.actions')}</th>
               </tr>
@@ -141,23 +157,23 @@ function InstallmentSummary({
                   <td style={styles.td}>{row.number} / {row.count}</td>
                   <td style={styles.td}>{formatJalaliDate(row.installment.dueDate, usePersianDigits)}</td>
                   <td style={styles.tdRight}>{formatCurrency(row.installment.amount, currency, locale)}</td>
+                  <td style={styles.tdRight}>{formatCurrency(row.paidAmount, currency, locale)}</td>
+                  <td style={styles.tdRight}>{formatCurrency(row.remainingAmount, currency, locale)}</td>
                   <td style={styles.td}><span style={stateStyle(row.state)}>{stateLabel(row.state)}</span></td>
                   <td style={styles.td}>
                     <div style={styles.actions}>
                       <button type="button" style={styles.smallButton} onClick={() => openEditor(row)}>
                         {t('installment.edit')}
                       </button>
-                      <button
-                        type="button"
-                        style={row.installment.status === InstallmentStatus.Paid ? styles.smallButton : styles.primarySmallButton}
-                        onClick={() => onSetInstallmentPaid(
-                          row.payableId,
-                          row.installment.id,
-                          row.installment.status !== InstallmentStatus.Paid
-                        )}
-                      >
-                        {t(row.installment.status === InstallmentStatus.Paid ? 'installment.markUnpaid' : 'installment.markPaid')}
-                      </button>
+                      {row.state !== 'paid' && (
+                        <button
+                          type="button"
+                          style={styles.primarySmallButton}
+                          onClick={() => onViewPayable(row.payableId)}
+                        >
+                          {t('payable.recordPayment')}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -191,6 +207,7 @@ function InstallmentSummary({
               <label style={styles.editLabel}>{t('installment.dueDate')}</label>
               <PersianCalendar value={editDate} onChange={setEditDate} compact />
             </div>
+            {editError && <div style={styles.errorText}>{editError}</div>}
             <div style={styles.editActions}>
               <button type="button" style={styles.cancelButton} onClick={() => setEditing(null)}>
                 {t('common.cancel')}
@@ -352,6 +369,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: borderRadius.md,
     boxSizing: 'border-box'
   },
+  errorText: { fontSize: fontSize.sm, color: colors.text.error },
   editActions: { display: 'flex', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.lg },
   cancelButton: {
     padding: padding.button,

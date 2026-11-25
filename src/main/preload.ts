@@ -31,7 +31,9 @@ const api = {
     showSaveDialog: (): Promise<Electron.OpenDialogReturnValue> =>
       ipcRenderer.invoke('dialog:save'),
     showOpenDialog: (): Promise<Electron.OpenDialogReturnValue> =>
-      ipcRenderer.invoke('dialog:open')
+      ipcRenderer.invoke('dialog:open'),
+    showBackupOpenDialog: (): Promise<Electron.OpenDialogReturnValue> =>
+      ipcRenderer.invoke('dialog:openDatasetBackup')
   },
   settings: {
     load: (): Promise<{ success: boolean; data?: ApplicationSettings | null; error?: string }> =>

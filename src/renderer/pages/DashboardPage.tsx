@@ -33,6 +33,7 @@ function DashboardPage(): JSX.Element {
 
   const transactions = dataset?.transactions ?? []
   const wallets = dataset?.wallets ?? []
+  const payables = dataset?.payables ?? []
   const selectedWallet = dashboardWalletId
     ? wallets.find((w) => w.id === dashboardWalletId) ?? null
     : null
@@ -315,6 +316,7 @@ function DashboardPage(): JSX.Element {
           <TransactionForm
             categories={categories}
             wallets={wallets}
+            payables={payables}
             defaultWalletId={dashboardWalletId ?? undefined}
             categoryTypeMap={categoryTypeMap}
             onSave={(data) => {

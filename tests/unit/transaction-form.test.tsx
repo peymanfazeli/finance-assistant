@@ -5,6 +5,7 @@ import { Category, TransactionType } from '../../src/core/models/types'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string) => {
       const map: Record<string, string> = {
         'transaction.date': 'Date',

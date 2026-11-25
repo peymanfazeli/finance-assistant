@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import InstallmentSummary from '../../src/renderer/components/InstallmentSummary'
-import { InstallmentStatus, Payable } from '../../src/core/models/types'
+import { InstallmentStatus, Payable, Transaction, TransactionType } from '../../src/core/models/types'
 import { getTodayJalali, jalaliToGregorianDateStrFromParts } from '../../src/core/utils/jalali'
 
 vi.mock('react-i18next', () => ({
@@ -14,23 +14,26 @@ vi.mock('react-i18next', () => ({
         'installment.filterPending': 'Pending',
         'installment.filterPaid': 'Paid',
         'installment.filterOverdue': 'Overdue',
+        'installment.filterPartial': 'Partially Paid',
         'installment.dueThisMonth': 'Due This Month (Pending)',
-        'installment.totalScheduled': 'Total Scheduled (Pending)',
         'installment.payable': 'Payable',
         'installment.number': '#',
         'installment.dueDate': 'Due date',
         'installment.amount': 'Amount',
+        'installment.paidAmount': 'Paid Amount',
+        'installment.remainingBalance': 'Remaining Balance',
         'installment.status': 'Status',
         'installment.actions': 'Actions',
         'installment.empty': 'No installments for this payable.',
         'installment.statePending': 'Pending',
         'installment.statePaid': 'Paid',
         'installment.stateOverdue': 'Overdue',
-        'installment.markPaid': 'Mark paid',
-        'installment.markUnpaid': 'Revert to pending',
+        'installment.statePartial': 'Partially Paid',
         'installment.edit': 'Edit installment',
         'installment.editTitle': 'Edit Installment',
         'installment.save': 'Save installment',
+        'installment.errorAmount': 'Invalid amount',
+        'payable.recordPayment': 'Record payment',
         'common.cancel': 'Cancel'
       }
       return map[key] ?? key
@@ -48,7 +51,7 @@ function makePayables(): Payable[] {
       id: 'p1',
       title: 'Laptop',
       categoryId: 'cat-1',
-      totalAmount: 60,
+      totalAmount: 50,
       to: 'Store',
       notes: '',
       createdAt: NOW,
@@ -66,8 +69,7 @@ function makePayables(): Payable[] {
           id: 'i2',
           amount: 30,
           dueDate: '2099-01-01',
-          status: InstallmentStatus.Paid,
-          paidAt: NOW,
+          status: InstallmentStatus.Pending,
           createdAt: NOW,
           updatedAt: NOW
         }
@@ -96,17 +98,33 @@ function makePayables(): Payable[] {
   ]
 }
 
-function renderSummary(onUpdate = vi.fn(), onSetPaid = vi.fn(), onView = vi.fn()) {
+function makeTransactions(): Transaction[] {
+  return [{
+    id: 't1',
+    date: '2098-12-31',
+    title: 'Laptop installment 2',
+    categoryId: 'cat-1',
+    type: TransactionType.Expense,
+    amount: 30,
+    notes: '',
+    payableId: 'p1',
+    installmentId: 'i2',
+    createdAt: NOW,
+    updatedAt: NOW
+  }]
+}
+
+function renderSummary(onUpdate = vi.fn(), onView = vi.fn()) {
   render(
     <InstallmentSummary
       payables={makePayables()}
+      transactions={makeTransactions()}
       currency="USD"
       onUpdateInstallment={onUpdate}
-      onSetInstallmentPaid={onSetPaid}
       onViewPayable={onView}
     />
   )
-  return { onUpdate, onSetPaid, onView }
+  return { onUpdate, onView }
 }
 
 describe('InstallmentSummary', () => {
@@ -130,18 +148,18 @@ describe('InstallmentSummary', () => {
     expect(filters.nextElementSibling?.querySelector('table')).toBe(table)
   })
 
-  it('filters rows by status', () => {
+  it('filters rows by payment-derived status', () => {
     renderSummary()
     fireEvent.click(screen.getByRole('button', { name: 'Paid' }))
     expect(screen.getByText('Laptop')).toBeDefined()
     expect(screen.queryByText('Car')).toBeNull()
   })
 
-  it('marks a pending installment paid', () => {
-    const { onSetPaid } = renderSummary()
-    const buttons = screen.getAllByText('Mark paid')
+  it('opens the payable detail view to record a payment', () => {
+    const { onView } = renderSummary()
+    const buttons = screen.getAllByText('Record payment')
     fireEvent.click(buttons[0])
-    expect(onSetPaid).toHaveBeenCalledWith(expect.any(String), expect.any(String), true)
+    expect(onView).toHaveBeenCalled()
   })
 
   it('edits an installment amount and due date', () => {

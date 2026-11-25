@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TransactionType, Transaction, Category, Wallet } from '../../core/models/types'
+import { TransactionType, Transaction, Category, Wallet, Payable } from '../../core/models/types'
 import Modal from './Modal'
 import PersianCalendar from './PersianCalendar'
 import { colors } from '../../core/utils/styles'
@@ -10,6 +10,7 @@ interface TransactionFormProps {
   transaction?: Transaction
   categories: Category[]
   wallets?: Wallet[]
+  payables?: Payable[]
   defaultWalletId?: string
   initialType?: TransactionType
   categoryTypeMap?: Record<string, TransactionType>
@@ -24,11 +25,13 @@ interface TransactionFormProps {
     notes: string
     walletId?: string
     toWalletId?: string
+    payableId?: string
+    installmentId?: string
   }) => void
   onCancel: () => void
 }
 
-function TransactionForm({ transaction, categories, wallets = [], defaultWalletId, initialType, categoryTypeMap, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
+function TransactionForm({ transaction, categories, wallets = [], payables = [], defaultWalletId, initialType, categoryTypeMap, keepOpen, onKeepOpenChange, onSave, onCancel }: TransactionFormProps): JSX.Element {
   const { t } = useTranslation()
   const initialMainWalletId = transaction ? transaction.walletId ?? '' : defaultWalletId ?? wallets[0]?.id ?? ''
   const [date, setDate] = useState(transaction?.date ?? new Date().toISOString().split('T')[0])
@@ -46,8 +49,11 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
     return ''
   })
   const isTransfer = type === TransactionType.Transfer
+  const isPaymentType = type === TransactionType.Expense || type === TransactionType.Refund
   const [isPayable, setIsPayable] = useState(false)
   const [payableTo, setPayableTo] = useState('')
+  const [payableId, setPayableId] = useState(transaction?.payableId ?? '')
+  const [installmentId, setInstallmentId] = useState(transaction?.installmentId ?? '')
   const [showValidationModal, setShowValidationModal] = useState(false)
   const [missingFields, setMissingFields] = useState<string[]>([])
 
@@ -63,18 +69,31 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
     setToWalletId(wallets.find((w) => w.id !== nextMainWalletId)?.id ?? '')
     setIsPayable(false)
     setPayableTo('')
+    setPayableId('')
+    setInstallmentId('')
   }
 
   const handleCategoryChange = (newCategoryId: string): void => {
     setCategoryId(newCategoryId)
+    setPayableId('')
+    setInstallmentId('')
     if (categoryTypeMap?.[newCategoryId]) {
       setType(categoryTypeMap[newCategoryId])
       setToWalletId('')
     }
   }
 
+  const handlePayableChange = (nextPayableId: string): void => {
+    setPayableId(nextPayableId)
+    setInstallmentId('')
+  }
+
   const handleTypeChange = (nextType: TransactionType): void => {
     setType(nextType)
+    if (nextType !== TransactionType.Expense && nextType !== TransactionType.Refund) {
+      setPayableId('')
+      setInstallmentId('')
+    }
     if (nextType === TransactionType.Transfer) {
       const mainWalletId = walletId || defaultWalletId || wallets[0]?.id || ''
       setWalletId(mainWalletId)
@@ -108,6 +127,10 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
     if (!isTransfer && isPayable && !payableTo.trim()) {
       fields.push(t('payable.to'))
     }
+    const linkedPayable = payables.find((item) => item.id === payableId)
+    if (isPaymentType && linkedPayable && (linkedPayable.installments ?? []).length > 0 && !installmentId) {
+      fields.push(t('transaction.linkedInstallment'))
+    }
     if (fields.length > 0) {
       setMissingFields(fields)
       setShowValidationModal(true)
@@ -127,7 +150,9 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
         amount: parsedAmount,
         notes: combinedNotes,
         walletId: walletId || undefined,
-        toWalletId: isTransfer ? toWalletId || undefined : undefined
+        toWalletId: isTransfer ? toWalletId || undefined : undefined,
+        payableId: isPaymentType ? payableId || undefined : undefined,
+        installmentId: isPaymentType ? installmentId || undefined : undefined
       })
       resetFields()
     } catch (err) {
@@ -217,6 +242,32 @@ function TransactionForm({ transaction, categories, wallets = [], defaultWalletI
       </div>
       {!isTransfer && (
         <>
+          {isPaymentType && payables.length > 0 && (
+            <>
+              <div style={styles.field}>
+                <label style={styles.label}>{t('transaction.linkedPayable')}</label>
+                <select style={styles.select} value={payableId} onChange={(e) => handlePayableChange(e.target.value)}>
+                  <option value="">{t('transaction.noPayable')}</option>
+                  {payables.map((item) => (
+                    <option key={item.id} value={item.id}>{item.title}</option>
+                  ))}
+                </select>
+              </div>
+              {payableId && (payables.find((item) => item.id === payableId)?.installments?.length ?? 0) > 0 && (
+                <div style={styles.field}>
+                  <label style={styles.label}>{t('transaction.linkedInstallment')}</label>
+                  <select style={styles.select} value={installmentId} onChange={(e) => setInstallmentId(e.target.value)}>
+                    <option value="">{t('transaction.selectInstallment')}</option>
+                    {(payables.find((item) => item.id === payableId)?.installments ?? []).map((item, index) => (
+                      <option key={item.id} value={item.id}>
+                        {index + 1} - {item.dueDate}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </>
+          )}
           <div style={styles.field}>
             <label style={styles.checkboxLabel}>
               <input

@@ -8,17 +8,92 @@ import ThemeToggle from '../components/ThemeToggle'
 import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, borderWidth } from '../../core/utils/styles'
 import Modal from '../components/Modal'
 import WalletManager from '../components/WalletManager'
+import { addToast } from '../components/ToastContainer'
+import {
+  exportCsvDataset,
+  exportFinaDataset,
+  exportXlsxDataset
+} from '../../core/services/DatasetBackupService'
+import {
+  chooseCompleteDatasetBackup,
+  replaceDatasetWithBackup
+} from '../utils/datasetBackup'
 
 function SettingsPage(): JSX.Element {
   const { t } = useTranslation()
   const { settings, setLanguage, dataset, updateCategoryTypeMap } = useAppStore()
   const [showMappingModal, setShowMappingModal] = useState(false)
+  const [backupBusy, setBackupBusy] = useState(false)
   const categoryTypeMap = dataset?.categoryTypeMap ?? {}
   const categories = dataset?.categories ?? []
 
   const handleLanguageChange = (lang: Language): void => {
     setLanguage(lang)
     applyLanguage(lang)
+  }
+
+  const safeBaseName = (name: string): string =>
+    name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_') || 'dataset'
+
+  const withFinaExtension = (filePath: string): string => {
+    if (/\.fina$/i.test(filePath)) return filePath
+    const withoutJson = filePath.replace(/\.json$/i, '')
+    return /\.fina$/i.test(withoutJson) ? withoutJson : `${withoutJson}.fina`
+  }
+
+  const handleExportBackup = async (format: 'fina' | 'xlsx' | 'csv'): Promise<void> => {
+    if (!dataset || backupBusy) return
+    setBackupBusy(true)
+    try {
+      await useAppStore.getState().flushDatasetSave()
+      const baseName = safeBaseName(dataset.name)
+
+      if (format === 'fina') {
+        const dialogResult = await window.api.export.showSaveDialog(`${baseName}.fina`, [
+          { name: 'Finance Dataset', extensions: ['fina'] }
+        ])
+        if (dialogResult.canceled || !dialogResult.filePath) return
+        const filePath = withFinaExtension(dialogResult.filePath)
+        const result = await window.api.dataset.save(filePath, exportFinaDataset(dataset))
+        if (!result.success) throw new Error(result.error || t('errors.saveError'))
+      } else if (format === 'xlsx') {
+        const dialogResult = await window.api.export.showSaveDialog(`${baseName}.xlsx`, [
+          { name: 'Excel Workbook', extensions: ['xlsx'] }
+        ])
+        if (dialogResult.canceled || !dialogResult.filePath) return
+        const result = await window.api.export.saveFileBinary(dialogResult.filePath, exportXlsxDataset(dataset))
+        if (!result.success) throw new Error(result.error || t('errors.saveError'))
+      } else {
+        const dialogResult = await window.api.export.showSaveDialog(`${baseName}.csv`, [
+          { name: 'CSV Backup', extensions: ['csv'] }
+        ])
+        if (dialogResult.canceled || !dialogResult.filePath) return
+        const result = await window.api.export.saveFile(dialogResult.filePath, exportCsvDataset(dataset))
+        if (!result.success) throw new Error(result.error || t('errors.saveError'))
+      }
+
+      addToast('success', t('common.exportSuccess'))
+    } catch (error) {
+      addToast('error', error instanceof Error ? error.message : t('errors.generic'))
+    } finally {
+      setBackupBusy(false)
+    }
+  }
+
+  const handleImportBackup = async (): Promise<void> => {
+    if (backupBusy) return
+    setBackupBusy(true)
+    try {
+      const backup = await chooseCompleteDatasetBackup()
+      if (!backup) return
+      if (!window.confirm(t('backup.confirmReplace'))) return
+      await replaceDatasetWithBackup(backup)
+      addToast('success', t('backup.importSuccess'))
+    } catch (error) {
+      addToast('error', error instanceof Error ? error.message : t('errors.generic'))
+    } finally {
+      setBackupBusy(false)
+    }
   }
 
   const typeOptions = [
@@ -80,6 +155,50 @@ function SettingsPage(): JSX.Element {
             </div>
           </div>
           <ThemeToggle />
+        </div>
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <span style={styles.cardIcon}>◧</span>
+            <div>
+              <h3 style={styles.cardTitle}>{t('backup.title')}</h3>
+              <p style={styles.cardDescription}>{t('backup.description')}</p>
+            </div>
+          </div>
+          <div style={styles.backupActions}>
+            <button
+              type="button"
+              style={styles.backupBtn}
+              disabled={backupBusy || !dataset}
+              onClick={() => { void handleExportBackup('fina') }}
+            >
+              {t('backup.exportFina')}
+            </button>
+            <button
+              type="button"
+              style={styles.backupBtn}
+              disabled={backupBusy || !dataset}
+              onClick={() => { void handleExportBackup('xlsx') }}
+            >
+              {t('backup.exportXlsx')}
+            </button>
+            <button
+              type="button"
+              style={styles.backupBtn}
+              disabled={backupBusy || !dataset}
+              onClick={() => { void handleExportBackup('csv') }}
+            >
+              {t('backup.exportCsv')}
+            </button>
+            <button
+              type="button"
+              style={{ ...styles.backupBtn, ...styles.backupImportBtn }}
+              disabled={backupBusy}
+              onClick={() => { void handleImportBackup() }}
+            >
+              {backupBusy ? t('common.loading') : t('backup.import')}
+            </button>
+          </div>
         </div>
 
         <div style={styles.card}>
@@ -246,6 +365,25 @@ const styles: Record<string, React.CSSProperties> = {
   languageToggle: {
     display: 'flex',
     gap: spacing.sm,
+  },
+  backupActions: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+    gap: spacing.sm,
+  },
+  backupBtn: {
+    padding: `${spacing.md} ${spacing.lg}`,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text.muted,
+    backgroundColor: colors.bg.muted,
+    border: `${borderWidth.default} solid ${colors.border.light}`,
+    borderRadius: borderRadius.md,
+    cursor: 'pointer',
+  },
+  backupImportBtn: {
+    color: colors.primary,
+    borderColor: colors.primary,
   },
   langBtn: {
     flex: 1,

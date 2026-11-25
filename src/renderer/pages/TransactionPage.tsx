@@ -9,12 +9,22 @@ import { colors, spacing, fontSize, fontWeight, borderRadius, padding, shadow, z
 import { addToast } from '../components/ToastContainer'
 import DropZone from '../components/DropZone'
 import { ImportService, ImportedRow, ColumnMapping as ColumnMappingType } from '../../core/services/ImportService'
+import { exportFinaDataset } from '../../core/services/DatasetBackupService'
 import TransactionList from '../components/TransactionList'
 import TransactionForm from '../components/TransactionForm'
 import Modal from '../components/Modal'
 import ImportModal from '../components/ImportModal'
 import SearchBar from '../components/SearchBar'
 import FilterPanel from '../components/FilterPanel'
+
+const safeBaseName = (name: string): string =>
+  name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_') || 'dataset'
+
+const withFinaExtension = (filePath: string): string => {
+  if (/\.fina$/i.test(filePath)) return filePath
+  const withoutJson = filePath.replace(/\.json$/i, '')
+  return /\.fina$/i.test(withoutJson) ? withoutJson : `${withoutJson}.fina`
+}
 
 function TransactionPage(): JSX.Element {
   const { t } = useTranslation()
@@ -96,12 +106,20 @@ function TransactionPage(): JSX.Element {
   )
 
   const handleExport = useCallback(
-    async (format: 'csv' | 'xlsx') => {
+    async (format: 'fina' | 'csv' | 'xlsx') => {
       if (!dataset) return
       setExporting(true)
       setShowExportMenu(false)
       try {
-        if (format === 'csv') {
+        if (format === 'fina') {
+          const dialogResult = await window.api.export.showSaveDialog(`${safeBaseName(dataset.name)}.fina`, [
+            { name: 'Finance Dataset', extensions: ['fina'] }
+          ])
+          if (dialogResult.canceled || !dialogResult.filePath) return
+          const filePath = withFinaExtension(dialogResult.filePath)
+          const result = await window.api.dataset.save(filePath, exportFinaDataset(dataset))
+          if (!result.success) throw new Error(result.error || t('errors.saveError'))
+        } else if (format === 'csv') {
           const csv = ExportService.toTransactionCSV(transactions, categories, wallets)
           const result = await window.api.export.showSaveDialog('transactions.csv', [
             { name: 'CSV', extensions: ['csv'] }
@@ -331,6 +349,7 @@ function TransactionPage(): JSX.Element {
                 </motion.button>
                 {showExportMenu && (
                   <div style={styles.exportDropdown}>
+                    <button style={styles.dropdownItem} onClick={() => handleExport('fina')}>.fina</button>
                     <button style={styles.dropdownItem} onClick={() => handleExport('csv')}>CSV</button>
                     <button style={styles.dropdownItem} onClick={() => handleExport('xlsx')}>XLSX</button>
                   </div>
@@ -340,7 +359,14 @@ function TransactionPage(): JSX.Element {
                 style={styles.closeBtn}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => { clearDataset(); updateSettings({ lastOpenedDataset: null }) }}
+                onClick={async () => {
+                  try {
+                    await clearDataset()
+                    updateSettings({ lastOpenedDataset: null })
+                  } catch (error) {
+                    alert(t('errors.generic') + ': ' + String(error))
+                  }
+                }}
               >
                 {t('common.closeDataset')}
               </motion.button>
@@ -370,6 +396,7 @@ function TransactionPage(): JSX.Element {
           transaction={editingTransaction}
           categories={categories}
           wallets={wallets}
+          payables={dataset?.payables ?? []}
           categoryTypeMap={dataset?.categoryTypeMap}
           keepOpen={keepFormOpen}
           onKeepOpenChange={setKeepFormOpen}

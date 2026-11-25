@@ -43,6 +43,8 @@ export interface Transaction {
   notes: string
   walletId?: string
   toWalletId?: string
+  payableId?: string
+  installmentId?: string
   createdAt: string
   updatedAt: string
 }

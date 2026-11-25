@@ -53,7 +53,7 @@
     "title": "به دستیار مالی خوش آمدید",
     "subtitle": "امور مالی خود را پیگیری کنید، گزارش تهیه کنید و بینش کسب کنید",
     "createDataset": "ایجاد مجموعه داده جدید",
-    "importData": "ورود داده",
+    "importData": "ورود پشتیبان مجموعه داده",
     "openDataset": "باز کردن مجموعه داده موجود"
   },
   "dataset": {
@@ -93,6 +93,10 @@
     "confirmDelete": "آیا از حذف این تراکنش اطمینان دارید؟",
     "noTransactions": "هنوز تراکنشی وجود ندارد. اولین تراکنش خود را اضافه کنید یا داده وارد کنید.",
     "batchMode": "افزودن یکی دیگر",
+    "linkedPayable": "پرداختنی مرتبط",
+    "linkedInstallment": "قسط مرتبط",
+    "selectInstallment": "انتخاب قسط",
+    "noPayable": "بدون پرداختنی",
     "validationTitle": "فیلدهای اجباری خالی هستند",
     "validationMessage": "لطفاً فیلدهای زیر را پر کنید:",
     "created": "تراکنش ایجاد شد",
@@ -180,6 +184,16 @@
     "dropHere": "فایل را اینجا رها کنید",
     "singleFileOnly": "لطفاً فقط یک فایل را رها کنید",
     "invalidFileType": "نوع فایل نامعتبر است. فرمت‌های پشتیبانی شده: {{types}}"
+  },
+  "backup": {
+    "title": "پشتیبان کامل مجموعه داده",
+    "description": "کل مجموعه داده شامل دسته بندی ها، کیف پول ها، دریافتی ها، پرداختنی ها، اقساط، بودجه و تراکنش های مرتبط را صادر یا وارد کنید.",
+    "exportFina": "خروجی .fina",
+    "exportXlsx": "خروجی .xlsx",
+    "exportCsv": "خروجی .csv",
+    "import": "ورود پشتیبان کامل",
+    "confirmReplace": "ورود پشتیبان کامل، مجموعه داده فعلی را جایگزین می کند. ادامه می دهید؟",
+    "importSuccess": "پشتیبان مجموعه داده با موفقیت وارد شد"
   },
   "reports": {
     "title": "گزارش‌ها",
@@ -334,7 +348,19 @@
     "validationMessage": "لطفاً فیلدهای زیر را پر کنید:",
     "paidTransactions": "تراکنش‌های پرداخت شده",
     "transactionDetails": "جزئیات تراکنش",
-    "noLinkedTransactions": "هیچ تراکنش مطابقی برای این پرداختنی یافت نشد."
+    "noLinkedTransactions": "هیچ تراکنش مطابقی برای این پرداختنی یافت نشد.",
+    "recordPayment": "ثبت پرداخت",
+    "paymentTitle": "پرداخت پرداختنی",
+    "paymentAmount": "مبلغ پرداخت",
+    "paymentDate": "تاریخ پرداخت",
+    "paymentRemaining": "مانده هدف",
+    "paymentSource": "منبع پیوند",
+    "paymentSourceExplicit": "پیوند صریح",
+    "paymentSourceLegacy": "تطابق قدیمی",
+    "linkedInstallment": "قسط",
+    "invalidPayment": "مبلغ پرداخت از مانده بیشتر است یا معتبر نیست.",
+    "paymentRecorded": "پرداخت ثبت شد",
+    "deleteHasPayments": "پرداختنی دارای تراکنش پرداخت مرتبط است و قابل حذف نیست. ابتدا تراکنش‌ها را حذف یا جدا کنید."
   },
   "installment": {
     "title": "اقساط",
@@ -362,9 +388,13 @@
     "filterPending": "در انتظار",
     "filterPaid": "پرداخت شده",
     "filterOverdue": "معوقه",
+    "filterPartial": "پرداخت جزئی",
     "statePending": "در انتظار",
     "statePaid": "پرداخت شده",
     "stateOverdue": "معوقه",
+    "statePartial": "پرداخت جزئی",
+    "paidAmount": "مبلغ پرداخت شده",
+    "remainingBalance": "مانده قسط",
     "payable": "پرداختنی",
     "markPaid": "علامت به عنوان پرداخت شده",
     "markUnpaid": "بازگشت به در انتظار",
@@ -380,6 +410,9 @@
     "errorDate": "تمام تاریخ‌های سررسید باید معتبر باشند",
     "errorAmount": "مبلغ تمام اقساط باید بیشتر از صفر باشد",
     "errorBalance": "مجموع مبالغ اقساط باید برابر مبلغ کل باشد",
+    "errorHistory": "اقساطی که پرداخت ثبت شده دارند قابل حذف نیستند",
+    "errorPaidAmount": "مبلغ قسط نمی‌تواند کمتر از مبلغ پرداخت شده باشد",
+    "errorDuplicate": "شناسه اقساط باید یکتا باشد",
     "created": "قسط بهروزرسانی شد",
     "markedPaid": "قسط پرداخت شده علامت خورد",
     "reverted": "قسط به در انتظار بازگشت"

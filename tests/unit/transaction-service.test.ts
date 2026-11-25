@@ -44,12 +44,32 @@ describe('TransactionService', () => {
     expect(result).toHaveLength(0)
   })
 
-  it('duplicates a transaction', () => {
-    const tx = makeTx()
+  it('duplicates a transaction without copying payable links', () => {
+    const tx = makeTx({ payableId: 'p1', installmentId: 'i1' })
     const result = TransactionService.duplicate([tx], '1')
     expect(result).toHaveLength(2)
     expect(result[1].title).toContain('(copy)')
     expect(result[1].id).not.toBe(tx.id)
+    expect(result[1].payableId).toBeUndefined()
+    expect(result[1].installmentId).toBeUndefined()
+  })
+
+  it('creates and updates payable links', () => {
+    const created = TransactionService.create([], {
+      date: '2026-06-01',
+      title: 'Rent payment',
+      categoryId: 'cat1',
+      type: TransactionType.Expense,
+      amount: 100,
+      payableId: 'p1',
+      installmentId: 'i1'
+    })
+    expect(created[0].payableId).toBe('p1')
+    expect(created[0].installmentId).toBe('i1')
+
+    const updated = TransactionService.update(created, created[0].id, { installmentId: 'i2' })
+    expect(updated[0].installmentId).toBe('i2')
+    expect(updated[0].payableId).toBe('p1')
   })
 
   it('creates a transfer with source and destination wallets', () => {

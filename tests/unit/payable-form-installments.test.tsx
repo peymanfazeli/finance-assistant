@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import PayableForm, { PAYABLE_FORM_ID } from '../../src/renderer/components/PayableForm'
-import { Category } from '../../src/core/models/types'
+import {
+  Category,
+  InstallmentStatus,
+  Payable,
+  Transaction,
+  TransactionType
+} from '../../src/core/models/types'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -34,6 +40,8 @@ vi.mock('react-i18next', () => ({
         'installment.statePaid': 'Paid',
         'installment.statePending': 'Pending',
         'installment.errorBalance': 'Installment amounts must add up to the total amount',
+        'installment.errorHistory': 'Installments with payment history cannot be removed',
+        'installment.errorPaidAmount': 'An installment amount cannot be less than the amount already paid',
         'common.save': 'Save',
         'common.cancel': 'Cancel',
         'common.ok': 'OK'
@@ -47,12 +55,14 @@ const categories: Category[] = [
   { id: 'cat-1', name: 'Bills', color: '#fff', icon: 'bill', isDefault: false, createdAt: '' }
 ]
 
-function renderForm(onSave = vi.fn()) {
+function renderForm(onSave = vi.fn(), payable?: Payable, transactions: Transaction[] = []) {
   render(
     <>
       <PayableForm
+        payable={payable}
         categories={categories}
         currency="USD"
+        transactions={transactions}
         onSave={onSave}
       />
       <button type="submit" form={PAYABLE_FORM_ID}>Save</button>
@@ -97,5 +107,46 @@ describe('PayableForm installments', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       installments: undefined
     }))
+  })
+
+  it('blocks editing an installment below its recorded payment', () => {
+    const payable: Payable = {
+      id: 'p1',
+      title: 'Laptop',
+      categoryId: 'cat-1',
+      totalAmount: 100,
+      to: 'Store',
+      notes: '',
+      createdAt: '2026-02-01T10:00:00.000Z',
+      updatedAt: '2026-02-01T10:00:00.000Z',
+      installments: [{
+        id: 'i1',
+        amount: 100,
+        dueDate: '2026-02-10',
+        status: InstallmentStatus.Pending,
+        createdAt: '2026-02-01T10:00:00.000Z',
+        updatedAt: '2026-02-01T10:00:00.000Z'
+      }]
+    }
+    const transactions: Transaction[] = [{
+      id: 't1',
+      date: '2026-02-10',
+      title: 'Installment 1',
+      categoryId: 'cat-1',
+      type: TransactionType.Expense,
+      amount: 50,
+      notes: '',
+      payableId: 'p1',
+      installmentId: 'i1',
+      createdAt: '2026-02-01T10:00:00.000Z',
+      updatedAt: '2026-02-01T10:00:00.000Z'
+    }]
+    const { onSave } = renderForm(vi.fn(), payable, transactions)
+
+    fireEvent.change(screen.getByLabelText('Amount 1'), { target: { value: '40' } })
+    fireEvent.click(screen.getByText('Save'))
+
+    expect(onSave).not.toHaveBeenCalled()
+    expect(screen.getByText('An installment amount cannot be less than the amount already paid')).toBeDefined()
   })
 })

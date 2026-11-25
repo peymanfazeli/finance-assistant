@@ -53,7 +53,7 @@
     "title": "Welcome to Finance Assistant",
     "subtitle": "Track your finances, generate reports, and gain insights",
     "createDataset": "Create New Dataset",
-    "importData": "Import Data",
+    "importData": "Import Dataset Backup",
     "openDataset": "Open Existing Dataset"
   },
   "dataset": {
@@ -93,6 +93,10 @@
     "confirmDelete": "Are you sure you want to delete this transaction?",
     "noTransactions": "No transactions yet. Add your first transaction or import data.",
     "batchMode": "Add another",
+    "linkedPayable": "Linked payable",
+    "linkedInstallment": "Linked installment",
+    "selectInstallment": "Select installment",
+    "noPayable": "No payable",
     "validationTitle": "Missing Required Fields",
     "validationMessage": "Please fill in the following fields:",
     "created": "Transaction created",
@@ -180,6 +184,16 @@
     "dropHere": "Drop file here",
     "singleFileOnly": "Please drop only one file",
     "invalidFileType": "Invalid file type. Supported: {{types}}"
+  },
+  "backup": {
+    "title": "Complete Dataset Backup",
+    "description": "Export or import the entire dataset, including categories, wallets, receivables, payables, installments, budgets, and linked transactions.",
+    "exportFina": "Export .fina",
+    "exportXlsx": "Export .xlsx",
+    "exportCsv": "Export .csv",
+    "import": "Import complete backup",
+    "confirmReplace": "Importing a complete backup replaces the current dataset. Continue?",
+    "importSuccess": "Dataset backup imported successfully"
   },
   "reports": {
     "title": "Reports",
@@ -334,7 +348,19 @@
     "validationMessage": "Please fill in the following fields:",
     "paidTransactions": "Paid Transactions",
     "transactionDetails": "Transaction Details",
-    "noLinkedTransactions": "No matching transactions found for this payable."
+    "noLinkedTransactions": "No matching transactions found for this payable.",
+    "recordPayment": "Record payment",
+    "paymentTitle": "Payable payment",
+    "paymentAmount": "Payment amount",
+    "paymentDate": "Payment date",
+    "paymentRemaining": "Remaining target",
+    "paymentSource": "Link source",
+    "paymentSourceExplicit": "Explicit link",
+    "paymentSourceLegacy": "Legacy match",
+    "linkedInstallment": "Installment",
+    "invalidPayment": "Payment amount exceeds the remaining balance or is invalid.",
+    "paymentRecorded": "Payment recorded",
+    "deleteHasPayments": "Cannot delete a payable with linked payment transactions. Delete or unlink those transactions first."
   },
   "installment": {
     "title": "Installments",
@@ -362,9 +388,13 @@
     "filterPending": "Pending",
     "filterPaid": "Paid",
     "filterOverdue": "Overdue",
+    "filterPartial": "Partially Paid",
     "statePending": "Pending",
     "statePaid": "Paid",
     "stateOverdue": "Overdue",
+    "statePartial": "Partially Paid",
+    "paidAmount": "Paid Amount",
+    "remainingBalance": "Remaining Balance",
     "payable": "Payable",
     "markPaid": "Mark paid",
     "markUnpaid": "Revert to pending",
@@ -380,6 +410,9 @@
     "errorDate": "All due dates must be valid",
     "errorAmount": "All installment amounts must be greater than zero",
     "errorBalance": "Installment amounts must add up to the total amount",
+    "errorHistory": "Installments with payment history cannot be removed",
+    "errorPaidAmount": "An installment amount cannot be less than the amount already paid",
+    "errorDuplicate": "Installment IDs must be unique",
     "created": "Installment updated",
     "markedPaid": "Installment marked as paid",
     "reverted": "Installment reverted to pending"

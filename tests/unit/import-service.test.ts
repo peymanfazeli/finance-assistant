@@ -30,6 +30,14 @@ describe('ImportService', () => {
     expect(imported[0].type).toBe(TransactionType.Expense)
   })
 
+  it('maps transaction fields only', () => {
+    const csv = 'Date,Title,Category,Type,Amount,Notes\n2026-01-15,Groceries,Food,expense,85.50,Costco'
+    const preview = ImportService.parseCSV(csv)
+    const targets = preview.suggestedMapping.map((mapping) => mapping.targetField)
+
+    expect(targets.every((target) => ['date', 'title', 'category', 'type', 'amount', 'notes'].includes(target))).toBe(true)
+  })
+
   it('interprets income type correctly', () => {
     const csv = 'Date,Title,Category,Type,Amount\n2026-01-15,Salary,Income,income,5000'
     const preview = ImportService.parseCSV(csv)

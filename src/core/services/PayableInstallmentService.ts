@@ -1,4 +1,5 @@
-import { InstallmentStatus, Payable, PayableInstallment } from '../models/types'
+import { InstallmentStatus, Payable, PayableInstallment, Transaction } from '../models/types'
+import { PayableService } from './PayableService'
 import { generateId } from '../utils/id'
 import {
   gregorianDateToJalali,
@@ -7,11 +8,11 @@ import {
   jalaliToGregorianDateStrFromParts
 } from '../utils/jalali'
 
-export type InstallmentFilter = 'all' | 'pending' | 'paid' | 'overdue'
+export type InstallmentFilter = 'all' | 'pending' | 'partial' | 'paid' | 'overdue'
 
-export type InstallmentValidationCode = 'total' | 'count' | 'date' | 'amount' | 'balance'
+export type InstallmentValidationCode = 'total' | 'count' | 'date' | 'amount' | 'balance' | 'history' | 'paidAmount' | 'duplicate'
 
-export type InstallmentState = 'pending' | 'paid' | 'overdue'
+export type InstallmentState = 'pending' | 'partial' | 'paid' | 'overdue'
 
 export interface InstallmentRow {
   payableId: string
@@ -20,11 +21,17 @@ export interface InstallmentRow {
   number: number
   count: number
   state: InstallmentState
+  paidAmount: number
+  remainingAmount: number
+  paidDate: string | null
 }
 
 export interface InstallmentSummary {
   dueThisMonth: number
   totalScheduled: number
+  partialBalance: number
+  overdueBalance: number
+  currentMonthBalance: number
   rows: InstallmentRow[]
 }
 
@@ -52,14 +59,32 @@ function isValidDate(dateStr: string): boolean {
   }
 }
 
-function getRows(payables: Payable[], todayStr: string): InstallmentRow[] {
+function resolveArgs(
+  todayOrTransactions?: Date | Transaction[],
+  transactions: Transaction[] = []
+): { today?: Date; transactions: Transaction[] } {
+  if (Array.isArray(todayOrTransactions)) {
+    return { transactions: todayOrTransactions }
+  }
+  return { today: todayOrTransactions, transactions }
+}
+
+function getRows(
+  payables: Payable[],
+  todayStr: string,
+  transactions: Transaction[]
+): InstallmentRow[] {
   const rows: InstallmentRow[] = []
   for (const payable of payables) {
     const installments = payable.installments ?? []
     installments.forEach((installment, index) => {
+      const paidAmount = PayableService.getInstallmentNetPaid(payable, installment, transactions, payables)
+      const remainingAmount = roundAmount(Math.max(0, installment.amount - paidAmount))
       let state: InstallmentState = 'pending'
-      if (installment.status === InstallmentStatus.Paid) {
+      if (paidAmount >= installment.amount - 0.005 && installment.amount > 0) {
         state = 'paid'
+      } else if (paidAmount > 0) {
+        state = 'partial'
       } else if (installment.dueDate < todayStr) {
         state = 'overdue'
       }
@@ -69,7 +94,10 @@ function getRows(payables: Payable[], todayStr: string): InstallmentRow[] {
         installment,
         number: index + 1,
         count: installments.length,
-        state
+        state,
+        paidAmount,
+        remainingAmount,
+        paidDate: PayableService.getInstallmentPaidDate(payable, installment, transactions)
       })
     })
   }
@@ -91,6 +119,10 @@ function getTodayStr(today?: Date): { dateStr: string; jy: number; jm: number } 
     jy: jalaliToday.jy,
     jm: jalaliToday.jm
   }
+}
+
+function sumBalances(rows: InstallmentRow[]): number {
+  return roundAmount(rows.reduce((sum, row) => sum + row.remainingAmount, 0))
 }
 
 export class PayableInstallmentService {
@@ -148,6 +180,21 @@ export class PayableInstallmentService {
     })
   }
 
+  static createSchedulePreservingIds(
+    existing: PayableInstallment[],
+    total: number,
+    count: number,
+    firstDueDate?: string,
+    now: string = new Date().toISOString()
+  ): PayableInstallment[] {
+    const generated = PayableInstallmentService.createInstallments(total, count, firstDueDate, now)
+    return generated.map((installment, index) =>
+      existing[index]
+        ? { ...installment, id: existing[index].id, status: existing[index].status, paidAt: existing[index].paidAt, createdAt: existing[index].createdAt }
+        : installment
+    )
+  }
+
   static isEvenDistribution(installments: PayableInstallment[]): boolean {
     if (installments.length === 0) return true
     const even = PayableInstallmentService.distributeEvenly(
@@ -183,29 +230,74 @@ export class PayableInstallmentService {
     return { valid: codes.length === 0, codes, difference }
   }
 
-  static getRows(payables: Payable[], today?: Date): InstallmentRow[] {
-    const { dateStr } = getTodayStr(today)
-    return getRows(payables, dateStr)
+  static validateScheduleEdit(
+    payable: Payable,
+    nextInstallments: PayableInstallment[],
+    transactions: Transaction[],
+    total: number = payable.totalAmount
+  ): InstallmentValidation {
+    const result = PayableInstallmentService.validateSchedule(total, nextInstallments)
+    const ids = nextInstallments.map((item) => item.id)
+    if (new Set(ids).size !== ids.length) result.codes.push('duplicate')
+
+    for (const existing of payable.installments ?? []) {
+      const paid = PayableService.getInstallmentNetPaid(payable, existing, transactions, [payable])
+      const retained = nextInstallments.find((item) => item.id === existing.id)
+      if (paid > 0 && !retained) {
+        result.codes.push('history')
+      } else if (retained && retained.amount < paid - 0.005) {
+        result.codes.push('paidAmount')
+      }
+    }
+
+    const priority: InstallmentValidationCode[] = ['history', 'paidAmount', 'duplicate', 'date', 'amount', 'balance', 'count', 'total']
+    result.codes = Array.from(new Set(result.codes)).sort(
+      (a, b) => priority.indexOf(a) - priority.indexOf(b)
+    )
+    result.valid = result.codes.length === 0
+    return result
   }
 
-  static getSummary(payables: Payable[], today?: Date): InstallmentSummary {
-    const { dateStr, jy, jm } = getTodayStr(today)
-    const rows = getRows(payables, dateStr)
+  static getRows(payables: Payable[], today?: Date, transactions?: Transaction[]): InstallmentRow[]
+  static getRows(payables: Payable[], transactions: Transaction[]): InstallmentRow[]
+  static getRows(
+    payables: Payable[],
+    todayOrTransactions?: Date | Transaction[],
+    transactions: Transaction[] = []
+  ): InstallmentRow[] {
+    const args = resolveArgs(todayOrTransactions, transactions)
+    const { dateStr } = getTodayStr(args.today)
+    return getRows(payables, dateStr, args.transactions)
+  }
+
+  static getSummary(payables: Payable[], today?: Date, transactions?: Transaction[]): InstallmentSummary
+  static getSummary(payables: Payable[], transactions: Transaction[]): InstallmentSummary
+  static getSummary(
+    payables: Payable[],
+    todayOrTransactions?: Date | Transaction[],
+    transactions: Transaction[] = []
+  ): InstallmentSummary {
+    const args = resolveArgs(todayOrTransactions, transactions)
+    const { dateStr, jy, jm } = getTodayStr(args.today)
+    const rows = getRows(payables, dateStr, args.transactions)
     const pending = rows.filter((row) => row.state !== 'paid')
     let dueThisMonth = 0
 
     for (const row of pending) {
       try {
         const jalali = gregorianDateToJalali(row.installment.dueDate)
-        if (jalali.jy === jy && jalali.jm === jm) dueThisMonth += row.installment.amount
+        if (jalali.jy === jy && jalali.jm === jm) dueThisMonth += row.remainingAmount
       } catch {
-        // Invalid dates are reported by validation and excluded from totals.
+        dueThisMonth += 0
       }
     }
 
     return {
       dueThisMonth: roundAmount(dueThisMonth),
-      totalScheduled: roundAmount(pending.reduce((sum, row) => sum + row.installment.amount, 0)),
+      totalScheduled: sumBalances(pending),
+      partialBalance: sumBalances(rows.filter((row) => row.state === 'partial')),
+      overdueBalance: sumBalances(rows.filter((row) => row.state === 'overdue')),
+      currentMonthBalance: roundAmount(dueThisMonth),
       rows
     }
   }
